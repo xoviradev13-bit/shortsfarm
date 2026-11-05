@@ -66,3 +66,24 @@ model AppRelease {
   @@map("app_releases")
 }
 
+model Order {
+  id            String    @id @default(uuid()) @db.Uuid
+  orderCode     Int       @unique @map("order_code")
+  customerEmail String    @map("customer_email")
+  customerName  String?   @default("Khách hàng") @map("customer_name")
+  plan          String    // monthly, yearly, lifetime
+  amount        Int
+  status        String    @default("pending") // pending, paid, cancelled, expired
+  paymentLinkId String?   @map("payment_link_id")
+  checkoutUrl   String?   @map("checkout_url")
+  qrCode        String?   @map("qr_code")
+  accountNo     String?   @map("account_no")
+  accountName   String?   @map("account_name")
+  bankBin       String?   @map("bank_bin")
+  licenseKey    String?   @map("license_key")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("orders")
+}
+

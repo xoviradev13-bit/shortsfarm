@@ -6,17 +6,21 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:email": "node test-email.mjs"
   },
   "dependencies": {
+    "@payos/node": "^2.0.5",
     "@prisma/client": "^5.21.1",
     "lucide-react": "^0.453.0",
     "next": "14.2.15",
+    "nodemailer": "^10.3.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^20.16.11",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",
@@ -24,5 +28,8 @@
     "prisma": "^5.21.1",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.3"
+  },
+  "optionalDependencies": {
+    "@next/swc-win32-x64-msvc": "^14.2.15"
   }
 }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import crypto from 'crypto';
 
+export const dynamic = 'force-dynamic';
+
 function checkAdminAuth(req: NextRequest): boolean {
   const adminKey = req.headers.get('x-admin-key');
   const expectedKey = process.env.ADMIN_SECRET_KEY || 'TiktokFarmSecretAdmin2026!#';

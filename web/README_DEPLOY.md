@@ -34,7 +34,13 @@ Hệ thống bao gồm:
    - `DIRECT_URL`: Chuỗi kết nối Supabase (Session - port 5432)
    - `ADMIN_SECRET_KEY`: Mật khẩu đăng nhập trang `/admin` (ví dụ: `AdminVip2026!#`)
    - `NEXT_PUBLIC_DEFAULT_DOWNLOAD_URL`: Đường link tải file `.exe` cài đặt (Google Drive / GitHub Release / S3)
-5. Bấm **Deploy**. Sau khoảng 1-2 phút, bạn sẽ nhận được đường dẫn website (ví dụ: `https://tiktokfarm.vercel.app`).
+   - `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`: Thông tin API từ https://payos.vn (Dành cho VietQR cá nhân tự động)
+   - `VIETQR_BANK_ID`, `VIETQR_ACCOUNT_NO`, `VIETQR_ACCOUNT_NAME`: Thông tin tài khoản ngân hàng của bạn
+   - `RESEND_API_KEY`: API Key gửi email biên nhận tự động từ https://resend.com (tùy chọn)
+5. Bấm **Deploy**. Sau khoảng 1-2 phút, bạn sẽ nhận được đường dẫn website (ví dụ: `https://shortsfarm.vercel.app`).
+6. Vào Dashboard payOS -> mục **Cài đặt Webhook** -> dán đường dẫn:
+   `https://<ten-mien-cua-ban>.vercel.app/api/checkout/webhook/payos`
+   Bấm **Xác nhận**. Hệ thống thanh toán VietQR tự động 24/7 đã sẵn sàng hoạt động!
 
 ### Cách 2: Deploy trực tiếp bằng Vercel CLI
 Mở terminal tại thư mục `web` và chạy:

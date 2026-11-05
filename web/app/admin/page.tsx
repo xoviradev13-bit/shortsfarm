@@ -640,7 +640,7 @@ export default function AdminDashboard() {
                   rows={3}
                   value={releaseForm.release_notes}
                   onChange={(e) => setReleaseForm({ ...releaseForm, release_notes: e.target.value })}
-                  placeholder="Tính năng mới: Bổ sung download Douyin, hỗ trợ AdsPower..."
+                  placeholder="Tính năng mới: Bổ sung download Douyin, nâng cấp GenLogin CDP..."
                   className="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-800 text-white"
                 />
               </div>

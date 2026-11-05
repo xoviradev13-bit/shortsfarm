@@ -62,13 +62,37 @@ CREATE TABLE IF NOT EXISTS public.app_releases (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 5. DỮ LIỆU MẪU BAN ĐẦU
+-- 5. BẢNG ĐƠN HÀNG THANH TOÁN VIETQR (ORDERS)
+CREATE TABLE IF NOT EXISTS public.orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_code INT UNIQUE NOT NULL,
+    customer_email TEXT NOT NULL,
+    customer_name TEXT DEFAULT 'Khách hàng',
+    plan TEXT NOT NULL,                     -- 'monthly', 'yearly', 'lifetime'
+    amount INT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'paid', 'cancelled', 'expired'
+    payment_link_id TEXT,
+    checkout_url TEXT,
+    qr_code TEXT,
+    account_no TEXT,
+    account_name TEXT,
+    bank_bin TEXT,
+    license_key TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_order_code ON public.orders(order_code);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON public.orders(customer_email);
+
+-- 6. DỮ LIỆU MẪU BAN ĐẦU
 -- Tạo 1 bản release v2.1.0 mặc định
 INSERT INTO public.app_releases (version, download_url, release_notes, is_mandatory, is_latest)
 VALUES (
     '2.1.0',
-    'https://github.com/your-repo/tiktok-farm/releases/download/v2.1.0/TikTokFarm_Setup_v2.1.0.exe',
-    'Bổ sung hỗ trợ AdsPower, Dolphin Anty, GenLogin và tải đa nền tảng Douyin, Xiaohongshu.',
+    'https://github.com/your-repo/tiktok-farm/releases/download/v2.1.0/ShortsFarm_Setup_v2.1.0.exe',
+    'Bổ sung kết nối GPMLogin, GenLogin CDP và tải đa nền tảng Douyin, Xiaohongshu sạch logo.',
     false,
     true
 )
@@ -78,35 +102,37 @@ ON CONFLICT (version) DO NOTHING;
 INSERT INTO public.licenses (license_key, customer_name, customer_email, plan, max_devices, expires_at, notes)
 VALUES 
 (
-    'TKFARM-DEMO-VIP1-2026', 
+    'SF-DEMO-VIP1-2026', 
     'Nguyễn Văn A', 
-    'demo@tiktokfarm.com', 
+    'demo@shortsfarm.com', 
     'monthly', 
     1, 
     now() + INTERVAL '30 days',
     'Key mẫu test 30 ngày'
 ),
 (
-    'TKFARM-LIFE-PRO8-9999', 
+    'SF-LIFE-PRO8-9999', 
     'Admin Owner', 
-    'admin@tiktokfarm.com', 
+    'admin@shortsfarm.com', 
     'lifetime', 
-    3, 
-    now() + INTERVAL '3650 days',
-    'Key Lifetime 3 máy'
+    5, 
+    NULL,
+    'Key Lifetime 5 máy'
 )
 ON CONFLICT (license_key) DO NOTHING;
 
--- 6. CẤU HÌNH BẢO MẬT ROW LEVEL SECURITY (RLS)
+-- 7. CẤU HÌNH BẢO MẬT ROW LEVEL SECURITY (RLS)
 ALTER TABLE public.licenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.downloads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_releases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
 -- Cho phép đọc công khai thông tin releases & ghi nhận lượt tải
 CREATE POLICY "Public read releases" ON public.app_releases FOR SELECT USING (true);
 CREATE POLICY "Public insert downloads" ON public.downloads FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public read download count" ON public.downloads FOR SELECT USING (true);
+CREATE POLICY "Service role full access orders" ON public.orders USING (true) WITH CHECK (true);
 
 -- Đối với licenses & activations:
 -- Next.js API Routes dùng SUPABASE_SERVICE_ROLE_KEY (hoặc anon key với RPC)

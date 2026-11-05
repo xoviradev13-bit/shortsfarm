@@ -3,10 +3,10 @@
   <assemblyIdentity
     version="1.0.0.0"
     processorArchitecture="*"
-    name="TikTokFarm.AutoTool"
+    name="ShortsFarm.AutoTool"
     type="win32"
   />
-  <description>TikTok Auto Farm &amp; AI Video Engine</description>
+  <description>ShortsFarm &amp; AI Video Engine</description>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>

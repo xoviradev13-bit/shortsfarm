@@ -158,7 +158,7 @@ class GPMClient:
             log_event("WARNING", f"Lỗi lấy danh sách GPM profiles: {str(e)}")
         return []
 
-    def start_profile(self, profile_id: str, target_url: str = "", low_ram_mode: bool = False) -> Optional[str]:
+    def start_profile(self, profile_id: str, target_url: str = "", low_ram_mode: bool = False, mute_audio: bool = False) -> Optional[str]:
         """
         Khởi chạy profile trên GPMLogin
         Trả về remote_debugging_address (VD: 127.0.0.1:12345)
@@ -187,6 +187,8 @@ class GPMClient:
                     "--mute-audio",
                     "--no-first-run"
                 ])
+            elif mute_audio:
+                args_list.append("--mute-audio")
             if target_url:
                 args_list.append(target_url)
 
@@ -277,3 +279,4 @@ class GPMClient:
         return None
 
 gpm_client = GPMClient()
+

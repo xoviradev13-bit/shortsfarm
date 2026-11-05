@@ -1,3 +1,4 @@
+import sys
 import os
 import subprocess
 import re
@@ -38,7 +39,7 @@ class SilenceDetector:
 
         pauses = []
         try:
-            res = subprocess.run(cmd, capture_output=True, timeout=120)
+            res = subprocess.run(cmd, capture_output=True, timeout=120, creationflags=0x08000000 if sys.platform == 'win32' else 0)
             stderr = res.stderr.decode("utf-8", errors="replace") if res.stderr else ""
             # Tìm dòng: [silencedetect @ ...] silence_start: 62.45
             for match in re.finditer(r"silence_start:\s*([0-9\.]+)", stderr):

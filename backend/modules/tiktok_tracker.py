@@ -261,7 +261,47 @@ class TikTokTracker:
                 session_result = fetch_account_info_from_gpm(gpm_id)
 
                 if session_result.get("found") and session_result.get("is_logged_in"):
-                    # Profile hợp lệ → cập nhật DB và trả về
+                    plat = session_result.get("platform", "tiktok")
+                    if plat != "tiktok":
+                        from backend.database import get_connection
+                        conn_p = get_connection()
+                        cur_p = conn_p.cursor()
+                        cur_p.execute("""
+                            UPDATE gpm_profiles SET
+                                platform = ?,
+                                channel_handle = COALESCE(NULLIF(?, ''), channel_handle),
+                                fb_page_id = COALESCE(NULLIF(?, ''), fb_page_id),
+                                tiktok_username = COALESCE(NULLIF(?, ''), tiktok_username),
+                                tiktok_nickname = COALESCE(NULLIF(?, ''), tiktok_nickname),
+                                tiktok_uid = COALESCE(NULLIF(?, ''), tiktok_uid),
+                                status = 'active',
+                                status_reason = ?
+                            WHERE gpm_id = ?
+                        """, (
+                            plat,
+                            session_result.get("channel_handle") or (session_result.get("username") if plat == 'youtube' else ''),
+                            session_result.get("fb_page_id") or (session_result.get("username") if plat == 'facebook' else ''),
+                            session_result.get("username") or "",
+                            session_result.get("nickname") or "",
+                            session_result.get("user_id") or "",
+                            session_result.get("message") or "Đã kết nối phiên đăng nhập",
+                            gpm_id
+                        ))
+                        conn_p.commit()
+                        conn_p.close()
+                        account_health.update_health_status(gpm_id, "active", "")
+                        return {
+                            "success": True,
+                            "is_logged_in": True,
+                            "gpm_id": gpm_id,
+                            "platform": plat,
+                            "username": session_result.get("username"),
+                            "nickname": session_result.get("nickname"),
+                            "scan_method": "gpm_profile_disk",
+                            "message": f"[{plat.upper()}] {session_result.get('username')}"
+                        }
+
+                    # Profile TikTok hợp lệ → cập nhật DB và trả về
                     u_name = session_result["username"]
                     n_name = session_result.get("nickname") or ""
                     t_uid = session_result.get("tiktok_uid") or session_result.get("user_id") or ""

@@ -1,9 +1,9 @@
 @echo off
-title TikTok Auto Farm & AI Video Engine
+title ShortsFarm & AI Video Engine
 color 0b
 
 echo ========================================================
-echo   TIKTOK BETA AUTO FARM & AI VIDEO ENGINE (GPM LOGIN)
+echo   SHORTSFARM - AI VIDEO ENGINE & AUTO UPLOADER
 echo ========================================================
 echo.
 

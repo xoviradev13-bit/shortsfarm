@@ -1,3 +1,4 @@
+import sys
 import os
 import subprocess
 import json
@@ -35,7 +36,7 @@ class VideoQualityChecker:
                 file_path
             ]
             try:
-                res = subprocess.run(cmd, capture_output=True, timeout=30)
+                res = subprocess.run(cmd, capture_output=True, timeout=30, creationflags=0x08000000 if sys.platform == 'win32' else 0)
                 if res.returncode == 0:
                     info = json.loads(res.stdout.decode("utf-8", errors="replace"))
                     duration = float(info.get("format", {}).get("duration", 0))

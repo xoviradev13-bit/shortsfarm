@@ -83,6 +83,11 @@ def _handle_uncaught_exception(exc_type, exc_value, exc_traceback):
 
 sys.excepthook = _handle_uncaught_exception
 
+# Suppress noisy Windows asyncio ProactorEventLoop errors (ConnectionResetError [WinError 10054])
+# These are cosmetic — happen when Edge-TTS or HTTP connections close, zero functional impact
+if sys.platform == "win32":
+    logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+
 if hasattr(threading, "excepthook"):
     def _handle_thread_exception(args):
         if issubclass(args.exc_type, KeyboardInterrupt):

@@ -2,7 +2,7 @@
 tray_manager.py
 ---------------
 Quản lý Khay Hệ Thống (System Tray) và Khởi Động Cùng Windows (Auto-start)
-cho ứng dụng Desktop TikTok Auto Farm.
+cho ứng dụng Desktop ShortsFarm.
 
 Tính năng:
 1. Thu nhỏ xuống System Tray khi bấm nút Đóng (X) hoặc Thu nhỏ (Minimize).
@@ -21,6 +21,8 @@ Tính năng:
 import os
 import sys
 import threading
+import atexit
+import time
 import winreg
 from typing import Optional, Dict, Any
 from PIL import Image, ImageDraw
@@ -35,6 +37,17 @@ APP_NAME = "TikTokAutoFarm"
 _global_window = None
 _tray_icon = None
 _is_exiting = False
+
+def _cleanup_tray():
+    global _tray_icon
+    if _tray_icon:
+        try:
+            _tray_icon.visible = False
+            _tray_icon.stop()
+        except Exception:
+            pass
+
+atexit.register(_cleanup_tray)
 
 # ─── REGISTRY: AUTO-START WITH WINDOWS ────────────────────────────────────────
 
@@ -181,7 +194,7 @@ def hide_to_tray():
     if _global_window:
         try:
             _global_window.hide()
-            notify_tray("TikTok Auto Farm", "Ứng dụng đang chạy ngầm trong Khay Hệ Thống.")
+            notify_tray("ShortsFarm", "Ứng dụng đang chạy ngầm trong Khay Hệ Thống.")
         except Exception as e:
             log_event("WARNING", f"[TrayManager] Lỗi ẩn window: {e}")
 
@@ -202,9 +215,10 @@ def exit_application(icon=None, item_obj=None):
     _is_exiting = True
     log_event("INFO", "🛑 Người dùng chọn Thoát Ứng Dụng từ System Tray.")
     
-    # 1. Dừng icon khay
+    # 1. Dừng và ẩn icon khay triệt để chống ghost icon trên Windows Explorer
     if _tray_icon:
         try:
+            _tray_icon.visible = False
             _tray_icon.stop()
         except Exception:
             pass
@@ -216,7 +230,8 @@ def exit_application(icon=None, item_obj=None):
         except Exception:
             pass
 
-    # 3. Kết thúc tiến trình
+    # 3. Chờ Windows Explorer 250ms để xử lý NIM_DELETE trước khi thoát process
+    time.sleep(0.25)
     os._exit(0)
 
 
@@ -278,7 +293,10 @@ def setup_tray(window=None) -> pystray.Icon:
     Không làm block giao diện chính của pywebview.
     """
     global _global_window, _tray_icon
-    _global_window = window
+    if window:
+        _global_window = window
+    if _tray_icon is not None:
+        return _tray_icon
 
     # Đăng ký sự kiện đóng cửa sổ của pywebview
     if window:
@@ -315,9 +333,9 @@ def setup_tray(window=None) -> pystray.Icon:
 
     image = get_tray_image()
     _tray_icon = pystray.Icon(
-        name="TikTokAutoFarm",
+        name="ShortsFarm",
         icon=image,
-        title="TikTok Auto Farm & AI Engine (Đang chạy ngầm)",
+        title="ShortsFarm & AI Engine (Đang chạy ngầm)",
         menu=menu
     )
 

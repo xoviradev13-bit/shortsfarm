@@ -53,10 +53,35 @@ def init_db():
         "include_shorts": "INTEGER DEFAULT NULL",
         "include_longform": "INTEGER DEFAULT NULL",
         "disable_subtitle_for_shorts": "INTEGER DEFAULT 1",
+        "hook_angle": "TEXT DEFAULT 'auto'",
+        "generate_variants": "INTEGER DEFAULT 0",
         "subtitle_enabled": "INTEGER DEFAULT NULL",
         "subtitle_style": "TEXT DEFAULT ''",
         "subtitle_position": "TEXT DEFAULT ''",
         "max_manual_videos": "INTEGER DEFAULT NULL",
+        "narration_enabled": "INTEGER DEFAULT 0",
+        "narration_language": "TEXT DEFAULT 'inherit'",
+        "voice_gender": "TEXT DEFAULT 'inherit'",
+        "narration_style": "TEXT DEFAULT 'inherit'",
+        "disable_narration_for_shorts": "INTEGER DEFAULT 1",
+        "keep_original_script_for_shorts": "INTEGER DEFAULT 1",
+        "ken_burns_enabled": "INTEGER DEFAULT 1",
+        "endcard_enabled": "INTEGER DEFAULT 1",
+        "use_ai_images": "INTEGER DEFAULT 0",
+        "image_style": "TEXT DEFAULT 'cinematic'",
+        "visual_source": "TEXT DEFAULT 'ai'",
+        "ai_image_model": "TEXT DEFAULT 'flux'",
+        "ai_video_model": "TEXT DEFAULT 'fal_ltx'",
+        "stock_provider": "TEXT DEFAULT 'all'",
+        "auto_upload": "INTEGER DEFAULT 1",
+        "tts_engine": "TEXT DEFAULT 'edge-tts'",
+        "elevenlabs_voice_id": "TEXT DEFAULT ''",
+        "elevenlabs_model": "TEXT DEFAULT 'eleven_multilingual_v2'",
+        "source_mode": "TEXT DEFAULT 'hybrid'",
+        "local_folder_path": "TEXT DEFAULT ''",
+        "target_platforms": "TEXT DEFAULT 'tiktok'",
+        "youtube_profile_ids": "TEXT DEFAULT ''",
+        "facebook_profile_ids": "TEXT DEFAULT ''",
     }
     for col, col_type in new_cols.items():
         if col not in existing_cols:
@@ -139,7 +164,7 @@ def init_db():
     # Migration columns cho gpm_profiles nếu chưa có
     cursor.execute("PRAGMA table_info(gpm_profiles)")
     existing_gpm_cols = {row["name"] for row in cursor.fetchall()}
-    for col in ["tiktok_nickname", "tiktok_uid", "sec_uid"]:
+    for col in ["tiktok_nickname", "tiktok_uid", "sec_uid", "browser_type", "platform", "channel_handle", "fb_page_id"]:
         if col not in existing_gpm_cols:
             try:
                 cursor.execute(f"ALTER TABLE gpm_profiles ADD COLUMN {col} TEXT DEFAULT ''")
@@ -157,6 +182,22 @@ def init_db():
             cursor.execute("UPDATE gpm_profiles SET notify_status = 'tracking' WHERE notify_status IS NULL OR notify_status = ''")
         except Exception:
             pass
+
+    # Bảng Kênh / Trang con của mỗi profile (YouTube channels, Facebook pages)
+    # TikTok luôn 1:1 nên không cần vào bảng này — chỉ YouTube (1:N) và Facebook (1:N)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS profile_channels (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        gpm_id TEXT NOT NULL,
+        platform TEXT NOT NULL CHECK(platform IN ('youtube', 'facebook')),
+        channel_id TEXT NOT NULL,
+        channel_name TEXT DEFAULT '',
+        channel_url TEXT DEFAULT '',
+        is_default INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(gpm_id, platform, channel_id)
+    )
+    ''')
 
     # Bảng Lịch trình đăng bài (Upload Tasks)
     cursor.execute('''
@@ -185,6 +226,13 @@ def init_db():
         ("retry_count", "INTEGER DEFAULT 0"),
         ("retry_after", "TEXT"),
         ("processing_started_at", "TEXT"),
+        ("variant_tag", "TEXT DEFAULT ''"),
+        ("hook_copy", "TEXT DEFAULT ''"),
+        ("views_count", "INTEGER DEFAULT 0"),
+        ("views_3s_count", "INTEGER DEFAULT 0"),
+        ("completion_rate", "REAL DEFAULT 0.0"),
+        ("post_url", "TEXT DEFAULT ''"),
+        ("platform", "TEXT DEFAULT 'tiktok'"),
     ]:
         if col not in existing_ut_cols:
             try:
@@ -323,6 +371,29 @@ def init_db():
         "include_longform": "INTEGER DEFAULT 1",
         "disable_subtitle_for_shorts": "INTEGER DEFAULT 1",
         "subtitle_position": "TEXT DEFAULT 'center'",
+        "auto_engagement_enabled": "INTEGER DEFAULT 0",
+        "auto_pin_comment": "INTEGER DEFAULT 1",
+        "pin_comment_delay_mins": "INTEGER DEFAULT 3",
+        "auto_reply_comments": "INTEGER DEFAULT 1",
+        "reply_comments_delay_mins": "INTEGER DEFAULT 20",
+        "narration_enabled": "INTEGER DEFAULT 0",
+        "narration_language": "TEXT DEFAULT 'original'",
+        "voice_gender": "TEXT DEFAULT 'male'",
+        "narration_style": "TEXT DEFAULT 'giat_gan'",
+        "disable_narration_for_shorts": "INTEGER DEFAULT 1",
+        "keep_original_script_for_shorts": "INTEGER DEFAULT 1",
+        "ken_burns_enabled": "INTEGER DEFAULT 1",
+        "endcard_enabled": "INTEGER DEFAULT 1",
+        "use_ai_images": "INTEGER DEFAULT 0",
+        "image_style": "TEXT DEFAULT 'cinematic'",
+        "visual_source": "TEXT DEFAULT 'ai'",
+        "ai_image_model": "TEXT DEFAULT 'flux'",
+        "ai_video_model": "TEXT DEFAULT 'fal_ltx'",
+        "stock_provider": "TEXT DEFAULT 'all'",
+        "auto_upload": "INTEGER DEFAULT 1",
+        "tts_engine": "TEXT DEFAULT 'edge-tts'",
+        "elevenlabs_voice_id": "TEXT DEFAULT ''",
+        "elevenlabs_model": "TEXT DEFAULT 'eleven_multilingual_v2'",
     }
     for col, col_type in new_camp_cols.items():
         if col not in existing_camp_cols:
@@ -350,6 +421,29 @@ def init_db():
         FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
     )
     ''')
+
+    # Bảng Nhiệm vụ Tương tác 30 Phút Vàng (Golden 30-Minute Engagement Protocol)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS engagement_tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        upload_task_id INTEGER,
+        campaign_id INTEGER,
+        gpm_profile_id INTEGER,
+        post_url TEXT DEFAULT '',
+        task_type TEXT NOT NULL, -- 'pin_comment' hoặc 'reply_comments'
+        status TEXT DEFAULT 'pending', -- pending, processing, completed, skipped, failed
+        scheduled_time TEXT,
+        executed_at TEXT,
+        payload TEXT DEFAULT '', -- JSON text lưu trữ câu hỏi mồi, các reply đã gửi, ngôn ngữ
+        error_message TEXT DEFAULT '',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (upload_task_id) REFERENCES upload_tasks(id),
+        FOREIGN KEY (campaign_id) REFERENCES campaigns(id),
+        FOREIGN KEY (gpm_profile_id) REFERENCES gpm_profiles(id)
+    )
+    ''')
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_engagement_tasks_status ON engagement_tasks(status, scheduled_time)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_engagement_tasks_profile ON engagement_tasks(gpm_profile_id, status)")
 
     # Bảng Theo dõi mức sử dụng AI Models & Chi phí (AI Usage Tracking)
     cursor.execute('''
@@ -451,6 +545,18 @@ def log_campaign_event(campaign_id: int, level: str, action: str, message: str, 
     except Exception:
         pass
 
+def get_setting(key: str, default: str = "") -> str:
+    """Lấy giá trị cấu hình từ bảng settings an toàn"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+        row = cursor.fetchone()
+        conn.close()
+        return str(row["value"]) if row and row["value"] is not None else default
+    except Exception:
+        return default
+
 def record_ai_usage(
     provider: str,
     model: str,
@@ -524,7 +630,8 @@ def get_ai_usage_stats(limit: int = 100) -> Dict[str, Any]:
                 COALESCE(SUM(completion_tokens), 0) as completion_tokens,
                 COALESCE(SUM(total_tokens), 0) as total_tokens,
                 ROUND(COALESCE(SUM(estimated_cost), 0.0), 6) as cost_usd,
-                ROUND(COALESCE(AVG(duration_ms), 0), 0) as avg_duration_ms
+                ROUND(COALESCE(AVG(duration_ms), 0), 0) as avg_duration_ms,
+                MAX(task) as task
             FROM ai_usage_logs
             GROUP BY provider, model
             ORDER BY calls DESC

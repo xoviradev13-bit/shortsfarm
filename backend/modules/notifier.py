@@ -211,6 +211,37 @@ class TelegramNotifier:
         )
         return self.send_message(msg, target_chat_id=target_chat_id, notification_type="10k")
 
+    def send_first_30min_checklist(
+        self,
+        task_id: int,
+        profile_name: str,
+        username: str,
+        title: str,
+        post_time: str,
+        variant_tag: str = "",
+        target_chat_id: Optional[str] = None
+    ) -> bool:
+        """
+        Gửi checklist nhắc nhở tương tác chủ động trong 'Golden 30-Minute Window' (Gap 4):
+        Khoảng thời gian 30 phút đầu quyết định 80% cơ hội video được thuật toán TikTok phân phối vào FYP Pool lớn.
+        """
+        now_str = post_time or datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+        var_badge = f" [{variant_tag}]" if variant_tag else ""
+        msg = (
+            f"🚀 *[GOLDEN 30-MIN PROTOCOL] VIDEO VỪA ĐĂNG THÀNH CÔNG!*{var_badge}\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎬 *Tiêu đề:* `{title}`\n"
+            f"👤 *Tài khoản:* `@{username or profile_name}` (GPM: `{profile_name}`)\n"
+            f"⏰ *Thời điểm đăng:* `{now_str}`\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🔥 *CHECKLIST HÀNH ĐỘNG NGAY TRONG 30 PHÚT ĐẦU:*\n"
+            "1️⃣ *Ghim comment mồi (0-5 phút):* Viết 1 câu hỏi mồi tranh luận dưới video và bấm Ghim (Pin Comment).\n"
+            "2️⃣ *Tương tác phản hồi (5-20 phút):* Trả lời ngay 3–5 comment đầu tiên của người xem bằng câu hỏi mở.\n"
+            "3️⃣ *Mồi tín hiệu chia sẻ (10-30 phút):* Copy link video chia sẻ vào 1-2 cộng đồng/nhóm phù hợp.\n"
+            "⚡ *Mục tiêu:* Đẩy Completion Rate & Comment Velocity trong 30 phút đầu để TikTok mở rộng phân phối!"
+        )
+        return self.send_message(msg, target_chat_id=target_chat_id, notification_type=None)
+
     def send_10k_alert_detailed(self, profile_name: str, username: str, followers: int, views: int = 0, target_chat_id: Optional[str] = None) -> Dict[str, Any]:
         """Gửi cảnh báo và trả về chi tiết từng kênh thành công/thất bại (Dùng cho test alert)"""
         bot_token = self.get_bot_token()
@@ -674,7 +705,7 @@ class TelegramNotifier:
         msg += f"• Nick đã cán mốc 10.000 Follower: *{data.get('eligible_10k_count', 0)} nick* 🏆\n"
 
         msg += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        msg += "🤖 *TikTok Farm Automation System* | Chúc bạn một ngày nổ view triệu view!"
+        msg += "🤖 *ShortsFarm Automation System* | Chúc bạn một ngày nổ view triệu view!"
         return msg
 
     def send_daily_report(self, report_date: Optional[str] = None, target_chat_id: Optional[str] = None) -> Dict[str, Any]:

@@ -20,7 +20,9 @@ if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys.executable).resolve().parent
     BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", BASE_DIR))
     _appdata = os.environ.get("APPDATA") or os.path.expanduser("~")
-    DATA_DIR = Path(_appdata) / "TikTok Auto Farm"
+    _legacy_dir = Path(_appdata) / "TikTok Auto Farm"
+    _new_dir = Path(_appdata) / "ShortsFarm"
+    DATA_DIR = _legacy_dir if (_legacy_dir.exists() and not _new_dir.exists()) else _new_dir
 else:
     BASE_DIR = Path(__file__).resolve().parent.parent
     BUNDLE_DIR = BASE_DIR
@@ -89,10 +91,11 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 # Cấu hình AI Cloud API & Local Models
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-AI_PROVIDER = os.getenv("AI_PROVIDER", "deepseek")  # "deepseek" | "gemini" | "openai"
+AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")  # "openai" | "gemini" | "deepseek"
 DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")  # "deepseek-chat" | "deepseek-reasoner"
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")  # "gemini-2.5-flash" | "gemini-1.5-flash" | "gemini-1.5-pro"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")  # "gemini-flash-lite-latest" | "gemini-flash-latest" | "gemini-2.5-flash"
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # "gpt-4o-mini" | "gpt-4o"
 WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")  # "tiny" | "base" | "small"
 ENABLE_DYNAMIC_SUBTITLES = os.getenv("ENABLE_DYNAMIC_SUBTITLES", "true").lower() in ("true", "1", "yes")
@@ -137,7 +140,7 @@ def save_env_config(updates: Dict[str, str]) -> bool:
         
     # Đồng bộ lại các biến toàn cục
     global YOUTUBE_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GPM_API_BASE_URL
-    global DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, AI_PROVIDER
+    global DEEPSEEK_API_KEY, GEMINI_API_KEY, GEMINI_BASE_URL, OPENAI_API_KEY, AI_PROVIDER
     global DEEPSEEK_MODEL, GEMINI_MODEL, OPENAI_MODEL
     global WHISPER_MODEL_SIZE, ENABLE_DYNAMIC_SUBTITLES, ENABLE_ANTI_DETECT
 
@@ -147,8 +150,9 @@ def save_env_config(updates: Dict[str, str]) -> bool:
     GPM_API_BASE_URL = os.getenv("GPM_API_BASE_URL", "http://127.0.0.1:9495/api/v1")
     DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-    AI_PROVIDER = os.getenv("AI_PROVIDER", "deepseek")
+    AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")
     DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")

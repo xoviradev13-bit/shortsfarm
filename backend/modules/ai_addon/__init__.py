@@ -1,5 +1,5 @@
 """
-AI Add-on Module for TikTok Farm
+AI Add-on Module for ShortsFarm
 Includes:
 - LLM Curation (DeepSeek, Gemini, OpenAI)
 - Speech-to-Text Transcription (faster-whisper)

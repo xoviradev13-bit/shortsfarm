@@ -167,18 +167,28 @@ def run_environment_diagnostics() -> Dict[str, Any]:
         "message": gpm_health.get("message", "")
     }
 
-    if not gpm_health.get("running"):
-        action_items.append({
-            "type": "warning",
-            "category": "GPMLogin",
-            "title": "Ứng dụng GPMLogin chưa mở",
-            "message": "Hãy mở phần mềm GPMLogin trên máy tính và đảm bảo API mở tại cổng 9495 hoặc 19995."
-        })
 
-    # 6. AI Providers & Speech-to-Text (Whisper)
-    has_deepseek = bool(DEEPSEEK_API_KEY and DEEPSEEK_API_KEY.strip())
-    has_gemini = bool(GEMINI_API_KEY and GEMINI_API_KEY.strip())
-    has_openai = bool(OPENAI_API_KEY and OPENAI_API_KEY.strip())
+    # 6. AI Providers & Speech-to-Text (Whisper) - Đọc động từ Database & os.environ theo thời gian thực
+    db_settings = {}
+    try:
+        from backend.database import get_connection
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT key, value FROM settings")
+        db_settings = dict(cursor.fetchall())
+        conn.close()
+    except Exception:
+        pass
+
+    deepseek_key = (db_settings.get("DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or "").strip()
+    gemini_key = (db_settings.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    openai_key = (db_settings.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip()
+    ai_provider = (db_settings.get("AI_PROVIDER") or os.getenv("AI_PROVIDER") or AI_PROVIDER or "deepseek").strip()
+    whisper_size = (db_settings.get("WHISPER_MODEL_SIZE") or os.getenv("WHISPER_MODEL_SIZE") or WHISPER_MODEL_SIZE or "base").strip()
+
+    has_deepseek = bool(deepseek_key)
+    has_gemini = bool(gemini_key)
+    has_openai = bool(openai_key)
     any_ai_key = has_deepseek or has_gemini or has_openai
 
     whisper_lib_ok = False
@@ -190,12 +200,12 @@ def run_environment_diagnostics() -> Dict[str, Any]:
 
     checks["ai"] = {
         "status": "ok" if any_ai_key else "warning",
-        "active_provider": AI_PROVIDER,
+        "active_provider": ai_provider,
         "has_deepseek": has_deepseek,
         "has_gemini": has_gemini,
         "has_openai": has_openai,
         "whisper_installed": whisper_lib_ok,
-        "whisper_model_size": WHISPER_MODEL_SIZE
+        "whisper_model_size": whisper_size
     }
 
     if not any_ai_key:
@@ -214,8 +224,9 @@ def run_environment_diagnostics() -> Dict[str, Any]:
             "message": "Để tạo phụ đề động Karaoke tự động, hãy chạy: pip install faster-whisper."
         })
 
-    # 7. YouTube Data API v3
-    yt_keys = [k.strip() for k in (YOUTUBE_API_KEY or "").split(",") if k.strip()]
+    # 7. YouTube Data API v3 - Đọc động từ Database & os.environ theo thời gian thực
+    raw_yt = (db_settings.get("YOUTUBE_API_KEYS") or db_settings.get("YOUTUBE_API_KEY") or os.getenv("YOUTUBE_API_KEYS") or os.getenv("YOUTUBE_API_KEY") or "").strip()
+    yt_keys = [k.strip() for k in raw_yt.replace(";", ",").replace("\n", ",").split(",") if k.strip()]
     checks["youtube"] = {
         "status": "ok" if yt_keys else "warning",
         "key_count": len(yt_keys),

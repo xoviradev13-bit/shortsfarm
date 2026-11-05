@@ -13,7 +13,7 @@ if sys.platform == "win32":
         pass
     try:
         import ctypes
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("TikTokFarm.AutoTool.App.1.0")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ShortsFarm.AutoTool.App.1.0")
     except Exception:
         pass
 try:
@@ -58,7 +58,7 @@ def start_server():
     server.run()
 
 def apply_native_window_icon(window_title: str):
-    """Gán icon thương hiệu TikTok Farm vào thanh tiêu đề Native Window (thay thế icon Python)"""
+    """Gán icon thương hiệu ShortsFarm vào thanh tiêu đề Native Window (thay thế icon Python)"""
     if sys.platform != "win32":
         return
     import ctypes
@@ -96,9 +96,66 @@ def apply_native_window_icon(window_title: str):
 
     threading.Thread(target=_apply, daemon=True).start()
 
+def find_app_window() -> int:
+    """Tìm HWND của cửa sổ ShortsFarm (kể cả khi đang bị ẩn trong System Tray)"""
+    if sys.platform != "win32":
+        return 0
+    import ctypes
+    user32 = ctypes.windll.user32
+    found_hwnd = [0]
+
+    def enum_cb(hwnd, lparam):
+        length = user32.GetWindowTextLengthW(hwnd)
+        if length > 0:
+            buff = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(hwnd, buff, length + 1)
+            if "ShortsFarm" in buff.value or "TikTok Auto Farm" in buff.value:
+                found_hwnd[0] = hwnd
+                return False  # Dừng quét khi đã tìm thấy
+        return True
+
+    ENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+    user32.EnumWindows(ENUMPROC(enum_cb), 0)
+    return found_hwnd[0]
+
+def acquire_single_instance_lock() -> bool:
+    """
+    Đảm bảo chỉ có DUY NHẤT 1 instance ShortsFarm chạy cùng lúc trên Windows.
+    - Nếu đã có cửa sổ Desktop App đang mở: đưa cửa sổ lên trước và kích hoạt.
+    - Nếu phát hiện tiến trình ngầm cũ không có cửa sổ Desktop (hoặc port bị giữ):
+      tự động giải phóng tiến trình cũ để cửa sổ Desktop App mới mở lên cho người dùng,
+      tuyệt đối KHÔNG mở tràn sang trình duyệt web.
+    """
+    if sys.platform != "win32":
+        return True
+    import ctypes
+    mutex_name = "Global\\TikTokAutoFarm_App_Mutex"
+    kernel32 = ctypes.windll.kernel32
+    user32 = ctypes.windll.user32
+    handle = kernel32.CreateMutexW(None, False, mutex_name)
+    if kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+        hwnd = find_app_window()
+        if hwnd:
+            print("[INSTANCE] Cửa sổ Desktop App đã mở sẵn. Đang đưa lên màn hình...")
+            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+            user32.ShowWindow(hwnd, 5)  # SW_SHOW
+            user32.SetForegroundWindow(hwnd)
+            return False
+        else:
+            print("[INSTANCE] Phát hiện tiến trình cũ chạy ngầm không có cửa sổ Desktop. Đang giải phóng để mở Desktop App...")
+            kernel32.CloseHandle(handle)
+            kill_process_on_port(SERVER_PORT)
+            time.sleep(0.6)
+            handle = kernel32.CreateMutexW(None, False, mutex_name)
+
+    globals()["_single_instance_mutex"] = handle
+    return True
+
 if __name__ == "__main__":
+    if not acquire_single_instance_lock():
+        sys.exit(0)
     init_db()
-    log_event("INFO", "Khởi động ứng dụng Desktop TikTok Farm...")
+    log_event("INFO", "Khởi động ứng dụng Desktop ShortsFarm...")
 
     # Giải phóng port nếu bị kẹt từ phiên trước
     if is_port_in_use(SERVER_PORT, SERVER_HOST):
@@ -134,7 +191,7 @@ if __name__ == "__main__":
     time.sleep(1.2)
     dashboard_url = f"http://{SERVER_HOST}:{SERVER_PORT}"
     print(f"\n=======================================================")
-    print(f"🚀 TIKTOK AUTO FARM & AI ENGINE ĐANG CHẠY TẠI:")
+    print(f"🚀 SHORTSFARM & AI ENGINE ĐANG CHẠY TẠI:")
     print(f"👉 {dashboard_url}")
     print(f"=======================================================\n")
 
@@ -147,7 +204,7 @@ if __name__ == "__main__":
     # Chạy giao diện Desktop trên Main Thread (Bắt buộc cho Windows GUI)
     if webview:
         try:
-            window_title = "TikTok Auto Farm & AI Video Engine"
+            window_title = "ShortsFarm & AI Video Engine"
             window = webview.create_window(
                 window_title,
                 dashboard_url,

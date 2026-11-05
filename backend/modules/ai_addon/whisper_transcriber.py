@@ -1,3 +1,4 @@
+import sys
 import os
 import subprocess
 import shutil
@@ -39,7 +40,7 @@ class WhisperTranscriber:
         compute_type = "float16" if has_cuda else "int8"
 
         log_event("INFO", f"Khởi tạo faster-whisper (model={model_size}, device={device}, compute={compute_type})")
-        self._model = WhisperModel(model_size, device=device, compute_type=compute_type)
+        self._model = WhisperModel(model_size, device=device, compute_type=compute_type, cpu_threads=min(8, os.cpu_count() or 4))
         self._current_model_size = model_size
         return self._model
 
@@ -60,7 +61,7 @@ class WhisperTranscriber:
         ]
 
         try:
-            res = subprocess.run(cmd, capture_output=True, timeout=300)
+            res = subprocess.run(cmd, capture_output=True, timeout=300, creationflags=0x08000000 if sys.platform == 'win32' else 0)
             if res.returncode == 0 and os.path.exists(output_wav):
                 return output_wav
         except Exception as e:
@@ -131,7 +132,7 @@ class WhisperTranscriber:
 
             segments, info = model.transcribe(
                 audio_arr,
-                beam_size=5,
+                beam_size=1,  # Tối ưu tốc độ cao x3-x5 lần trên CPU
                 word_timestamps=True,
                 language=language
             )

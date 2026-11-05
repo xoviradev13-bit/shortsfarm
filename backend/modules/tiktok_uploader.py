@@ -59,6 +59,16 @@ def dismiss_tiktok_modals(page) -> None:
         pass
 
     try:
+        # 3b. Hộp thoại xác nhận "Tiếp tục đăng?" (khi TikTok đang kiểm tra bản quyền/nội dung chưa xong)
+        btn_post_now = page.locator('button:has-text("Đăng ngay"), button:has-text("Post now"), button:has-text("Post anyway")').first
+        if btn_post_now.is_visible(timeout=1000):
+            log_event("INFO", "Phát hiện modal 'Tiếp tục đăng?' -> Đang bấm 'Đăng ngay' (Post anyway)")
+            btn_post_now.click()
+            time.sleep(1.5)
+    except Exception:
+        pass
+
+    try:
         # 4. Gỡ bỏ overlay tour guide của react-joyride (nguyên nhân gây chặn click nút Đăng)
         page.evaluate("""
             () => {
@@ -86,7 +96,9 @@ class TikTokUploader:
         title: str,
         tags: str = "#viral #fyp #trending",
         auto_post: bool = True,
-        close_browser_on_finish: bool = False
+        close_browser_on_finish: bool = False,
+        enable_warmup: bool = True,
+        warmup_minutes: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Tự động hóa đăng video lên TikTok bằng GPMLogin qua Playwright CDP.
@@ -163,6 +175,29 @@ class TikTokUploader:
                     page.bring_to_front()
                 except Exception:
                     pass
+
+                # 1.5. Chế độ Làm Ấm Tài Khoản (Pre-Upload Natural Feed Warm-up):
+                current_url = page.url.lower()
+                upload_reached = "upload" in current_url
+                if enable_warmup and not upload_reached:
+                    try:
+                        from backend.modules.account_warmup import account_warmup
+                        conn_w = get_connection()
+                        cur_w = conn_w.cursor()
+                        cur_w.execute("SELECT id FROM gpm_profiles WHERE gpm_id = ?", (gpm_profile_id,))
+                        p_row_w = cur_w.fetchone()
+                        conn_w.close()
+
+                        target_mins = warmup_minutes
+                        if target_mins is None and p_row_w:
+                            stg = account_warmup.get_profile_growth_stage(p_row_w[0])
+                            target_mins = stg.get("warmup_minutes", 3.0)
+
+                        if target_mins and target_mins > 0:
+                            log_event("INFO", f"🌱 [PRE-UPLOAD WARMUP] Lướt feed làm ấm {target_mins:.1f} phút cho profile {gpm_profile_id} trước khi tải lên...")
+                            account_warmup.run_feed_warmup(page=page, duration_minutes=target_mins, gpm_profile_id=gpm_profile_id)
+                    except Exception as e_warm:
+                        logger.warning(f"Lỗi khi chạy pre-upload warm-up: {e_warm}")
 
                 # 2. Điều hướng đến trang upload TikTok nếu chưa ở đó
                 current_url = page.url.lower()
@@ -356,8 +391,27 @@ class TikTokUploader:
                             except Exception:
                                 post_btn.click(timeout=5000)
 
+                            # Kiểm tra và tự động bấm xác nhận modal "Tiếp tục đăng?" / "Đăng ngay" (Post anyway) nếu có
+                            for _ in range(6):
+                                time.sleep(0.8)
+                                cur_u = page.url.lower()
+                                if "tiktokstudio/content" in cur_u or "creator-center/content" in cur_u:
+                                    break  # TikTok đã đăng thành công và điều hướng ngay (không có popup)
+                                try:
+                                    btn_post_now = page.locator('button:has-text("Đăng ngay"), button:has-text("Post now"), button:has-text("Post anyway")').first
+                                    if btn_post_now.is_visible(timeout=800):
+                                        log_event("INFO", "🎯 Phát hiện popup 'Tiếp tục đăng?' -> Đang tự động bấm 'Đăng ngay'")
+                                        try:
+                                            btn_post_now.evaluate("el => el.click()")
+                                        except Exception:
+                                            btn_post_now.click()
+                                        time.sleep(2)
+                                        break
+                                except Exception:
+                                    pass
+
                             # Chờ điều hướng hoặc thông báo đăng thành công
-                            time.sleep(6)
+                            time.sleep(5)
                             cur_u = page.url.lower()
                             if "tiktokstudio/content" in cur_u or "creator-center/content" in cur_u or not post_btn.is_visible():
                                 log_event("INFO", f"✅ Đã đăng video thành công lên TikTok Studio - Profile {gpm_profile_id}")

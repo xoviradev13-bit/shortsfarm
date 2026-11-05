@@ -1,4 +1,4 @@
-# TikTok Auto Farm & AI Video Engine (GPMLogin Integration)
+# ShortsFarm & AI Video Engine (GPMLogin Integration)
 
 Hệ thống Desktop App tự động hóa khai thác kênh YouTube và quản lý dàn tài khoản TikTok Beta qua GPMLogin.
 

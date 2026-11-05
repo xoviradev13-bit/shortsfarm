@@ -1,3 +1,4 @@
+import socket
 import os
 import re
 import json
@@ -41,7 +42,7 @@ from starlette.responses import Response
 
 logger = get_logger("api")
 
-app = FastAPI(title="TikTok Auto Farm & AI Video Engine", version="1.0.0")
+app = FastAPI(title="ShortsFarm & AI Video Engine", version="1.0.0")
 
 # --- Security Hardening (OWASP / NIST SP 800-218 / ISO 27034) ---
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -154,6 +155,23 @@ class RenderVideoRequest(BaseModel):
     subtitle_position: Optional[str] = None
     bgm_folder: Optional[str] = None
     bgm_volume: Optional[float] = None
+    generate_variants: Optional[bool] = False
+    hook_angle: Optional[str] = "auto"
+    use_ai_images: Optional[bool] = False
+    image_style: Optional[str] = "cinematic"
+    visual_source: Optional[str] = "ai"
+    ai_image_model: Optional[str] = "flux"
+    ai_video_model: Optional[str] = "fal_ltx"
+    stock_provider: Optional[str] = "all"
+    auto_upload: Optional[int] = 1
+    ken_burns_enabled: Optional[bool] = True
+    endcard_enabled: Optional[bool] = True
+    tts_engine: Optional[str] = "edge-tts"
+    elevenlabs_voice_id: Optional[str] = None
+    elevenlabs_model: Optional[str] = "eleven_multilingual_v2"
+    narration_language: Optional[str] = "vi"
+    voice_gender: Optional[str] = "male"
+    narration_style: Optional[str] = "giat_gan"
 
 class SmartRenderVideoRequest(BaseModel):
     video_id: str
@@ -170,6 +188,23 @@ class SmartRenderVideoRequest(BaseModel):
     subtitle_position: Optional[str] = None
     bgm_folder: Optional[str] = None
     bgm_volume: Optional[float] = None
+    generate_variants: Optional[bool] = False
+    hook_angle: Optional[str] = "auto"
+    use_ai_images: Optional[bool] = False
+    image_style: Optional[str] = "cinematic"
+    visual_source: Optional[str] = "ai"
+    ai_image_model: Optional[str] = "flux"
+    ai_video_model: Optional[str] = "fal_ltx"
+    stock_provider: Optional[str] = "all"
+    auto_upload: Optional[int] = 1
+    ken_burns_enabled: Optional[bool] = True
+    endcard_enabled: Optional[bool] = True
+    tts_engine: Optional[str] = "edge-tts"
+    elevenlabs_voice_id: Optional[str] = None
+    elevenlabs_model: Optional[str] = "eleven_multilingual_v2"
+    narration_language: Optional[str] = "vi"
+    voice_gender: Optional[str] = "male"
+    narration_style: Optional[str] = "giat_gan"
 
 class UploadVideoRequest(BaseModel):
     gpm_profile_id: str
@@ -191,6 +226,8 @@ class UpdateProfileUsernameRequest(BaseModel):
     nickname: Optional[str] = ""
     tiktok_uid: Optional[str] = ""
     sec_uid: Optional[str] = ""
+    browser_type: Optional[str] = "gpm"
+    platform: Optional[str] = "tiktok"
 
 class UpdateProfileNotifyStatusRequest(BaseModel):
     status: str
@@ -249,6 +286,26 @@ class UpdateChannelSettingsRequest(BaseModel):
     subtitle_style: Optional[str] = "inherit"
     subtitle_position: Optional[str] = "inherit"
     max_manual_videos: Optional[int] = None
+    narration_enabled: Optional[int] = 0
+    narration_language: Optional[str] = "inherit"
+    voice_gender: Optional[str] = "inherit"
+    narration_style: Optional[str] = "inherit"
+    disable_narration_for_shorts: Optional[int] = 1
+    keep_original_script_for_shorts: Optional[int] = 1
+    ken_burns_enabled: Optional[int] = 1
+    endcard_enabled: Optional[int] = 1
+    use_ai_images: Optional[int] = 0
+    image_style: Optional[str] = "cinematic"
+    visual_source: Optional[str] = "ai"
+    ai_image_model: Optional[str] = "flux"
+    ai_video_model: Optional[str] = "fal_ltx"
+    stock_provider: Optional[str] = "all"
+    auto_upload: Optional[int] = 1
+    hook_angle: Optional[str] = "inherit"
+    generate_variants: Optional[int] = -1
+    tts_engine: Optional[str] = "edge-tts"
+    elevenlabs_voice_id: Optional[str] = ""
+    elevenlabs_model: Optional[str] = "eleven_multilingual_v2"
 
 class ToggleChannelStatusRequest(BaseModel):
     channel_id: str
@@ -270,7 +327,15 @@ class SaveApiKeysRequest(BaseModel):
     youtube_api_keys: Optional[str] = ""       # comma-separated list
     deepseek_api_key: Optional[str] = ""
     gemini_api_key: Optional[str] = ""
+    gemini_base_url: Optional[str] = ""
     openai_api_key: Optional[str] = ""
+    pexels_api_key: Optional[str] = ""
+    pixabay_api_key: Optional[str] = ""
+    pollinations_api_key: Optional[str] = ""
+    fal_api_key: Optional[str] = ""
+    kling_access_key: Optional[str] = ""
+    kling_secret_key: Optional[str] = ""
+    elevenlabs_api_key: Optional[str] = ""
     ai_provider: Optional[str] = "deepseek"
     deepseek_model: Optional[str] = "deepseek-chat"
     gemini_model: Optional[str] = "gemini-2.5-flash"
@@ -284,6 +349,9 @@ class SaveApiKeysRequest(BaseModel):
     telegram_bot_token: Optional[str] = ""
     telegram_chat_id: Optional[str] = ""
     gpm_api_base_url: Optional[str] = ""
+    adspower_api_base_url: Optional[str] = ""
+    dolphin_api_base_url: Optional[str] = ""
+    genlogin_api_base_url: Optional[str] = ""
 
 class SystemTraySettingsRequest(BaseModel):
     autostart: Optional[bool] = None
@@ -324,6 +392,11 @@ class TestApiKeyRequest(BaseModel):
 
 class CreateCampaignRequest(BaseModel):
     name: str
+    source_mode: Optional[str] = "hybrid"
+    local_folder_path: Optional[str] = ""
+    target_platforms: Optional[str] = "tiktok"
+    youtube_profile_ids: Optional[str] = ""
+    facebook_profile_ids: Optional[str] = ""
     channel_id: Optional[str] = ""
     channel_ids: Optional[List[str]] = []
     gpm_profile_id: Optional[int] = None
@@ -359,6 +432,29 @@ class CreateCampaignRequest(BaseModel):
     bgm_folder: Optional[str] = ""
     bgm_volume: Optional[float] = 0.15
     is_active: Optional[int] = 1
+    auto_engagement_enabled: Optional[int] = 0
+    auto_pin_comment: Optional[int] = 1
+    pin_comment_delay_mins: Optional[int] = 3
+    auto_reply_comments: Optional[int] = 1
+    reply_comments_delay_mins: Optional[int] = 20
+    narration_enabled: Optional[int] = 0
+    narration_language: Optional[str] = "original"
+    voice_gender: Optional[str] = "male"
+    narration_style: Optional[str] = "giat_gan"
+    disable_narration_for_shorts: Optional[int] = 1
+    keep_original_script_for_shorts: Optional[int] = 1
+    ken_burns_enabled: Optional[int] = 1
+    endcard_enabled: Optional[int] = 1
+    use_ai_images: Optional[int] = 0
+    image_style: Optional[str] = "cinematic"
+    visual_source: Optional[str] = "ai"
+    ai_image_model: Optional[str] = "flux"
+    ai_video_model: Optional[str] = "fal_ltx"
+    stock_provider: Optional[str] = "all"
+    auto_upload: Optional[int] = 1
+    tts_engine: Optional[str] = "edge-tts"
+    elevenlabs_voice_id: Optional[str] = None
+    elevenlabs_model: Optional[str] = "eleven_multilingual_v2"
 
 class DownloadFilterSettingsRequest(BaseModel):
     min_video_duration: int = 300
@@ -477,19 +573,6 @@ def get_system_active_issues():
     except Exception as e:
         logger.error(f"Lỗi truy vấn active issues: {e}")
 
-    # 5. Kiểm tra tình trạng GPMLogin App
-    gpm_health = gpm_client.check_health()
-    if not gpm_health.get("running"):
-        issues.append({
-            "id": "gpm_offline",
-            "category": "system_service",
-            "severity": "warning",
-            "title": "Phần mềm GPMLogin chưa mở",
-            "target": "GPMLogin Local API (:9495 / :19995)",
-            "message": gpm_health.get("message", "Chưa kết nối được cổng API GPMLogin"),
-            "action": "start_gpm",
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
 
     return {
         "total_count": len(issues),
@@ -528,6 +611,7 @@ def get_dashboard_stats():
         "total_profiles": total_profiles,
         "eligible_10k_count": eligible_10k,
         "gpm_health": gpm_status,
+        "computer_name": socket.gethostname(),
         "recent_logs": logs,
         "active_issues_count": active_issues["total_count"],
         "has_critical_issues": active_issues["has_critical"],
@@ -541,72 +625,136 @@ def check_gpm_health():
 
 @app.post("/api/gpm/sync")
 def sync_gpm_profiles():
-    """Đồng bộ toàn bộ danh sách profile từ GPMLogin vào database và tự động nhận diện TikTok Handle & NickName mới nhất"""
-    profiles = gpm_client.get_profiles()
-    if not profiles:
-        return {"status": "warning", "message": "Không tìm thấy profile nào từ GPMLogin (hoặc GPM chưa mở)", "synced": 0}
+    """Đồng bộ toàn bộ danh sách profile từ trình duyệt Antidetect đã chọn (GPM, AdsPower, Dolphin, GenLogin) vào database"""
+    from backend.modules.browser_adapters import browser_manager
+    active_browser = browser_manager.get_active_browser()
+    profiles = browser_manager.get_selected_profiles()
+    is_live_from_app = bool(profiles)
 
     conn = get_connection()
     cursor = conn.cursor()
+
+    if not profiles:
+        # Fallback: chỉ đọc profile CỦA ĐÚNG trình duyệt đang chọn, tránh ghi đè nhầm browser_type
+        fallback_type = active_browser if active_browser not in ('auto', '') else 'gpm'
+        cursor.execute("SELECT gpm_id, name, raw_proxy, browser_type FROM gpm_profiles WHERE browser_type = ?", (fallback_type,))
+        db_profiles = cursor.fetchall()
+        if db_profiles:
+            profiles = [{"id": p["gpm_id"], "name": p["name"], "raw_proxy": p["raw_proxy"], "browser_type": p["browser_type"]} for p in db_profiles]
+        else:
+            conn.close()
+            return {"status": "warning", "message": f"Không tìm thấy profile nào từ trình duyệt {active_browser.upper()} (hoặc ứng dụng chưa bật)", "synced": 0}
+
     active_gpm_ids = set()
     synced = 0
     for p in profiles:
         active_gpm_ids.add(p["id"])
+        b_type = p.get("browser_type") or (active_browser if active_browser != "auto" else "gpm")
         cursor.execute('''
-        INSERT INTO gpm_profiles (gpm_id, name, raw_proxy)
-        VALUES (?, ?, ?)
+        INSERT INTO gpm_profiles (gpm_id, name, raw_proxy, browser_type)
+        VALUES (?, ?, ?, ?)
         ON CONFLICT(gpm_id) DO UPDATE SET
             name = excluded.name,
-            raw_proxy = excluded.raw_proxy
-        ''', (p["id"], p["name"], p["raw_proxy"]))
+            raw_proxy = excluded.raw_proxy,
+            browser_type = COALESCE(NULLIF(excluded.browser_type, ''), gpm_profiles.browser_type, 'gpm')
+        ''', (p["id"], p.get("name") or p["id"], p.get("raw_proxy", ""), b_type))
         synced += 1
 
-    # Xóa các profile trong DB mà không còn tồn tại trên GPMLogin
     removed_count = 0
-    if active_gpm_ids:
-        cursor.execute("SELECT gpm_id, name FROM gpm_profiles")
+    if is_live_from_app and active_gpm_ids:
+        # Chỉ xóa profile thuộc đúng trình duyệt đang đồng bộ, không xóa nhầm profile của trình duyệt khác
+        if active_browser == "auto":
+            cursor.execute("SELECT gpm_id, name, browser_type FROM gpm_profiles")
+        else:
+            cursor.execute("SELECT gpm_id, name, browser_type FROM gpm_profiles WHERE browser_type = ? OR browser_type IS NULL OR browser_type = ''", (active_browser,))
+        
         for db_p in cursor.fetchall():
             if db_p["gpm_id"] not in active_gpm_ids:
                 cursor.execute("DELETE FROM gpm_profiles WHERE gpm_id = ?", (db_p["gpm_id"],))
                 removed_count += 1
-                log_event("INFO", f"Tự động gỡ bỏ profile '{db_p['name']}' ({db_p['gpm_id']}) do đã bị xóa trên GPMLogin.")
+                log_event("INFO", f"Tự động gỡ bỏ profile '{db_p['name']}' ({db_p['gpm_id']}) do đã bị xóa trên {active_browser.upper()}.")
 
     conn.commit()
     conn.close()
 
-    # Tự động cập nhật TikTok Handle (Username) & Profile Name (Nickname) từ local cookies (ZeroRAM)
+    # Tự động cập nhật TikTok Handle (Username) & Profile Name (Nickname) từ local cookies (ZeroRAM cho GPM / CDP cho GenLogin)
     tt_synced = 0
-    if is_gpm_reader_available() and active_gpm_ids:
+    if active_gpm_ids and (
+        (is_gpm_reader_available() and active_browser in ['gpm', 'auto']) or
+        active_browser == 'genlogin'
+    ):
         try:
             from concurrent.futures import ThreadPoolExecutor
             def sync_single_cookie(pid):
                 try:
-                    res = fetch_account_info_from_gpm(pid)
+                    if active_browser == 'genlogin':
+                        from backend.modules.genlogin_cdp_reader import fetch_account_info_from_genlogin
+                        res = fetch_account_info_from_genlogin(pid)
+                    else:
+                        res = fetch_account_info_from_gpm(pid)
+
                     if res.get("found") and res.get("is_logged_in"):
-                        metrics_tracker.update_profile_stats(
-                            gpm_id=pid,
-                            followers=res.get("followers", 0),
-                            total_views=res.get("views_7d", 0),
-                            username=res.get("username") or "",
-                            nickname=res.get("nickname") or "",
-                            tiktok_uid=res.get("tiktok_uid") or res.get("user_id") or "",
-                            sec_uid=res.get("sec_uid") or ""
-                        )
+                        plat = res.get("platform", "tiktok")
+                        if plat == "tiktok":
+                            metrics_tracker.update_profile_stats(
+                                gpm_id=pid,
+                                followers=res.get("followers", 0),
+                                total_views=res.get("views_7d", 0),
+                                username=res.get("username") or "",
+                                nickname=res.get("nickname") or "",
+                                tiktok_uid=res.get("tiktok_uid") or res.get("user_id") or "",
+                                sec_uid=res.get("sec_uid") or ""
+                            )
+                        else:
+                            conn_p = get_connection()
+                            cur_p = conn_p.cursor()
+                            cur_p.execute("""
+                                UPDATE gpm_profiles SET
+                                    platform = ?,
+                                    channel_handle = COALESCE(NULLIF(?, ''), channel_handle),
+                                    fb_page_id = COALESCE(NULLIF(?, ''), fb_page_id),
+                                    tiktok_username = COALESCE(NULLIF(?, ''), tiktok_username),
+                                    tiktok_nickname = COALESCE(NULLIF(?, ''), tiktok_nickname),
+                                    tiktok_uid = COALESCE(NULLIF(?, ''), tiktok_uid),
+                                    status = 'active',
+                                    status_reason = ?
+                                WHERE gpm_id = ?
+                            """, (
+                                plat,
+                                res.get("channel_handle") or (res.get("username") if plat == 'youtube' else ''),
+                                res.get("fb_page_id") or (res.get("username") if plat == 'facebook' else ''),
+                                res.get("username") or "",
+                                res.get("nickname") or "",
+                                res.get("user_id") or "",
+                                res.get("message") or "Đã kết nối phiên đăng nhập",
+                                pid
+                            ))
+                            conn_p.commit()
+                            conn_p.close()
+                            # Đồng bộ tất cả kênh/trang con (YouTube channels, Facebook pages)
+                            try:
+                                from backend.modules.gpm_profile_reader import sync_profile_channels
+                                sync_profile_channels(pid)
+                            except Exception:
+                                pass
                         account_health.update_health_status(pid, "active", "")
                         return True
                     elif res.get("source") == "no_session" or (res.get("found") and not res.get("is_logged_in")):
-                        account_health.update_health_status(pid, "unlogged", res.get("message") or "Phiên TikTok đã hết hạn hoặc đã đăng xuất")
+                        account_health.update_health_status(pid, "unlogged", res.get("message") or "Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập")
                 except Exception:
                     pass
                 return False
 
-            with ThreadPoolExecutor(max_workers=6) as ex:
+            # GenLogin chạy mở profile trình duyệt nên hạn chế worker song song để tránh giật lag máy (worker = 2 với GenLogin)
+            max_workers = 2 if active_browser == 'genlogin' else 6
+            with ThreadPoolExecutor(max_workers=max_workers) as ex:
                 results = list(ex.map(sync_single_cookie, list(active_gpm_ids)))
                 tt_synced = sum(1 for r in results if r)
         except Exception as tt_err:
             log_event("WARNING", f"Lỗi đồng bộ chi tiết TikTok từ cookie: {tt_err}")
 
-    msg = f"Đã đồng bộ {synced} profile từ GPMLogin"
+    browser_title = active_browser.upper() if active_browser != "auto" else "Trình Duyệt"
+    msg = f"Đã đồng bộ {synced} profile từ {browser_title}"
     if tt_synced > 0:
         msg += f" (đã cập nhật thông tin TikTok của {tt_synced} profile)"
     if removed_count > 0:
@@ -640,6 +788,101 @@ def delete_gpm_profile(gpm_id: str):
 
     log_event("INFO", f"Đã xóa profile '{p_name}' ({gpm_id}) khỏi hệ thống quản lý Farm")
     return {"status": "success", "message": f"Đã xóa profile '{p_name}' thành công"}
+
+
+@app.get("/api/gpm/profiles/{gpm_id}/channels")
+def list_profile_channels(gpm_id: str):
+    """Liệt kê tất cả kênh YouTube / trang Facebook của một profile GPM"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM profile_channels WHERE gpm_id = ? ORDER BY is_default DESC, id ASC", (gpm_id,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+@app.post("/api/gpm/profiles/{gpm_id}/channels/sync")
+def sync_profile_channels_api(gpm_id: str):
+    """Quét và đồng bộ tất cả kênh/trang con cho một profile GPM"""
+    try:
+        from backend.modules.gpm_profile_reader import sync_profile_channels
+        result = sync_profile_channels(gpm_id)
+        return {"status": "success", **result}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/gpm/profiles/{gpm_id}/channels/{channel_id}/set-default")
+def set_default_channel(gpm_id: str, channel_id: str):
+    """Đặt một kênh/trang làm mặc định cho profile"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    # Reset all defaults for this profile
+    cursor.execute("UPDATE profile_channels SET is_default = 0 WHERE gpm_id = ?", (gpm_id,))
+    # Set the selected one as default
+    cursor.execute("UPDATE profile_channels SET is_default = 1 WHERE gpm_id = ? AND channel_id = ?", (gpm_id, channel_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "message": f"Đã đặt kênh {channel_id} làm mặc định"}
+
+@app.delete("/api/gpm/profiles/{gpm_id}/channels/{channel_id}")
+def delete_profile_channel(gpm_id: str, channel_id: str):
+    """Xóa một kênh/trang khỏi danh sách profile"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM profile_channels WHERE gpm_id = ? AND channel_id = ?", (gpm_id, channel_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "message": f"Đã xóa kênh {channel_id}"}
+
+
+@app.get("/api/gpm/profiles/{gpm_id}/stage")
+def get_gpm_profile_growth_stage(gpm_id: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM gpm_profiles WHERE gpm_id = ?", (gpm_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Không tìm thấy profile GPMLogin")
+    from backend.modules.account_warmup import account_warmup
+    return account_warmup.get_profile_growth_stage(row["id"])
+
+@app.post("/api/gpm/profiles/{gpm_id}/warmup")
+def trigger_gpm_profile_warmup(gpm_id: str, bg_tasks: BackgroundTasks, minutes: float = 15.0):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name FROM gpm_profiles WHERE gpm_id = ?", (gpm_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Không tìm thấy profile GPMLogin")
+
+    def _async_warmup():
+        from backend.modules.account_warmup import account_warmup
+        from backend.modules.gpm_client import gpm_client
+        from backend.modules.tiktok_tracker import set_profile_busy
+        from playwright.sync_api import sync_playwright
+        set_profile_busy(gpm_id, True)
+        try:
+            gpm_client.ensure_gpm_running()
+            remote_addr = gpm_client.start_profile(gpm_id)
+            if not remote_addr:
+                log_event("ERROR", f"Không thể khởi động profile {gpm_id} để warm-up")
+                return
+            with sync_playwright() as p:
+                browser = p.chromium.connect_over_cdp(f"http://{remote_addr}")
+                ctx = browser.contexts[0] if browser.contexts else browser.new_context()
+                page = ctx.new_page()
+                account_warmup.run_feed_warmup(page, duration_minutes=minutes, gpm_profile_id=gpm_id)
+        except Exception as e:
+            log_event("WARNING", f"Lỗi trong quá trình warm-up độc lập profile {gpm_id}: {e}")
+        finally:
+            set_profile_busy(gpm_id, False)
+
+    bg_tasks.add_task(_async_warmup)
+    return {
+        "status": "success",
+        "message": f"Đã bắt đầu phiên lướt feed làm ấm {minutes:.1f} phút cho profile {row['name']} trong nền."
+    }
 
 # --- YouTube Intelligence API ---
 @app.post("/api/youtube/search")
@@ -696,6 +939,20 @@ def delete_channel(channel_id: str):
     conn.close()
     log_event("INFO", f"Đã xóa kênh YouTube (channel_id: {channel_id})")
     return {"status": "success", "deleted": deleted}
+
+@app.get("/api/ai/voices")
+@app.get("/api/voices")
+def get_ai_voices_catalog():
+    try:
+        from backend.modules.ai_addon.ai_narrator import ai_narrator
+        return {
+            "status": "success",
+            "languages": ai_narrator.get_supported_languages(),
+            "styles": ai_narrator.get_supported_styles(),
+            "voices": ai_narrator.get_all_voices()
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e), "voices": []}
 
 @app.get("/api/youtube/channels")
 def list_saved_channels():
@@ -788,7 +1045,26 @@ def update_channel_settings(req: UpdateChannelSettingsRequest):
             subtitle_enabled = ?,
             subtitle_style = ?,
             subtitle_position = ?,
-            max_manual_videos = ?
+            max_manual_videos = ?,
+            narration_enabled = ?,
+            narration_language = ?,
+            voice_gender = ?,
+            narration_style = ?,
+            disable_narration_for_shorts = ?,
+            keep_original_script_for_shorts = ?,
+            ken_burns_enabled = ?,
+            endcard_enabled = ?,
+            use_ai_images = ?,
+            image_style = ?,
+            visual_source = ?,
+            ai_image_model = ?,
+            ai_video_model = ?,
+            stock_provider = ?,
+            hook_angle = ?,
+            generate_variants = ?,
+            tts_engine = ?,
+            elevenlabs_voice_id = ?,
+            elevenlabs_model = ?
         WHERE channel_id = ?
     ''', (
         req.display_name or '',
@@ -809,6 +1085,25 @@ def update_channel_settings(req: UpdateChannelSettingsRequest):
         req.subtitle_style or '',
         req.subtitle_position or '',
         req.max_manual_videos,
+        1 if req.narration_enabled else 0,
+        req.narration_language or "inherit",
+        req.voice_gender or "inherit",
+        req.narration_style or "inherit",
+        1 if req.disable_narration_for_shorts is None or req.disable_narration_for_shorts else 0,
+        1 if req.keep_original_script_for_shorts is None or req.keep_original_script_for_shorts else 0,
+        1 if req.ken_burns_enabled is None or req.ken_burns_enabled else 0,
+        1 if req.endcard_enabled is None or req.endcard_enabled else 0,
+        1 if req.use_ai_images else 0,
+        req.image_style or 'cinematic',
+        req.visual_source or 'ai',
+        req.ai_image_model or 'flux',
+        req.ai_video_model or 'fal_ltx',
+        req.stock_provider or 'all',
+        req.hook_angle or 'inherit',
+        req.generate_variants if req.generate_variants is not None else -1,
+        req.tts_engine or 'edge-tts',
+        req.elevenlabs_voice_id or '',
+        req.elevenlabs_model or 'eleven_multilingual_v2',
         req.channel_id
     ))
     conn.commit()
@@ -969,9 +1264,21 @@ def get_channel_videos(channel_id: str):
                     if str(p) not in found_files:
                         found_files.add(str(p))
                         part_m = re.search(r'Part(\d+)', p.name, re.IGNORECASE)
-                        p_num = int(part_m.group(1)) if part_m else 1
+                        var_m = re.search(r'Var([ABC])', p.name, re.IGNORECASE)
+                        if part_m:
+                            p_num = int(part_m.group(1))
+                            p_tag = f"Part {p_num}"
+                        elif var_m:
+                            v_char = var_m.group(1).upper()
+                            p_num = 1 if v_char == 'A' else (2 if v_char == 'B' else 3)
+                            p_tag = f"Var{v_char}"
+                        else:
+                            p_num = 1
+                            p_tag = "Part 1"
+
                         rendered_parts.append({
                             "part": p_num,
+                            "tag": p_tag,
                             "filename": p.name,
                             "path": str(p),
                             "url": f"/api/video/stream/{r['id']}?type=rendered&part={p_num}"
@@ -1396,12 +1703,19 @@ def sanitize_campaign_schedule(raw_str: str) -> str:
 def create_campaign(req: CreateCampaignRequest):
     if not req.name or not req.name.strip():
         raise HTTPException(status_code=400, detail="Tên chiến dịch không được để trống!")
+    source_mode = req.source_mode or "hybrid"
+    local_folder = (req.local_folder_path or "").strip()
     ch_ids = req.channel_ids if req.channel_ids else ([req.channel_id] if req.channel_id else [])
-    if not ch_ids:
+    
+    if source_mode == "youtube" and not ch_ids:
         raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất một kênh YouTube nguồn!")
+    elif source_mode == "local_folder" and not local_folder:
+        raise HTTPException(status_code=400, detail="Vui lòng chỉ định thư mục chứa video cục bộ trên máy tính!")
+    elif source_mode == "hybrid" and not ch_ids and not local_folder:
+        raise HTTPException(status_code=400, detail="Vui lòng chọn kênh YouTube nguồn hoặc nhập đường dẫn thư mục video!")
     gpm_ids = req.gpm_profile_ids if req.gpm_profile_ids else ([req.gpm_profile_id] if req.gpm_profile_id else [])
-    if not gpm_ids:
-        raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất một Profile GPMLogin đích!")
+    if (req.auto_upload is None or req.auto_upload != 0) and not gpm_ids:
+        raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất một Profile GPMLogin đích (hoặc bỏ chọn 'Tự động tải lên TikTok' nếu chỉ muốn render video)!")
     if req.min_video_duration is not None and req.max_video_duration is not None:
         if req.min_video_duration >= req.max_video_duration:
             raise HTTPException(status_code=400, detail="Thời lượng cắt tối thiểu phải nhỏ hơn thời lượng tối đa!")
@@ -1422,7 +1736,8 @@ def create_campaign(req: CreateCampaignRequest):
 
     cursor.execute('''
         INSERT INTO campaigns (
-            name, channel_id, gpm_profile_id, channel_ids, gpm_profile_ids,
+            name, source_mode, local_folder_path, target_platforms, youtube_profile_ids, facebook_profile_ids,
+            channel_id, gpm_profile_id, channel_ids, gpm_profile_ids,
             distribution_mode, download_dir, render_dir, subtitle_enabled,
             subtitle_style, aspect_ratio, preset_name, video_duration,
             speed_factor, flip_horizontal, daily_limit, post_schedule,
@@ -1430,11 +1745,20 @@ def create_campaign(req: CreateCampaignRequest):
             random_delay_minutes, warmup_mode, ai_provider, ai_model,
             min_video_duration, max_video_duration, add_part_label, clips_per_video,
             bgm_folder, bgm_volume, is_active, min_post_interval_minutes,
-            include_shorts, include_longform, disable_subtitle_for_shorts, subtitle_position
+            include_shorts, include_longform, disable_subtitle_for_shorts, subtitle_position,
+            auto_engagement_enabled, auto_pin_comment, pin_comment_delay_mins,
+            auto_reply_comments, reply_comments_delay_mins,
+            narration_enabled, narration_language, voice_gender, narration_style, disable_narration_for_shorts, keep_original_script_for_shorts, ken_burns_enabled, endcard_enabled, use_ai_images, image_style, visual_source, ai_image_model, ai_video_model, stock_provider, auto_upload,
+            tts_engine, elevenlabs_voice_id, elevenlabs_model
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         req.name,
+        source_mode,
+        local_folder,
+        req.target_platforms or 'tiktok',
+        req.youtube_profile_ids or '',
+        req.facebook_profile_ids or '',
         main_ch,
         main_gpm,
         json.dumps(ch_ids),
@@ -1469,7 +1793,30 @@ def create_campaign(req: CreateCampaignRequest):
         1 if req.include_shorts != 0 else 0,
         1 if req.include_longform != 0 else 0,
         1 if req.disable_subtitle_for_shorts else 0,
-        req.subtitle_position or 'center'
+        req.subtitle_position or 'center',
+        1 if req.auto_engagement_enabled else 0,
+        1 if req.auto_pin_comment != 0 else 0,
+        req.pin_comment_delay_mins or 3,
+        1 if req.auto_reply_comments != 0 else 0,
+        req.reply_comments_delay_mins or 20,
+        1 if req.narration_enabled else 0,
+        req.narration_language or "original",
+        req.voice_gender or "male",
+        req.narration_style or "giat_gan",
+        1 if req.disable_narration_for_shorts is None or req.disable_narration_for_shorts else 0,
+        1 if req.keep_original_script_for_shorts is None or req.keep_original_script_for_shorts else 0,
+        1 if req.ken_burns_enabled is None or req.ken_burns_enabled else 0,
+        1 if req.endcard_enabled is None or req.endcard_enabled else 0,
+        1 if req.use_ai_images else 0,
+        req.image_style or 'cinematic',
+        req.visual_source or 'ai',
+        req.ai_image_model or 'flux',
+        req.ai_video_model or 'fal_ltx',
+        req.stock_provider or 'all',
+        1 if (req.auto_upload is None or req.auto_upload != 0) else 0,
+        req.tts_engine or 'edge-tts',
+        req.elevenlabs_voice_id or None,
+        req.elevenlabs_model or 'eleven_multilingual_v2'
     ))
     campaign_id = cursor.lastrowid
     # Persist last used download/render dirs in settings table for future campaigns
@@ -1540,14 +1887,19 @@ def update_campaign(campaign_id: int, req: CreateCampaignRequest):
     if not req.name or not req.name.strip():
         conn.close()
         raise HTTPException(status_code=400, detail="Tên chiến dịch không được để trống!")
+    source_mode = req.source_mode or "hybrid"
+    local_folder = (req.local_folder_path or "").strip()
     ch_ids = req.channel_ids if req.channel_ids else ([req.channel_id] if req.channel_id else [])
-    if not ch_ids:
+    if source_mode == "youtube" and not ch_ids:
         conn.close()
         raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất một kênh YouTube nguồn!")
-    gpm_ids = req.gpm_profile_ids if req.gpm_profile_ids else ([req.gpm_profile_id] if req.gpm_profile_id else [])
-    if not gpm_ids:
+    elif source_mode == "local_folder" and not local_folder:
         conn.close()
-        raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất một Profile GPMLogin đích!")
+        raise HTTPException(status_code=400, detail="Vui lòng chỉ định thư mục chứa video cục bộ trên máy tính!")
+    gpm_ids = req.gpm_profile_ids if req.gpm_profile_ids else ([req.gpm_profile_id] if req.gpm_profile_id else [])
+    if (req.auto_upload is None or req.auto_upload != 0) and not gpm_ids:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất một Profile GPMLogin đích (hoặc bỏ chọn 'Tự động tải lên TikTok' nếu chỉ muốn render video)!")
     if req.min_video_duration is not None and req.max_video_duration is not None:
         if req.min_video_duration >= req.max_video_duration:
             conn.close()
@@ -1569,6 +1921,11 @@ def update_campaign(campaign_id: int, req: CreateCampaignRequest):
     cursor.execute('''
         UPDATE campaigns SET
             name = ?,
+            source_mode = ?,
+            local_folder_path = ?,
+            target_platforms = ?,
+            youtube_profile_ids = ?,
+            facebook_profile_ids = ?,
             channel_id = ?,
             gpm_profile_id = ?,
             channel_ids = ?,
@@ -1602,10 +1959,38 @@ def update_campaign(campaign_id: int, req: CreateCampaignRequest):
             include_shorts = ?,
             include_longform = ?,
             disable_subtitle_for_shorts = ?,
-            subtitle_position = ?
+            subtitle_position = ?,
+            auto_engagement_enabled = ?,
+            auto_pin_comment = ?,
+            pin_comment_delay_mins = ?,
+            auto_reply_comments = ?,
+            reply_comments_delay_mins = ?,
+            narration_enabled = ?,
+            narration_language = ?,
+            voice_gender = ?,
+            narration_style = ?,
+            disable_narration_for_shorts = ?,
+            keep_original_script_for_shorts = ?,
+            ken_burns_enabled = ?,
+            endcard_enabled = ?,
+            use_ai_images = ?,
+            image_style = ?,
+            visual_source = ?,
+            ai_image_model = ?,
+            ai_video_model = ?,
+            stock_provider = ?,
+            auto_upload = ?,
+            tts_engine = ?,
+            elevenlabs_voice_id = ?,
+            elevenlabs_model = ?
         WHERE id = ?
     ''', (
         req.name,
+        source_mode,
+        local_folder,
+        req.target_platforms or "tiktok",
+        req.youtube_profile_ids or "",
+        req.facebook_profile_ids or "",
         main_ch,
         main_gpm,
         json.dumps(ch_ids),
@@ -1640,6 +2025,29 @@ def update_campaign(campaign_id: int, req: CreateCampaignRequest):
         1 if req.include_longform != 0 else 0,
         1 if req.disable_subtitle_for_shorts else 0,
         req.subtitle_position or 'center',
+        1 if req.auto_engagement_enabled else 0,
+        1 if req.auto_pin_comment != 0 else 0,
+        req.pin_comment_delay_mins or 3,
+        1 if req.auto_reply_comments != 0 else 0,
+        req.reply_comments_delay_mins or 20,
+        1 if req.narration_enabled else 0,
+        req.narration_language or "original",
+        req.voice_gender or "male",
+        req.narration_style or "giat_gan",
+        1 if req.disable_narration_for_shorts is None or req.disable_narration_for_shorts else 0,
+        1 if req.keep_original_script_for_shorts is None or req.keep_original_script_for_shorts else 0,
+        1 if req.ken_burns_enabled is None or req.ken_burns_enabled else 0,
+        1 if req.endcard_enabled is None or req.endcard_enabled else 0,
+        1 if req.use_ai_images else 0,
+        req.image_style or 'cinematic',
+        req.visual_source or 'ai',
+        req.ai_image_model or 'flux',
+        req.ai_video_model or 'fal_ltx',
+        req.stock_provider or 'all',
+        1 if (req.auto_upload is None or req.auto_upload != 0) else 0,
+        req.tts_engine or 'edge-tts',
+        req.elevenlabs_voice_id or None,
+        req.elevenlabs_model or 'eleven_multilingual_v2',
         campaign_id
     ))
     if req.download_dir:
@@ -1768,6 +2176,41 @@ def get_campaign_logs(campaign_id: int):
         "logs": c_logs[:80]
     }
 
+@app.get("/api/engagement/tasks")
+def list_engagement_tasks(limit: int = 50):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT et.*, gp.name as profile_name, gp.tiktok_username,
+               ut.title, ut.variant_tag, c.name as campaign_name
+        FROM engagement_tasks et
+        LEFT JOIN gpm_profiles gp ON et.gpm_profile_id = gp.id
+        LEFT JOIN upload_tasks ut ON et.upload_task_id = ut.id
+        LEFT JOIN campaigns c ON et.campaign_id = c.id
+        ORDER BY et.id DESC LIMIT ?
+    ''', (limit,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+@app.post("/api/engagement/tasks/{task_id}/run")
+def run_engagement_task(task_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, task_type FROM engagement_tasks WHERE id = ?", (task_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhiệm vụ tương tác")
+
+    from backend.modules.engagement_bot import engagement_bot
+    t_type = row["task_type"]
+    if t_type == "pin_comment":
+        res = engagement_bot.execute_pin_comment_task(task_id)
+    else:
+        res = engagement_bot.execute_reply_comments_task(task_id)
+    return res
+
 @app.post("/api/campaigns/{campaign_id}/test-run")
 def test_run_campaign(campaign_id: int, bg_tasks: BackgroundTasks):
     conn = get_connection()
@@ -1873,7 +2316,7 @@ def delete_campaign(campaign_id: int):
 def download_video(req: DownloadVideoRequest, bg_tasks: BackgroundTasks):
     clean_url = (req.url or "").strip()
     if not clean_url:
-        raise HTTPException(status_code=400, detail="Vui lòng nhập link video YouTube!")
+        raise HTTPException(status_code=400, detail="Vui lòng nhập liên kết video (YouTube, Douyin, Xiaohongshu, Facebook, Instagram...)!")
     if not is_safe_external_url(clean_url):
         raise HTTPException(
             status_code=400,
@@ -1886,10 +2329,39 @@ def download_video(req: DownloadVideoRequest, bg_tasks: BackgroundTasks):
         direct_dir.mkdir(parents=True, exist_ok=True)
         target_dir = str(direct_dir)
 
-    result = yt_downloader.download_video(clean_url, target_dir=target_dir, is_studio=req.is_studio)
-    if not result:
-        raise HTTPException(status_code=400, detail="Không thể tải video từ URL này")
-    return {"status": "success", "video": result}
+    # Nhận diện nền tảng (Douyin, Xiaohongshu, Facebook, Instagram, Bilibili, Weibo, TikTok, YouTube)
+    from backend.modules.multi_downloader import multi_downloader
+    platform = multi_downloader.detect_platform(clean_url)
+
+    if platform in ("douyin", "xiaohongshu", "facebook", "instagram", "bilibili", "weibo", "tiktok"):
+        dl_res = multi_downloader.download(clean_url, output_dir=Path(target_dir))
+        if not dl_res.get("success"):
+            raise HTTPException(status_code=400, detail=dl_res.get("message", f"Không thể tải video từ {platform.upper()}"))
+        
+        file_path = dl_res.get("file_path", "")
+        sync_local_videos_with_db()
+        return {
+            "status": "success",
+            "video": {
+                "file_path": file_path,
+                "download_path": file_path,
+                "title": dl_res.get("title", ""),
+                "platform": platform,
+                "video_id": dl_res.get("video_id", ""),
+                "duration": dl_res.get("duration", 0)
+            }
+        }
+    else:
+        # YouTube hoặc fallback
+        result = yt_downloader.download_video(clean_url, target_dir=target_dir, is_studio=req.is_studio)
+        if not result:
+            # Fallback sang multi_downloader nếu yt_downloader gặp URL không parse được
+            dl_res = multi_downloader.download(clean_url, output_dir=Path(target_dir))
+            if dl_res.get("success"):
+                sync_local_videos_with_db()
+                return {"status": "success", "video": dl_res}
+            raise HTTPException(status_code=400, detail="Không thể tải video từ URL này")
+        return {"status": "success", "video": result}
 
 def sync_local_videos_with_db():
     """
@@ -1934,11 +2406,14 @@ def sync_local_videos_with_db():
             except Exception:
                 pass
 
-        # Kiểm tra thêm part renders
+        # Kiểm tra thêm part renders (hỗ trợ mọi thư mục và subfolder qua rglob)
         any_parts = False
         if vid_id:
-            for d in [RENDERED_DIR, Path("data/test_renders")]:
-                if d.exists() and list(d.glob(f"*{vid_id}*.mp4")):
+            check_dirs = [RENDERED_DIR, Path("data/test_renders")]
+            if r.get("rendered_path") and os.path.exists(r["rendered_path"]):
+                check_dirs.append(Path(r["rendered_path"]).parent)
+            for d in check_dirs:
+                if d.exists() and list(d.rglob(f"*{vid_id}*.mp4")):
                     any_parts = True
                     break
 
@@ -1966,57 +2441,111 @@ def sync_local_videos_with_db():
         if r["yt_video_id"]:
             known_vid_ids.add(r["yt_video_id"])
 
-    # Quét DOWNLOADS_DIR (hỗ trợ thư mục con theo kênh và studio)
-    if DOWNLOADS_DIR.exists():
-        for ext in ["*.mp4", "*.mkv", "*.webm", "*.mov"]:
-            for f in DOWNLOADS_DIR.rglob(ext):
-                abs_f = os.path.abspath(str(f))
-                if abs_f in known_paths:
-                    continue
+    # Quét DOWNLOADS_DIR và mọi thư mục tải tùy chỉnh được cấu hình ở kênh/chiến dịch
+    scan_download_dirs = [DOWNLOADS_DIR]
+    try:
+        cursor.execute("SELECT DISTINCT download_dir FROM channels WHERE download_dir IS NOT NULL AND download_dir != ''")
+        for row in cursor.fetchall():
+            p = Path(row[0])
+            if p not in scan_download_dirs:
+                scan_download_dirs.append(p)
+        cursor.execute("SELECT DISTINCT download_dir FROM campaigns WHERE download_dir IS NOT NULL AND download_dir != ''")
+        for row in cursor.fetchall():
+            p = Path(row[0])
+            if p not in scan_download_dirs:
+                scan_download_dirs.append(p)
+    except Exception:
+        pass
 
-                fname = f.name
-                vid_m = re.search(r'\[([a-zA-Z0-9_-]{11})\]', fname)
-                if vid_m:
-                    v_id = vid_m.group(1)
-                else:
-                    v_id = f"local_{hashlib.md5(fname.encode('utf-8', errors='ignore')).hexdigest()[:8]}"
+    for d_dir in scan_download_dirs:
+        if d_dir.exists():
+            for ext in ["*.mp4", "*.mkv", "*.webm", "*.mov"]:
+                for f in d_dir.rglob(ext):
+                    abs_f = os.path.abspath(str(f))
+                    if abs_f in known_paths:
+                        continue
 
-                if v_id in known_vid_ids:
-                    cursor.execute("UPDATE videos SET download_path = ? WHERE yt_video_id = ?", (str(f), v_id))
+                    fname = f.name
+                    vid_m = re.search(r'\[([a-zA-Z0-9_-]{11})\]', fname)
+                    if vid_m:
+                        v_id = vid_m.group(1)
+                    else:
+                        v_id = f"local_{hashlib.md5(fname.encode('utf-8', errors='ignore')).hexdigest()[:8]}"
+
+                    if v_id in known_vid_ids:
+                        cursor.execute("UPDATE videos SET download_path = ? WHERE yt_video_id = ?", (str(f), v_id))
+                        known_paths.add(abs_f)
+                        continue
+
+                    clean_title = re.sub(r'\[[a-zA-Z0-9_-]{11}\]', '', fname)
+                    ch_m = re.match(r'^\[(.*?)\]_(.*)', clean_title)
+                    ch_name = ""
+                    if ch_m:
+                        ch_name = ch_m.group(1).strip()
+                        clean_title = ch_m.group(2).strip()
+                    clean_title = Path(clean_title).stem.strip() or fname
+
+                    if not ch_name:
+                        if f.parent.name and f.parent != d_dir:
+                            ch_name = f.parent.name
+                        else:
+                            ch_name = "Direct Links"
+
+                    duration = _probe_duration(f)
+
+                    cursor.execute("""
+                        INSERT INTO videos (channel_id, yt_video_id, title, duration, download_path, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, 'downloaded', datetime('now', 'localtime'))
+                    """, (ch_name, v_id, clean_title, duration, str(f)))
                     known_paths.add(abs_f)
-                    continue
+                    known_vid_ids.add(v_id)
 
-                clean_title = re.sub(r'\[[a-zA-Z0-9_-]{11}\]', '', fname)
-                ch_m = re.match(r'^\[(.*?)\]_(.*)', clean_title)
-                ch_name = ""
-                if ch_m:
-                    ch_name = ch_m.group(1).strip()
-                    clean_title = ch_m.group(2).strip()
-                clean_title = Path(clean_title).stem.strip() or fname
+    try:
+        cursor.execute("""
+        UPDATE videos 
+        SET channel_id = 'Direct Links' 
+        WHERE (channel_id IS NULL OR channel_id = '' OR channel_id = 'LOCAL') 
+        AND download_path LIKE '%Direct Links%'
+        """)
+        conn.commit()
+    except Exception:
+        pass
 
-                duration = _probe_duration(f)
+    # Quét RENDERED_DIR, data/test_renders và mọi thư mục render tùy chỉnh của kênh/chiến dịch
+    scan_rendered_dirs = [RENDERED_DIR, Path("data/test_renders")]
+    try:
+        cursor.execute("SELECT DISTINCT render_dir FROM channels WHERE render_dir IS NOT NULL AND render_dir != ''")
+        for row in cursor.fetchall():
+            p = Path(row[0])
+            if p not in scan_rendered_dirs:
+                scan_rendered_dirs.append(p)
+        cursor.execute("SELECT DISTINCT render_dir FROM campaigns WHERE render_dir IS NOT NULL AND render_dir != ''")
+        for row in cursor.fetchall():
+            p = Path(row[0])
+            if p not in scan_rendered_dirs:
+                scan_rendered_dirs.append(p)
+    except Exception:
+        pass
 
-                cursor.execute("""
-                    INSERT INTO videos (yt_video_id, title, duration, download_path, status, created_at)
-                    VALUES (?, ?, ?, ?, 'downloaded', datetime('now', 'localtime'))
-                """, (v_id, clean_title, duration, str(f)))
-                known_paths.add(abs_f)
-                known_vid_ids.add(v_id)
-
-    # Quét RENDERED_DIR và data/test_renders (hỗ trợ thư mục con theo kênh)
-    for d in [RENDERED_DIR, Path("data/test_renders")]:
+    for d in scan_rendered_dirs:
         if d.exists():
             for f in d.rglob("*.mp4"):
                 abs_f = os.path.abspath(str(f))
                 fname = f.name
-                vid_m = re.search(r'([a-zA-Z0-9_-]{11})', fname)
-                if vid_m:
-                    v_id = vid_m.group(1)
-                    if v_id in known_vid_ids:
-                        cursor.execute("SELECT rendered_path FROM videos WHERE yt_video_id = ?", (v_id,))
-                        r_row = cursor.fetchone()
-                        if not r_row or not r_row["rendered_path"] or not os.path.exists(r_row["rendered_path"]):
-                            cursor.execute("UPDATE videos SET rendered_path = ?, status = 'rendered' WHERE yt_video_id = ?", (str(f), v_id))
+                v_id = None
+                for known_id in known_vid_ids:
+                    if known_id and len(known_id) >= 6 and known_id in fname:
+                        v_id = known_id
+                        break
+                if not v_id:
+                    vid_m = re.search(r'\[([a-zA-Z0-9_-]{11})\]|_([a-zA-Z0-9_-]{11})(?:_Part|_Var|\.mp4)', fname)
+                    if vid_m:
+                        v_id = vid_m.group(1) or vid_m.group(2)
+                if v_id and v_id in known_vid_ids:
+                    cursor.execute("SELECT rendered_path FROM videos WHERE yt_video_id = ?", (v_id,))
+                    r_row = cursor.fetchone()
+                    if not r_row or not r_row["rendered_path"] or not os.path.exists(r_row["rendered_path"]):
+                        cursor.execute("UPDATE videos SET rendered_path = ?, status = 'rendered' WHERE yt_video_id = ?", (str(f), v_id))
 
     conn.commit()
     conn.close()
@@ -2088,6 +2617,18 @@ def list_videos(sync: bool = True):
         has_raw = bool(r.get("download_path") and os.path.exists(r["download_path"]))
         has_rendered = len(rendered_parts) > 0 or bool(r.get("rendered_path") and os.path.exists(r["rendered_path"]))
 
+        # Fallback: nếu rendered_path trống nhưng có rendered_parts, tự động gán đường dẫn part đầu tiên và lưu vào DB
+        if (not r.get("rendered_path") or not os.path.exists(r.get("rendered_path") or "")) and rendered_parts:
+            r["rendered_path"] = rendered_parts[0]["path"]
+            try:
+                up_conn = get_connection()
+                up_cur = up_conn.cursor()
+                up_cur.execute("UPDATE videos SET rendered_path = ?, status = 'rendered' WHERE id = ?", (rendered_parts[0]["path"], r["id"]))
+                up_conn.commit()
+                up_conn.close()
+            except Exception:
+                pass
+
         r["has_raw"] = has_raw
         r["has_rendered"] = has_rendered
         r["raw_url"] = f"/api/video/stream/{r['id']}?type=original" if has_raw else ""
@@ -2127,10 +2668,16 @@ def stream_video(video_id: int, type: str = "auto", part: int = 1):
         if RENDERED_DIR not in dirs_to_check and RENDERED_DIR.exists():
             dirs_to_check.append(RENDERED_DIR)
 
+        v_letters = {1: 'A', 2: 'B', 3: 'C'}
+        v_letter = v_letters.get(part, '')
         for d in dirs_to_check:
             for p in d.rglob(f"*{vid_id}*Part{part}*.mp4"):
                 file_path = str(p)
                 break
+            if not file_path and v_letter:
+                for p in d.rglob(f"*{vid_id}*Var{v_letter}*.mp4"):
+                    file_path = str(p)
+                    break
             if file_path:
                 break
         if not file_path:
@@ -2459,6 +3006,32 @@ def delete_audio_track(req: DeleteAudioRequest):
         raise HTTPException(status_code=404, detail="Không tìm thấy file nhạc để xóa")
     return {"status": "success", "message": f"Đã xóa bài hát '{req.filename}'"}
 
+@app.get("/api/video/ai-story-styles")
+@app.get("/api/video/moneyprinter-styles")
+def get_ai_story_styles():
+    from backend.modules.ai_addon.ai_story_engine import ai_story_engine
+    return ai_story_engine.get_supported_image_styles()
+
+@app.get("/api/video/ai-story-models")
+def get_ai_story_models():
+    from backend.modules.ai_addon.ai_story_engine import ai_story_engine
+    return ai_story_engine.get_supported_ai_models()
+
+@app.get("/api/video/ai-story-video-models")
+def get_ai_story_video_models():
+    from backend.modules.ai_addon.ai_story_engine import ai_story_engine
+    return ai_story_engine.get_supported_video_models()
+
+@app.get("/api/video/ai-story-visual-sources")
+def get_ai_story_visual_sources():
+    from backend.modules.ai_addon.ai_story_engine import ai_story_engine
+    return ai_story_engine.get_supported_visual_sources()
+
+@app.get("/api/video/ai-story-stock-providers")
+def get_ai_story_stock_providers():
+    from backend.modules.ai_addon.ai_story_engine import ai_story_engine
+    return ai_story_engine.get_supported_stock_providers()
+
 @app.post("/api/video/render")
 def render_video_ai(req: RenderVideoRequest):
     if not req.video_id or not req.video_id.strip():
@@ -2473,12 +3046,24 @@ def render_video_ai(req: RenderVideoRequest):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT v.download_path, v.title, v.duration, c.display_name, c.title as ch_title, c.render_dir as ch_render_dir
+        SELECT v.download_path, v.title, v.duration, v.channel_id, c.display_name, c.title as ch_title, c.render_dir as ch_render_dir
         FROM videos v
         LEFT JOIN channels c ON v.channel_id = c.channel_id
         WHERE v.yt_video_id = ?
     """, (req.video_id,))
     row = cursor.fetchone()
+
+    # Kế thừa thư mục render từ Campaign nếu kênh không cài riêng (Channel > Campaign > Global)
+    effective_render_dir = (row["ch_render_dir"] or "").strip() if row else ""
+    if not effective_render_dir and row and row["channel_id"]:
+        try:
+            cursor.execute("SELECT render_dir FROM campaigns WHERE is_active = 1 AND (channel_ids LIKE ? OR channel_id = ?)",
+                           (f'%"{row["channel_id"]}"%', row["channel_id"]))
+            camp_row = cursor.fetchone()
+            if camp_row and camp_row["render_dir"]:
+                effective_render_dir = camp_row["render_dir"].strip()
+        except Exception:
+            pass
     conn.close()
 
     if not row or not row["download_path"] or not os.path.exists(row["download_path"]):
@@ -2495,7 +3080,7 @@ def render_video_ai(req: RenderVideoRequest):
             part_duration=req.duration,
             channel_name=ch_name,
             video_title=row["title"],
-            output_dir=row["ch_render_dir"] or None,
+            output_dir=effective_render_dir or None,
             max_clips=req.clips_count,
             add_part_label=req.add_part_label if req.add_part_label is not None else True,
             enable_subtitles=req.enable_subtitles,
@@ -2527,7 +3112,7 @@ def render_video_ai(req: RenderVideoRequest):
         speed_factor=req.speed_factor,
         channel_name=ch_name,
         video_title=row["title"],
-        output_dir=row["ch_render_dir"] or None,
+        output_dir=effective_render_dir or None,
         enable_subtitles=req.enable_subtitles,
         add_part_label=req.add_part_label if req.add_part_label is not None else True,
         subtitle_style=req.subtitle_style,
@@ -2570,12 +3155,24 @@ def render_smart_ai_video(req: SmartRenderVideoRequest):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT v.download_path, v.title, v.duration, c.display_name, c.title as ch_title, c.render_dir as ch_render_dir
+        SELECT v.download_path, v.title, v.duration, v.channel_id, c.display_name, c.title as ch_title, c.render_dir as ch_render_dir
         FROM videos v
         LEFT JOIN channels c ON v.channel_id = c.channel_id
         WHERE v.yt_video_id = ?
     """, (req.video_id,))
     row = cursor.fetchone()
+
+    # Kế thừa thư mục render từ Campaign nếu kênh không cài riêng (Channel > Campaign > Global)
+    effective_render_dir = (row["ch_render_dir"] or "").strip() if row else ""
+    if not effective_render_dir and row and row["channel_id"]:
+        try:
+            cursor.execute("SELECT render_dir FROM campaigns WHERE is_active = 1 AND (channel_ids LIKE ? OR channel_id = ?)",
+                           (f'%"{row["channel_id"]}"%', row["channel_id"]))
+            camp_row = cursor.fetchone()
+            if camp_row and camp_row["render_dir"]:
+                effective_render_dir = camp_row["render_dir"].strip()
+        except Exception:
+            pass
     conn.close()
 
     if not row or not row["download_path"] or not os.path.exists(row["download_path"]):
@@ -2587,7 +3184,7 @@ def render_smart_ai_video(req: SmartRenderVideoRequest):
         video_id=req.video_id,
         video_title=row["title"] or "",
         channel_name=ch_name,
-        output_dir=row["ch_render_dir"] or None,
+        output_dir=effective_render_dir or None,
         custom_provider=req.ai_provider,
         custom_model=req.ai_model,
         enable_subtitles=req.enable_subtitles,
@@ -2600,7 +3197,18 @@ def render_smart_ai_video(req: SmartRenderVideoRequest):
         subtitle_style=req.subtitle_style,
         subtitle_position=req.subtitle_position,
         bgm_folder=req.bgm_folder,
-        bgm_volume=req.bgm_volume
+        bgm_volume=req.bgm_volume,
+        generate_variants=req.generate_variants if req.generate_variants is not None else False,
+        hook_angle=req.hook_angle or "auto",
+        use_ai_images=req.use_ai_images if req.use_ai_images is not None else False,
+        image_style=req.image_style or "cinematic",
+        visual_source=req.visual_source or "ai",
+        ai_image_model=req.ai_image_model or "flux",
+        ai_video_model=getattr(req, "ai_video_model", "fal_ltx") or "fal_ltx",
+        stock_provider=req.stock_provider or "all",
+        narration_language=req.narration_language or "vi",
+        voice_gender=req.voice_gender or "male",
+        narration_style=req.narration_style or "giat_gan"
     )
 
     if result.get("status") != "success":
@@ -2715,9 +3323,11 @@ def update_profile_username(gpm_id: str, req: UpdateProfileUsernameRequest):
         SET tiktok_username = ?,
             tiktok_nickname = COALESCE(NULLIF(?, ''), tiktok_nickname),
             tiktok_uid = COALESCE(NULLIF(?, ''), tiktok_uid),
-            sec_uid = COALESCE(NULLIF(?, ''), sec_uid)
+            sec_uid = COALESCE(NULLIF(?, ''), sec_uid),
+            browser_type = COALESCE(NULLIF(?, ''), browser_type),
+            platform = COALESCE(NULLIF(?, ''), platform)
         WHERE gpm_id = ?
-    """, (cleaned_u, cleaned_nick, cleaned_uid, cleaned_sec, gpm_id))
+    """, (cleaned_u, cleaned_nick, cleaned_uid, cleaned_sec, req.browser_type or 'gpm', req.platform or 'tiktok', gpm_id))
     conn.commit()
     conn.close()
     log_event("INFO", f"Đã gán TikTok username @{cleaned_u} ({cleaned_nick}) cho GPM profile {gpm_id}")
@@ -3043,7 +3653,7 @@ def test_specific_telegram_channel(channel_id: int, mode: Optional[str] = "conne
     types_str = "\n".join([f"• {t}" for t in types_active]) if types_active else "• (Chưa bật loại thông báo nào)"
 
     msg = (
-        "🔔 *[TIKTOK FARM] KIỂM TRA KẾT NỐI KÊNH THÀNH CÔNG!*\n"
+        "🔔 *[SHORTSFARM] KIỂM TRA KẾT NỐI KÊNH THÀNH CÔNG!*\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📢 *Tên Kênh:* `{row['name']}`\n"
         f"🆔 *Chat ID:* `{row['chat_id']}`\n"
@@ -3052,7 +3662,7 @@ def test_specific_telegram_channel(channel_id: int, mode: Optional[str] = "conne
         "📋 *Loại thông báo đang đăng ký nhận:*\n"
         f"{types_str}\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "✅ Kênh này đã sẵn sàng hoạt động cùng TikTok Farm Auto-Pilot!"
+        "✅ Kênh này đã sẵn sàng hoạt động cùng ShortsFarm Auto-Pilot!"
     )
     ok, err_msg = notifier.send_message_to_chat(bot_token, row["chat_id"], msg)
     if ok:
@@ -3177,10 +3787,22 @@ def get_api_keys():
     db_settings = dict(cursor.fetchall())
     conn.close()
 
-    raw = os.getenv("YOUTUBE_API_KEYS", os.getenv("YOUTUBE_API_KEY", db_settings.get("YOUTUBE_API_KEYS", "")))
-    deepseek = os.getenv("DEEPSEEK_API_KEY", db_settings.get("DEEPSEEK_API_KEY", cfg.DEEPSEEK_API_KEY))
-    gemini = os.getenv("GEMINI_API_KEY", db_settings.get("GEMINI_API_KEY", cfg.GEMINI_API_KEY))
-    openai = os.getenv("OPENAI_API_KEY", db_settings.get("OPENAI_API_KEY", cfg.OPENAI_API_KEY))
+    raw = (db_settings.get("YOUTUBE_API_KEYS") or db_settings.get("YOUTUBE_API_KEY") or os.getenv("YOUTUBE_API_KEYS") or os.getenv("YOUTUBE_API_KEY") or "").strip()
+    deepseek = (db_settings.get("DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or cfg.DEEPSEEK_API_KEY or "").strip()
+    gemini = (db_settings.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY") or cfg.GEMINI_API_KEY or "").strip()
+    gemini_base_url = (db_settings.get("GEMINI_BASE_URL") or os.getenv("GEMINI_BASE_URL") or getattr(cfg, 'GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com')).strip().rstrip("/")
+    openai = (db_settings.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY") or cfg.OPENAI_API_KEY or "").strip()
+    pexels = (db_settings.get("PEXELS_API_KEY") or os.getenv("PEXELS_API_KEY") or "").strip()
+    pixabay = (db_settings.get("PIXABAY_API_KEY") or os.getenv("PIXABAY_API_KEY") or "").strip()
+    pollinations = (db_settings.get("POLLINATIONS_API_KEY") or os.getenv("POLLINATIONS_API_KEY") or "").strip()
+    fal_key = (db_settings.get("FAL_KEY") or db_settings.get("FAL_API_KEY") or os.getenv("FAL_KEY") or "").strip()
+    kling_ak = (db_settings.get("KLING_ACCESS_KEY") or os.getenv("KLING_ACCESS_KEY") or "").strip()
+    kling_sk = (db_settings.get("KLING_SECRET_KEY") or os.getenv("KLING_SECRET_KEY") or "").strip()
+    try:
+        from backend.modules.elevenlabs_client import elevenlabs_client
+        elevenlabs_key = elevenlabs_client.get_api_key()
+    except Exception:
+        elevenlabs_key = os.getenv("ELEVENLABS_API_KEY", db_settings.get("ELEVENLABS_API_KEY", ""))
     ai_provider = os.getenv("AI_PROVIDER", db_settings.get("AI_PROVIDER", cfg.AI_PROVIDER))
     deepseek_model = os.getenv("DEEPSEEK_MODEL", db_settings.get("DEEPSEEK_MODEL", cfg.DEEPSEEK_MODEL))
     gemini_model = os.getenv("GEMINI_MODEL", db_settings.get("GEMINI_MODEL", cfg.GEMINI_MODEL))
@@ -3191,6 +3813,9 @@ def get_api_keys():
     tele_token = os.getenv("TELEGRAM_BOT_TOKEN", db_settings.get("TELEGRAM_BOT_TOKEN", cfg.TELEGRAM_BOT_TOKEN))
     tele_chat = os.getenv("TELEGRAM_CHAT_ID", db_settings.get("TELEGRAM_CHAT_ID", cfg.TELEGRAM_CHAT_ID))
     gpm_url = os.getenv("GPM_API_BASE_URL", db_settings.get("GPM_API_BASE_URL", cfg.GPM_API_BASE_URL))
+    adspower_url = os.getenv("ADSPOWER_API_BASE_URL", db_settings.get("ADSPOWER_API_BASE_URL", "http://local.adspower.net:50325"))
+    dolphin_url = os.getenv("DOLPHIN_API_BASE_URL", db_settings.get("DOLPHIN_API_BASE_URL", "http://localhost:3001/v1.0"))
+    genlogin_url = os.getenv("GENLOGIN_API_BASE_URL", db_settings.get("GENLOGIN_API_BASE_URL", "http://localhost:55550"))
 
     sub_style = os.getenv("SUBTITLE_STYLE", db_settings.get("SUBTITLE_STYLE", getattr(cfg, 'SUBTITLE_STYLE', 'karaoke_yellow')))
     sub_pos = os.getenv("SUBTITLE_POSITION", db_settings.get("SUBTITLE_POSITION", getattr(cfg, 'SUBTITLE_POSITION', 'center')))
@@ -3202,7 +3827,15 @@ def get_api_keys():
         "youtube_key_pool": pool_status,
         "deepseek_api_key": deepseek,
         "gemini_api_key": gemini,
+        "gemini_base_url": gemini_base_url,
         "openai_api_key": openai,
+        "pexels_api_key": pexels,
+        "pixabay_api_key": pixabay,
+        "pollinations_api_key": pollinations,
+        "fal_api_key": fal_key,
+        "kling_access_key": kling_ak,
+        "kling_secret_key": kling_sk,
+        "elevenlabs_api_key": elevenlabs_key,
         "ai_provider": ai_provider,
         "deepseek_model": deepseek_model,
         "gemini_model": gemini_model,
@@ -3216,6 +3849,9 @@ def get_api_keys():
         "telegram_bot_token": tele_token,
         "telegram_chat_id": tele_chat,
         "gpm_api_base_url": gpm_url,
+        "adspower_api_base_url": adspower_url,
+        "dolphin_api_base_url": dolphin_url,
+        "genlogin_api_base_url": genlogin_url,
     }
 
 @app.post("/api/settings/keys")
@@ -3236,8 +3872,24 @@ def save_api_keys(req: SaveApiKeysRequest):
         updates["DEEPSEEK_API_KEY"] = req.deepseek_api_key.strip()
     if req.gemini_api_key is not None:
         updates["GEMINI_API_KEY"] = req.gemini_api_key.strip()
+    if req.gemini_base_url is not None:
+        updates["GEMINI_BASE_URL"] = req.gemini_base_url.strip().rstrip("/")
     if req.openai_api_key is not None:
         updates["OPENAI_API_KEY"] = req.openai_api_key.strip()
+    if req.pexels_api_key is not None:
+        updates["PEXELS_API_KEY"] = req.pexels_api_key.strip()
+    if req.pixabay_api_key is not None:
+        updates["PIXABAY_API_KEY"] = req.pixabay_api_key.strip()
+    if req.pollinations_api_key is not None:
+        updates["POLLINATIONS_API_KEY"] = req.pollinations_api_key.strip()
+    if req.elevenlabs_api_key is not None:
+        el_k = req.elevenlabs_api_key.strip()
+        updates["ELEVENLABS_API_KEY"] = el_k
+        try:
+            from backend.modules.elevenlabs_client import elevenlabs_client
+            elevenlabs_client.set_api_key(el_k)
+        except Exception:
+            pass
     if req.ai_provider is not None:
         updates["AI_PROVIDER"] = req.ai_provider.strip()
     if req.deepseek_model is not None:
@@ -3264,6 +3916,12 @@ def save_api_keys(req: SaveApiKeysRequest):
         updates["TELEGRAM_CHAT_ID"] = req.telegram_chat_id.strip()
     if req.gpm_api_base_url is not None and req.gpm_api_base_url.strip():
         updates["GPM_API_BASE_URL"] = req.gpm_api_base_url.strip()
+    if req.adspower_api_base_url is not None and req.adspower_api_base_url.strip():
+        updates["ADSPOWER_API_BASE_URL"] = req.adspower_api_base_url.strip()
+    if req.dolphin_api_base_url is not None and req.dolphin_api_base_url.strip():
+        updates["DOLPHIN_API_BASE_URL"] = req.dolphin_api_base_url.strip()
+    if req.genlogin_api_base_url is not None and req.genlogin_api_base_url.strip():
+        updates["GENLOGIN_API_BASE_URL"] = req.genlogin_api_base_url.strip()
 
     # 1. Save to .env file
     save_env_config(updates)
@@ -3440,7 +4098,7 @@ def browse_folder():
         ps_cmd = (
             'Add-Type -AssemblyName System.Windows.Forms; '
             '$d = New-Object System.Windows.Forms.FolderBrowserDialog; '
-            '$d.Description = "Chọn thư mục lưu trữ video TikTok Farm"; '
+            '$d.Description = "Chọn thư mục lưu trữ video ShortsFarm"; '
             '$d.ShowNewFolderButton = $true; '
             'if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $d.SelectedPath }'
         )
@@ -3470,6 +4128,110 @@ def clear_ai_usage():
     from backend.database import clear_ai_usage_logs
     success = clear_ai_usage_logs()
     return {"status": "ok" if success else "error"}
+
+
+# --- Multilingual AI Narrator APIs ---
+SAMPLE_PREVIEW_TEXTS = {
+    "vi": "Xin chào! Đây là bản nghe thử giọng đọc AI tự động cho kênh video TikTok của bạn.",
+    "en": "Hello! This is a preview of your AI voiceover for viral TikTok videos.",
+    "ja": "こんにちは！これはTikTok動画用のAIナレーションのプレビューです。",
+    "ko": "안녕하세요! 틱톡 채널을 위한 AI 음성 미리보기입니다.",
+    "de": "Hallo! Dies ist eine Hörprobe Ihrer KI-Stimme für TikTok-Videos.",
+    "es": "¡Hola! Esta es una prueba de tu voz con inteligencia artificial para TikTok.",
+    "fr": "Bonjour ! Ceci est un aperçu de votre voix IA pour les vidéos TikTok."
+}
+
+def resolve_voice_lang(voice_id: str, fallback_lang: str = "en") -> str:
+    if not voice_id:
+        return fallback_lang
+    v_lower = voice_id.lower()
+    if v_lower.startswith("vi") or "namminh" in v_lower or "hoaimy" in v_lower:
+        return "vi"
+    if v_lower.startswith("en") or "christopher" in v_lower or "jenny" in v_lower or "guy" in v_lower:
+        return "en"
+    if v_lower.startswith("ja") or "keita" in v_lower or "nanami" in v_lower:
+        return "ja"
+    if v_lower.startswith("ko") or "injoon" in v_lower or "sunhi" in v_lower:
+        return "ko"
+    if v_lower.startswith("de") or "conrad" in v_lower or "katja" in v_lower:
+        return "de"
+    if v_lower.startswith("es") or "alvaro" in v_lower or "elvira" in v_lower:
+        return "es"
+    if v_lower.startswith("fr") or "henri" in v_lower or "denise" in v_lower:
+        return "fr"
+    return fallback_lang
+
+@app.get("/api/narrator/languages")
+def get_narrator_languages():
+    from backend.modules.ai_addon.ai_narrator import ai_narrator
+    return {
+        "languages": ai_narrator.get_supported_languages(),
+        "styles": ai_narrator.get_supported_styles()
+    }
+
+@app.get("/api/voices/preview")
+def preview_voice_sample(voice_id: str = "en-US-ChristopherNeural", lang: Optional[str] = None):
+    try:
+        from backend.modules.ai_addon.ai_narrator import ai_narrator
+        from backend.config import DATA_DIR
+        import re
+
+        # Handle inherit or generic
+        if voice_id in ("inherit", "", None):
+            voice_id = "en-US-ChristopherNeural"
+
+        target_lang = lang if lang and lang not in ("original", "inherit", "auto") else resolve_voice_lang(voice_id, "en")
+
+        safe_voice_key = re.sub(r'[^a-zA-Z0-9_\-]', '_', voice_id)
+        preview_dir = DATA_DIR / "preview_audio"
+        preview_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = str(preview_dir / f"sample_{target_lang}_{safe_voice_key}.mp3")
+
+        if os.path.exists(cache_file) and os.path.getsize(cache_file) > 1000:
+            return FileResponse(cache_file, media_type="audio/mpeg", filename=f"{safe_voice_key}.mp3")
+
+        sample_text = SAMPLE_PREVIEW_TEXTS.get(target_lang, SAMPLE_PREVIEW_TEXTS["en"])
+
+        res = ai_narrator.synthesize_voice(
+            text=sample_text,
+            output_path=cache_file,
+            language=target_lang,
+            gender=voice_id
+        )
+        audio_path = res[0] if isinstance(res, tuple) else res
+        if audio_path and os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
+            return FileResponse(audio_path, media_type="audio/mpeg", filename=f"{safe_voice_key}.mp3")
+
+        raise HTTPException(status_code=500, detail="Không thể tạo file âm thanh nghe thử")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class PreviewVoiceRequest(BaseModel):
+    text: Optional[str] = None
+    language: str = "original"
+    gender: str = "male"
+
+@app.post("/api/narrator/preview")
+def preview_narrator_voice(req: PreviewVoiceRequest):
+    from backend.modules.ai_addon.ai_narrator import ai_narrator, detect_text_language
+    from backend.config import DATA_DIR
+    import uuid
+    from fastapi.responses import FileResponse
+    txt = (req.text or '').strip()
+    lang = req.language
+    if not txt:
+        target_lang = lang if lang and lang not in ("original", "auto") else resolve_voice_lang(req.gender, "en")
+        txt = SAMPLE_PREVIEW_TEXTS.get(target_lang, SAMPLE_PREVIEW_TEXTS["en"])
+    if lang in ("original", "auto", ""):
+        lang = detect_text_language(txt)
+    preview_dir = DATA_DIR / "preview_audio"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    out_file = str(preview_dir / f"preview_{uuid.uuid4().hex[:8]}.mp3")
+    res = ai_narrator.synthesize_voice(text=txt, output_path=out_file, language=lang, gender=req.gender)
+    audio_path = res[0] if isinstance(res, tuple) else res
+    if audio_path and os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
+        return FileResponse(audio_path, media_type="audio/mpeg", filename=os.path.basename(audio_path))
+    raise HTTPException(status_code=500, detail="Không thể tạo file giọng đọc thử nghiệm")
 
 # --- System Diagnostics, File Logs & Active Issues APIs ---
 @app.get("/api/system/active-issues")
@@ -3534,6 +4296,31 @@ def open_log_folder():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Không thể mở thư mục log: {str(e)}")
 
+# --- Video Variant Analytics & A/B Testing (Measurement Layer - Gap 3 & Gap 5) ---
+class VideoMetricsRequest(BaseModel):
+    task_id: int
+    views_count: int
+    views_3s_count: int = 0
+    completion_rate: float = 0.0
+    post_url: Optional[str] = ""
+
+@app.post("/api/analytics/video-metrics")
+def record_video_metrics(req: VideoMetricsRequest):
+    ok = metrics_tracker.record_video_metrics(
+        task_id=req.task_id,
+        views_count=req.views_count,
+        views_3s_count=req.views_3s_count,
+        completion_rate=req.completion_rate,
+        post_url=req.post_url or ""
+    )
+    if not ok:
+        raise HTTPException(status_code=400, detail="Không thể lưu chỉ số video. Kiểm tra task_id.")
+    return {"status": "success", "message": f"Đã cập nhật chỉ số cho Task #{req.task_id}"}
+
+@app.get("/api/analytics/variants-report")
+def get_variants_ab_test_report():
+    return metrics_tracker.get_variant_ab_test_report()
+
 @app.on_event("startup")
 def on_startup():
     try:
@@ -3583,6 +4370,14 @@ if LOGO_DIR.exists():
     @app.get("/")
     def serve_frontend():
         return FileResponse(str(FRONTEND_DIR / "index.html"))
+
+# --- Mount V2 Routes (Multi-Browser, Multi-Downloader, Multi-Uploader, Local Ingest, Licensing) ---
+try:
+    from backend.modules.api_v2_routes import router as v2_router
+    app.include_router(v2_router)
+except Exception as e:
+    print(f"Error mounting v2_router: {e}")
+
 
 if __name__ == "__main__":
     import uvicorn

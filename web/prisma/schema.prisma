@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model License {
+  id            String       @id @default(uuid()) @db.Uuid
+  licenseKey    String       @unique @map("license_key")
+  customerName  String?      @default("Khách hàng") @map("customer_name")
+  customerEmail String?      @map("customer_email")
+  plan          String       @default("monthly") // trial, monthly, yearly, lifetime
+  maxDevices    Int          @default(1) @map("max_devices")
+  hwidList      String[]     @default([]) @map("hwid_list")
+  status        String       @default("active") // active, suspended, expired
+  expiresAt     DateTime?    @map("expires_at")
+  notes         String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @default(now()) @updatedAt @map("updated_at")
+  activations   Activation[]
+
+  @@map("licenses")
+}
+
+model Download {
+  id        String   @id @default(uuid()) @db.Uuid
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  country   String?  @default("VN")
+  os        String?  @default("Windows")
+  version   String?  @default("2.1.0")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("downloads")
+}
+
+model Activation {
+  id            String    @id @default(uuid()) @db.Uuid
+  licenseKey    String    @map("license_key")
+  hwid          String
+  deviceName    String?   @map("device_name")
+  appVersion    String?   @map("app_version")
+  ipAddress     String?   @map("ip_address")
+  lastHeartbeat DateTime  @default(now()) @map("last_heartbeat")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  license       License   @relation(fields: [licenseKey], references: [licenseKey], onDelete: Cascade)
+
+  @@unique([licenseKey, hwid])
+  @@map("activations")
+}
+
+model AppRelease {
+  id          String   @id @default(uuid()) @db.Uuid
+  version     String   @unique
+  downloadUrl String   @map("download_url")
+  fileSizeMb  Float?   @default(85.5) @map("file_size_mb")
+  releaseNotes String? @map("release_notes")
+  isMandatory Boolean  @default(false) @map("is_mandatory")
+  isLatest    Boolean  @default(true) @map("is_latest")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("app_releases")
+}
+

@@ -34,10 +34,20 @@ class YouTubeDownloader:
 
         import re
         if target_dir:
-            save_dir = Path(target_dir)
+            base_save = Path(target_dir)
+            if is_save_by_channel_folder_enabled() and channel_name and channel_name.strip() and channel_name.strip() not in ("Dán trực tiếp", "Direct Links"):
+                clean_ch = re.sub(r'[\\/*?:"<>|]', '', channel_name).strip()
+                save_dir = base_save / (clean_ch or "Direct Links")
+            else:
+                save_dir = base_save
         elif channel_name and channel_name.strip() and channel_name.strip() not in ("Dán trực tiếp", "Direct Links"):
-            clean_ch = re.sub(r'[\\/*?:"<>|]', '', channel_name).strip()
-            save_dir = self.download_dir / (clean_ch or "Direct Links")
+            if is_save_by_channel_folder_enabled():
+                # Lưu vào thư mục con riêng theo tên kênh (mặc định ON)
+                clean_ch = re.sub(r'[\\/*?:"<>|]', '', channel_name).strip()
+                save_dir = self.download_dir / (clean_ch or "Direct Links")
+            else:
+                # Toggle OFF → lưu phẳng vào thư mục download gốc, không tạo subfolder
+                save_dir = self.download_dir
         else:
             save_dir = self.download_dir / "Direct Links"
         save_dir.mkdir(parents=True, exist_ok=True)
@@ -199,8 +209,11 @@ class YouTubeDownloader:
         except Exception as e:
             err_str = str(e)
             classified = classify_youtube_error(err_str)
-            logger.exception(f"Lỗi tải video YouTube {video_url} [{classified['type']}]: {err_str}")
-            log_event("ERROR", f"[{classified['title']}] {classified['message']} (URL: {video_url})", details=err_str)
+            if classified["type"] == "VIDEO_PREMIERE":
+                log_event("INFO", f"⏳ Bỏ qua video chưa công chiếu: {classified['message']} (URL: {video_url})")
+            else:
+                logger.exception(f"Lỗi tải video YouTube {video_url} [{classified['type']}]: {err_str}")
+                log_event("ERROR", f"[{classified['title']}] {classified['message']} (URL: {video_url})", details=err_str)
 
             # Cố gắng lưu trạng thái lỗi vào DB nếu nhận dạng được video ID
             try:
@@ -279,6 +292,13 @@ def classify_youtube_error(err_str: str) -> Dict[str, str]:
             "title": "Thiếu Node.js Runtime",
             "message": "yt-dlp cần Node.js để giải mã thuật toán YouTube signature. Vui lòng cài đặt Node.js trên máy.",
             "action": "install_nodejs"
+        }
+    elif any(k in err_lower for k in ("premieres in", "live event", "is scheduled", "upcoming")):
+        return {
+            "type": "VIDEO_PREMIERE",
+            "title": "Video Chưa Công Chiếu",
+            "message": "Video là lịch công chiếu trực tiếp và chưa phát sóng trên YouTube.",
+            "action": "skip_video"
         }
     elif "ffmpeg" in err_lower:
         return {

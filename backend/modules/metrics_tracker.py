@@ -124,4 +124,112 @@ class MetricsTracker:
         conn.close()
         return [dict(r) for r in rows]
 
+    def record_video_metrics(
+        self,
+        task_id: int,
+        views_count: int,
+        views_3s_count: int = 0,
+        completion_rate: float = 0.0,
+        post_url: str = ""
+    ) -> bool:
+        """
+        Ghi nhận chỉ số tương tác thực tế của video (Measurement Layer - Gap 3 & Gap 5):
+        - views_count: Tổng lượt xem
+        - views_3s_count: Số lượt xem vượt qua 3s đầu (3-Second View Rate)
+        - completion_rate: Tỷ lệ xem hết video (0.0 - 100.0%)
+        - post_url: Link bài đăng trên TikTok
+        """
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE upload_tasks 
+                SET views_count = ?,
+                    views_3s_count = ?,
+                    completion_rate = ?,
+                    post_url = COALESCE(NULLIF(?, ''), post_url)
+                WHERE id = ?
+            """, (views_count, views_3s_count, completion_rate, post_url, task_id))
+            conn.commit()
+            conn.close()
+            log_event("INFO", f"[METRICS] Đã cập nhật chỉ số Task #{task_id}: {views_count:,} views, {views_3s_count:,} views 3s, {completion_rate:.1f}% completion.")
+            return True
+        except Exception as e:
+            log_event("WARNING", f"Lỗi cập nhật chỉ số video Task #{task_id}: {e}")
+            return False
+
+    def get_variant_ab_test_report(self) -> Dict[str, Any]:
+        """
+        Báo cáo phân tích A/B/C Testing biến thể (Measurement Feedback Loop - Gap 3 & Gap 5):
+        So sánh hiệu quả giữa các biến thể VarA (Curiosity), VarB (Controversy), VarC (Climax):
+        - Tỷ lệ giữ chân 3s đầu (3s Hook Retention)
+        - Tỷ lệ xem hết (Completion Rate)
+        - Lượt xem trung bình
+        - Top các câu Hook chiến thắng (Winning Hooks)
+        """
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Thống kê tổng hợp theo từng biến thể
+        cursor.execute("""
+            SELECT 
+                COALESCE(NULLIF(variant_tag, ''), 'Standard') AS variant,
+                COUNT(*) AS total_posts,
+                SUM(views_count) AS total_views,
+                AVG(views_count) AS avg_views,
+                SUM(views_3s_count) AS total_3s_views,
+                AVG(completion_rate) AS avg_completion_rate
+            FROM upload_tasks
+            WHERE status = 'completed'
+            GROUP BY variant
+        """)
+        summary_rows = cursor.fetchall()
+
+        variant_stats = {}
+        for r in summary_rows:
+            v_name = r["variant"]
+            t_views = r["total_views"] or 0
+            t_3s = r["total_3s_views"] or 0
+            retention_3s = round((t_3s / t_views * 100.0), 1) if t_views > 0 else 0.0
+
+            variant_stats[v_name] = {
+                "variant": v_name,
+                "total_posts": r["total_posts"],
+                "total_views": t_views,
+                "avg_views": round(r["avg_views"] or 0, 1),
+                "total_3s_views": t_3s,
+                "retention_rate_3s": retention_3s,
+                "avg_completion_rate": round(r["avg_completion_rate"] or 0.0, 1)
+            }
+
+        # Lấy Top 5 câu Hook có view cao nhất
+        cursor.execute("""
+            SELECT hook_copy, variant_tag, title, views_count, views_3s_count, completion_rate
+            FROM upload_tasks
+            WHERE status = 'completed' AND hook_copy IS NOT NULL AND hook_copy != ''
+            ORDER BY views_count DESC, views_3s_count DESC
+            LIMIT 5
+        """)
+        top_hooks = [dict(row) for row in cursor.fetchall()]
+
+        conn.close()
+
+        # Xác định biến thể dẫn đầu
+        best_variant = None
+        if variant_stats:
+            best_variant = max(
+                variant_stats.values(), 
+                key=lambda x: (x.get("retention_rate_3s", 0) + x.get("avg_completion_rate", 0) + (x.get("avg_views", 0) / 100.0))
+            ).get("variant")
+
+        return {
+            "variants": variant_stats,
+            "top_performing_hooks": top_hooks,
+            "winning_variant": best_variant,
+            "recommendation": (
+                f"Biến thể '{best_variant}' đang có tỷ lệ giữ chân và tương tác cao nhất. Khuyến nghị tăng tỷ trọng phân phối cho biến thể này."
+                if best_variant else "Chưa đủ dữ liệu thống kê video để đưa ra kết luận A/B Testing."
+            )
+        }
+
 metrics_tracker = MetricsTracker()

@@ -5,9 +5,29 @@ let cachedVideos = [];
 let cachedCampaigns = [];
 let activeStudioVideo = null;
 let currentStudioFilter = 'all';
+let cachedAudioCategories = [];
+
+async function ensureAudioCategoriesLoaded() {
+    if (!cachedAudioCategories || !cachedAudioCategories.length) {
+        try {
+            const res = await fetch('/api/audio/categories');
+            const data = await res.json();
+            if (data.status === 'success') {
+                cachedAudioCategories = data.categories || [];
+            }
+        } catch (e) {
+            console.error('Lỗi nạp thư mục BGM:', e);
+        }
+    }
+    if (typeof populateAllBgmSelects === 'function') {
+        populateAllBgmSelects(cachedAudioCategories);
+    }
+    return cachedAudioCategories;
+}
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
+    loadInitialRssAndHost();
     applyCachedSchedulerState();
     setupNavigation();
     loadDashboardStats();
@@ -23,6 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSystemTraySettings();
     applyColumnVisibility();
     startTopbarClock();
+    initLanguageVoiceAutoSync();
+    ensureAudioCategoriesLoaded();
+    if (typeof loadActiveBrowser === 'function') loadActiveBrowser();
 
     // Close column dropdown & action menus when clicking outside
     document.addEventListener('click', (e) => {
@@ -398,6 +421,227 @@ function toggleSidebar() {
     }
 }
 
+// Multi-Voice Catalog filtered by Language
+const VOICE_OPTIONS_BY_LANG = {
+    'vi': [
+        { id: 'vi-VN-NamMinhNeural', name: 'Nam Minh (Nam - Phóng sự đại án, tài liệu giật gân)' },
+        { id: 'vi-VN-HoaiMyNeural', name: 'Hoài My (Nữ - Truyền cảm, tâm lý, tin tức)' }
+    ],
+    'en': [
+        { id: 'en-US-ChristopherNeural', name: '🔥 Christopher (Viral TikTok deep storytelling)' },
+        { id: 'en-US-GuyNeural', name: 'Guy (Nam - Tự nhiên, vlog đời thường)' },
+        { id: 'en-US-BrianNeural', name: 'Brian (Nam - Năng động, hài hước, hiện đại)' },
+        { id: 'en-US-AndrewNeural', name: 'Andrew (Nam - Trầm, ấm áp, tin cậy)' },
+        { id: 'en-US-EricNeural', name: 'Eric (Nam - Trẻ trung, đĩnh đạc)' },
+        { id: 'en-US-AvaNeural', name: 'Ava (Nữ - Trendy TikTok aesthetic, trẻ trung)' },
+        { id: 'en-US-JennyNeural', name: 'Jenny (Nữ - Kể chuyện cuốn hút, tự nhiên)' },
+        { id: 'en-US-EmmaNeural', name: 'Emma (Nữ - Nhẹ nhàng, tâm sự, sâu lắng)' },
+        { id: 'en-US-AriaNeural', name: 'Aria (Nữ - Chuyên nghiệp, thời sự, tin tức)' },
+        { id: 'en-US-AnaNeural', name: 'Ana (Nữ - Hoạt hình, nhí nhảnh, vui tươi)' }
+    ],
+    'ja': [
+        { id: 'ja-JP-KeitaNeural', name: 'Keita (Nam - Thần thoại, anime, giật gân)' },
+        { id: 'ja-JP-NanamiNeural', name: 'Nanami (Nữ - Dịu dàng, chuẩn giọng Tokyo)' }
+    ],
+    'ko': [
+        { id: 'ko-KR-InJoonNeural', name: 'InJoon (Nam - Phim truyền hình K-Drama, kịch tính)' },
+        { id: 'ko-KR-HyunsuMultilingualNeural', name: 'Hyunsu (Nam - Điện ảnh, trầm ấm hiện đại)' },
+        { id: 'ko-KR-SunHiNeural', name: 'SunHi (Nữ - Năng động, thời trang, sành điệu)' }
+    ],
+    'de': [
+        { id: 'de-DE-ConradNeural', name: 'Conrad (Nam - Khoa học, lịch sử, đĩnh đạc)' },
+        { id: 'de-DE-KillianNeural', name: 'Killian (Nam - Đài phát thanh, năng lượng)' },
+        { id: 'de-DE-FlorianMultilingualNeural', name: 'Florian (Nam - Trẻ trung, đa ngôn ngữ)' },
+        { id: 'de-DE-KatjaNeural', name: 'Katja (Nữ - Thời sự, tin tức rõ ràng)' },
+        { id: 'de-DE-AmalaNeural', name: 'Amala (Nữ - Nhẹ nhàng, ấm áp)' },
+        { id: 'de-DE-SeraphinaMultilingualNeural', name: 'Seraphina (Nữ - Tự nhiên, đa ngôn ngữ)' }
+    ],
+    'es': [
+        { id: 'es-ES-AlvaroNeural', name: 'Alvaro (Nam - Tây Ban Nha, truyền cảm)' },
+        { id: 'es-MX-JorgeNeural', name: 'Jorge (Nam - Mexico, tự nhiên)' },
+        { id: 'es-ES-ElviraNeural', name: 'Elvira (Nữ - Tây Ban Nha, rõ ràng)' },
+        { id: 'es-MX-DaliaNeural', name: 'Dalia (Nữ - Mexico, trẻ trung)' }
+    ],
+    'fr': [
+        { id: 'fr-FR-HenriNeural', name: 'Henri (Nam - Truyền cảm, lịch lãm)' },
+        { id: 'fr-FR-DeniseNeural', name: 'Denise (Nữ - Rõ ràng, tin tức)' },
+        { id: 'fr-FR-VivienneMultilingualNeural', name: 'Vivienne (Nữ - Tự nhiên, đa ngôn ngữ)' }
+    ]
+};
+
+function updateVoiceDropdownOptions(voiceSelectId, langCode, currentVal = null, allowInherit = false) {
+    const voiceSelect = document.getElementById(voiceSelectId);
+    if (!voiceSelect) return;
+
+    const valToKeep = currentVal !== null ? currentVal : voiceSelect.value;
+    let html = '';
+
+    if (allowInherit) {
+        html += '<option value="inherit">Theo Chiến dịch (Mặc định)</option>';
+    }
+
+    html += '<optgroup label="⚡ Chế độ Tự Động">';
+    html += '<option value="male">👦 Giọng Nam Chuẩn (Auto)</option>';
+    html += '<option value="female">👧 Giọng Nữ Chuẩn (Auto)</option>';
+    html += '</optgroup>';
+
+    const langNames = {
+        'vi': '🇻🇳 Tiếng Việt',
+        'en': '🇺🇸 English (US)',
+        'ja': '🇯🇵 日本語',
+        'ko': '🇰🇷 한국어',
+        'de': '🇩🇪 Deutsch',
+        'es': '🇪🇸 Español',
+        'fr': '🇫🇷 Français'
+    };
+
+    if (VOICE_OPTIONS_BY_LANG[langCode]) {
+        html += `<optgroup label="${langNames[langCode] || langCode}">`;
+        VOICE_OPTIONS_BY_LANG[langCode].forEach(v => {
+            html += `<option value="${v.id}">${v.name}</option>`;
+        });
+        html += '</optgroup>';
+    } else {
+        // When language is "original" or "inherit", list available languages
+        Object.keys(VOICE_OPTIONS_BY_LANG).forEach(k => {
+            html += `<optgroup label="${langNames[k]}">`;
+            VOICE_OPTIONS_BY_LANG[k].forEach(v => {
+                html += `<option value="${v.id}">${v.name}</option>`;
+            });
+            html += '</optgroup>';
+        });
+    }
+
+    voiceSelect.innerHTML = html;
+
+    // Restore or select best voice
+    if (valToKeep && voiceSelect.querySelector(`option[value="${valToKeep}"]`)) {
+        voiceSelect.value = valToKeep;
+    } else if (allowInherit && (langCode === 'inherit' || valToKeep === 'inherit')) {
+        voiceSelect.value = 'inherit';
+    } else if (VOICE_OPTIONS_BY_LANG[langCode] && VOICE_OPTIONS_BY_LANG[langCode].length > 0) {
+        voiceSelect.value = VOICE_OPTIONS_BY_LANG[langCode][0].id;
+    } else {
+        voiceSelect.value = 'male';
+    }
+}
+
+let voiceNarratorPreviewAudio = null;
+let voiceNarratorPreviewBtn = null;
+
+function resetPreviewBtnState(btnEl) {
+    if (!btnEl) return;
+    btnEl.className = 'btn-voice-preview';
+    btnEl.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+    btnEl.title = 'Nghe thử giọng đọc';
+}
+
+function setPreviewBtnLoading(btnEl) {
+    if (!btnEl) return;
+    btnEl.className = 'btn-voice-preview loading';
+    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    btnEl.title = 'Đang tải bản nghe thử...';
+}
+
+function setPreviewBtnPlaying(btnEl) {
+    if (!btnEl) return;
+    btnEl.className = 'btn-voice-preview playing';
+    btnEl.innerHTML = '<i class="fa-solid fa-stop"></i>';
+    btnEl.title = 'Bấm để dừng nghe thử';
+}
+
+function playVoicePreview(voiceSelectId, langSelectId, btnEl) {
+    const voiceSelect = document.getElementById(voiceSelectId);
+    const langSelect = document.getElementById(langSelectId);
+
+    let voiceId = voiceSelect ? voiceSelect.value : 'en-US-ChristopherNeural';
+    let lang = langSelect ? langSelect.value : 'original';
+
+    if (voiceId === 'inherit') {
+        voiceId = (lang && lang !== 'inherit' && lang !== 'original') ? lang : 'en-US-ChristopherNeural';
+    }
+
+    // Toggle stop if already playing
+    if (voiceNarratorPreviewAudio && !voiceNarratorPreviewAudio.paused) {
+        voiceNarratorPreviewAudio.pause();
+        voiceNarratorPreviewAudio.currentTime = 0;
+        if (voiceNarratorPreviewBtn) {
+            resetPreviewBtnState(voiceNarratorPreviewBtn);
+        }
+        if (voiceNarratorPreviewBtn === btnEl) {
+            voiceNarratorPreviewAudio = null;
+            voiceNarratorPreviewBtn = null;
+            return;
+        }
+    }
+
+    voiceNarratorPreviewBtn = btnEl;
+    setPreviewBtnLoading(btnEl);
+
+    const url = `/api/voices/preview?voice_id=${encodeURIComponent(voiceId)}&lang=${encodeURIComponent(lang)}`;
+    const audio = new Audio(url);
+    voiceNarratorPreviewAudio = audio;
+
+    audio.addEventListener('playing', () => {
+        if (voiceNarratorPreviewBtn === btnEl) {
+            setPreviewBtnPlaying(btnEl);
+        }
+    });
+
+    audio.addEventListener('ended', () => {
+        if (voiceNarratorPreviewBtn === btnEl) {
+            resetPreviewBtnState(btnEl);
+            voiceNarratorPreviewAudio = null;
+            voiceNarratorPreviewBtn = null;
+        }
+    });
+
+    audio.addEventListener('error', (err) => {
+        console.error('Lỗi phát giọng đọc preview:', err);
+        if (voiceNarratorPreviewBtn === btnEl) {
+            btnEl.className = 'btn-voice-preview';
+            btnEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ff4d4d;"></i>';
+            btnEl.title = 'Không thể tải âm thanh nghe thử';
+            setTimeout(() => {
+                resetPreviewBtnState(btnEl);
+                voiceNarratorPreviewAudio = null;
+                voiceNarratorPreviewBtn = null;
+            }, 2000);
+        }
+    });
+
+    audio.play().catch(err => {
+        console.warn('Playback error / autoplay blocked:', err);
+        if (voiceNarratorPreviewBtn === btnEl) {
+            resetPreviewBtnState(btnEl);
+            voiceNarratorPreviewAudio = null;
+            voiceNarratorPreviewBtn = null;
+        }
+    });
+}
+
+function initLanguageVoiceAutoSync() {
+    const pairs = [
+        { langId: 'settingChannelNarrationLanguage', voiceId: 'settingChannelVoiceGender', allowInherit: true },
+        { langId: 'campaignNarrationLanguage', voiceId: 'campaignVoiceGender', allowInherit: false },
+        { langId: 'editCampaignNarrationLanguage', voiceId: 'editCampaignVoiceGender', allowInherit: false }
+    ];
+
+    pairs.forEach(({ langId, voiceId, allowInherit }) => {
+        const langEl = document.getElementById(langId);
+        const voiceEl = document.getElementById(voiceId);
+        if (!langEl || !voiceEl) return;
+
+        // Initial sync on load
+        updateVoiceDropdownOptions(voiceId, langEl.value, voiceEl.value, allowInherit);
+
+        langEl.addEventListener('change', () => {
+            const lang = langEl.value;
+            updateVoiceDropdownOptions(voiceId, lang, null, allowInherit);
+        });
+    });
+}
+
 // Navigation Tabs
 function setupNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
@@ -464,19 +708,27 @@ function switchTab(tabId) {
     const tabMeta = {
         'tab-auto-pipeline': {
             title: 'Chiến Dịch Tự Động Hóa (Auto-Pilot)',
-            sub: 'Quy trình khép kín: Quét RSS Kênh → Tải MP4 → AI Render 9:16 → Tự Đăng TikTok GPM'
+            sub: 'Quy trình khép kín: Quét RSS Kênh → Tải MP4 → AI Render 9:16 → Tự Đăng Tài Khoản'
         },
         'tab-video-studio': {
             title: 'Studio Biên Tập Video 9:16',
             sub: 'Tùy chỉnh mẫu cắt >60s chuẩn Quỹ Beta & xem trước trực tiếp trên điện thoại mô phỏng'
+        },
+        'tab-video-manager': {
+            title: 'Quản Lý Video & Tải Đa Nền Tảng',
+            sub: 'Tải video sạch không watermark từ 7 nền tảng, nạp kho video cục bộ & quản lý thư viện video'
+        },
+        'tab-elevenlabs': {
+            title: 'Phòng Thu Giọng Đọc ElevenLabs AI',
+            sub: 'Tạo giọng đọc siêu thực đa cảm xúc, thử nghiệm âm thanh và kết nối với từng Kênh/Chiến dịch TikTok'
         },
         'tab-sources': {
             title: 'Quản Lý Kênh YouTube Nguồn',
             sub: 'Theo dõi nguồn RSS chất lượng cao và quét từ khóa tự động tìm kênh mới'
         },
         'tab-gpm-farm': {
-            title: 'Dàn Tài Khoản GPMLogin',
-            sub: 'Quản lý profile TikTok, theo dõi tăng trưởng follower và cấu hình thông báo Telegram'
+            title: 'Dàn Tài Khoản Đa Nền Tảng',
+            sub: 'Quản lý profile, theo dõi tăng trưởng follower và cấu hình thông báo Telegram'
         },
         'tab-overview': {
             title: 'Bảng Điều Khiển Tổng Quan',
@@ -514,6 +766,7 @@ function switchTab(tabId) {
         loadPipelineStatus();
     } else if (tabId === 'tab-video-studio') {
         loadStudioVideos();
+        ensureAudioCategoriesLoaded();
     } else if (tabId === 'tab-sources') {
         loadSavedChannels();
     } else if (tabId === 'tab-audio-studio') {
@@ -530,6 +783,11 @@ function switchTab(tabId) {
         loadSchedulerSettings();
     } else if (tabId === 'tab-logs') {
         loadFileLogs();
+    } else if (tabId === 'tab-video-manager') {
+        if (typeof loadRssScanMode === 'function') loadRssScanMode();
+        if (typeof loadVideoLibraryTable === 'function') loadVideoLibraryTable();
+    } else if (tabId === 'tab-elevenlabs') {
+        if (typeof loadElevenLabsStudio === 'function') loadElevenLabsStudio();
     }
 }
 
@@ -583,23 +841,27 @@ async function loadDashboardStats() {
         if (sSource) sSource.textContent = `${data.total_channels} kênh theo dõi`;
 
         const sGpm = document.getElementById('stepperGpmStats');
-        if (sGpm) sGpm.textContent = `${data.total_profiles} nick GPM (${data.eligible_10k_count} đạt 10K)`;
+        if (sGpm) sGpm.textContent = `${data.total_profiles} nick kết nối`;
 
         const sSourceBadge = document.getElementById('sourceSavedCountBadge');
         if (sSourceBadge) sSourceBadge.textContent = data.total_channels;
 
         // Update GPM status
         const gpmStatusText = document.getElementById('gpmStatusText');
+        const sidebarComputerName = document.getElementById('sidebarComputerName');
+        if (sidebarComputerName && data.computer_name) {
+            sidebarComputerName.textContent = data.computer_name;
+        }
         const chkGpm = document.getElementById('chkGpm');
         if (data.gpm_health && data.gpm_health.running) {
-            gpmStatusText.textContent = `Online (${data.gpm_health.profile_count} Profiles)`;
+            if (gpmStatusText) { gpmStatusText.textContent = ''; }
             gpmStatusText.style.color = '#10b981';
             if (chkGpm) {
                 chkGpm.className = 'badge badge-success';
                 chkGpm.textContent = 'Kết Nối Tốt';
             }
         } else {
-            gpmStatusText.textContent = 'Offline (Cổng :19995)';
+            if (gpmStatusText) { gpmStatusText.textContent = ''; }
             gpmStatusText.style.color = '#ef4444';
             if (chkGpm) {
                 chkGpm.className = 'badge badge-danger';
@@ -1635,8 +1897,8 @@ async function openChannelDetailModal(target) {
     // 1. Kiểm tra cờ is_saved hiện tại và cachedSavedChannels trong bộ nhớ
     let isChannelSaved = Boolean(
         (ch && ch.is_saved) ||
-        (cachedSavedChannels && cachedSavedChannels.some(sc => 
-            sc.channel_id === cid || 
+        (cachedSavedChannels && cachedSavedChannels.some(sc =>
+            sc.channel_id === cid ||
             (sc.channel_id && cid && sc.channel_id.toLowerCase() === cid.toLowerCase())
         ))
     );
@@ -2116,8 +2378,8 @@ function updateDetailModalSaveBtn() {
     const cid = activeDetailChannel.channel_id;
     const isSaved = Boolean(
         activeDetailChannel.is_saved ||
-        (cachedSavedChannels && cachedSavedChannels.some(sc => 
-            sc.channel_id === cid || 
+        (cachedSavedChannels && cachedSavedChannels.some(sc =>
+            sc.channel_id === cid ||
             (sc.channel_id && cid && sc.channel_id.toLowerCase() === cid.toLowerCase())
         ))
     );
@@ -2366,11 +2628,13 @@ async function downloadSingleVideo() {
     const url = inputEl ? inputEl.value.trim() : '';
     const btn = document.getElementById('btnDownloadVideo');
     if (!url) {
-        markInputError('directDownloadUrl', 'Vui lòng nhập link video YouTube hoặc Video ID!');
+        markInputError('directDownloadUrl', 'Vui lòng nhập liên kết video từ YouTube, Douyin, Xiaohongshu, Facebook, Instagram...');
         return;
     }
-    if (!isValidYouTubeUrl(url)) {
-        markInputError('directDownloadUrl', 'Định dạng link YouTube không hợp lệ! Vui lòng nhập link watch, shorts hoặc video ID 11 ký tự.');
+    // Hỗ trợ cả 7 nền tảng: YouTube, Douyin, Xiaohongshu, Facebook, Instagram, Bilibili, Weibo
+    const isHttpUrl = url.startsWith('http://') || url.startsWith('https://');
+    if (!isHttpUrl && !isValidYouTubeUrl(url)) {
+        markInputError('directDownloadUrl', 'Định dạng link không hợp lệ! Vui lòng dán link video (http/https) hoặc YouTube ID 11 ký tự.');
         return;
     }
 
@@ -2392,6 +2656,7 @@ async function downloadSingleVideo() {
             loadVideos();
             loadStudioVideos();
             loadDashboardStats();
+            if (typeof loadVideoLibraryTable === 'function') loadVideoLibraryTable();
         } else {
             showToast('Lỗi: ' + (data.detail || data.message || 'Không xác định'), 'error');
         }
@@ -2400,7 +2665,7 @@ async function downloadSingleVideo() {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-download"></i> Tải Video Gốc';
+            btn.innerHTML = '<i class="fa-solid fa-download"></i> Tải';
         }
     }
 }
@@ -2439,7 +2704,7 @@ async function loadVideos() {
                         </button>
                         ${v.rendered_path ? `
                         <button class="btn btn-sm btn-secondary" onclick="openUploadModal('${v.id}')">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> Đăng GPM
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Đăng
                         </button>
                         ` : ''}
                     </div>
@@ -2493,19 +2758,26 @@ async function syncGPMProfiles(btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Đồng Bộ...';
     }
-    showToast('Đang đồng bộ profiles từ GPMLogin Local API (:19995)...');
+    const sel = document.getElementById('selectActiveBrowser');
+    const browserName = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.replace(/^[^a-zA-Z0-9]+/, '').split(' ')[0] : 'Trình Duyệt';
+    showToast(`Đang đồng bộ profiles từ ${browserName}...`);
     try {
         const res = await fetch('/api/gpm/sync', { method: 'POST' });
-        const data = await res.json();
+        let data;
+        try {
+            data = await res.json();
+        } catch (_) {
+            throw new Error(`Máy chủ trả về phản hồi không hợp lệ (${res.status})`);
+        }
         if (data.status === 'success') {
-            showToast(`Đồng bộ thành công ${data.synced} profiles từ GPMLogin!`);
+            showToast(data.message || `Đồng bộ thành công ${data.synced} profiles!`);
             loadGpmProfiles();
             loadDashboardStats();
         } else {
-            showToast(data.message, true);
+            showToast(data.message || 'Không thể đồng bộ profiles', true);
         }
     } catch (err) {
-        showToast('Không kết nối được GPMLogin: ' + err.message, true);
+        showToast('Không kết nối được trình duyệt: ' + err.message, true);
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -2682,6 +2954,8 @@ function renderGpmProfilesTable() {
     const filter10k = document.getElementById('filterGpm10k') ? document.getElementById('filterGpm10k').value : 'all';
     const filterNotify = document.getElementById('filterGpmNotify') ? document.getElementById('filterGpmNotify').value : 'all';
     const filterNick = document.getElementById('filterGpmNick') ? document.getElementById('filterGpmNick').value : 'all';
+    const filterPlatform = document.getElementById('filterAccountPlatform') ? document.getElementById('filterAccountPlatform').value : 'all';
+    const filterBrowser = document.getElementById('filterAccountBrowser') ? document.getElementById('filterAccountBrowser').value : 'all';
     const keyword = (document.getElementById('searchGpmKeyword') ? document.getElementById('searchGpmKeyword').value : '').trim().toLowerCase();
 
     let list = (cachedGpmProfiles || []).slice();
@@ -2707,6 +2981,14 @@ function renderGpmProfilesTable() {
         list = list.filter(p => Boolean(p.tiktok_username && p.tiktok_username.trim()));
     } else if (filterNick === 'unattached') {
         list = list.filter(p => !Boolean(p.tiktok_username && p.tiktok_username.trim()));
+    }
+
+    // Lọc theo Nền tảng & Trình duyệt
+    if (filterPlatform && filterPlatform !== 'all') {
+        list = list.filter(p => (p.platform || 'tiktok').toLowerCase() === filterPlatform.toLowerCase());
+    }
+    if (filterBrowser && filterBrowser !== 'all') {
+        list = list.filter(p => (p.browser_type || 'gpm').toLowerCase() === filterBrowser.toLowerCase());
     }
 
     // 4. Lọc từ khóa
@@ -2767,26 +3049,73 @@ function renderGpmProfilesTable() {
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fa-solid fa-folder-open" style="font-size: 24px; opacity: 0.3; display: block; margin-bottom: 8px;"></i>Không tìm thấy profile nào phù hợp với bộ lọc.</td></tr>`;
     } else {
         tbody.innerHTML = list.map(p => {
-            const hasUsername = Boolean(p.tiktok_username && p.tiktok_username.trim());
+            const plat = (p.platform || 'tiktok').toLowerCase();
+            const hasUsername = Boolean((p.tiktok_username && p.tiktok_username.trim()) || (p.channel_handle && p.channel_handle.trim()) || (p.fb_page_id && p.fb_page_id.trim()));
             const hasNickname = Boolean(p.tiktok_nickname && p.tiktok_nickname.trim());
-            const usernameDisplay = hasUsername
-                ? `<div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
-                    <div style="display:flex; align-items:center; gap:6px; min-width:0;">
-                        <a href="https://www.tiktok.com/@${escapeHtml(p.tiktok_username)}" target="_blank" class="table-text-truncate" style="max-width:150px; color:var(--accent-cyan); font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="@${escapeHtml(p.tiktok_username)}${p.tiktok_uid ? ' (UID: ' + escapeHtml(p.tiktok_uid) + ')' : ''}">
-                            <i class="fa-brands fa-tiktok" style="flex-shrink:0;"></i> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@${escapeHtml(p.tiktok_username)}</span>
-                        </a>
-                        <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(p.tiktok_username || '')}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}')" data-tooltip="Sửa Nick TikTok & Chỉ Số">
-                            <i class="fa-solid fa-pen"></i>
+            let usernameDisplay = '';
+
+            if (plat === 'youtube') {
+                const handle = p.channel_handle || p.tiktok_username || '';
+                const cleanHandle = handle ? (handle.startsWith('@') ? handle : '@' + handle) : '';
+                usernameDisplay = cleanHandle ? `
+                    <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                            <a href="https://www.youtube.com/${escapeHtml(cleanHandle)}" target="_blank" class="table-text-truncate" style="max-width:150px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(cleanHandle)}">
+                                <i class="fa-brands fa-youtube" style="color:#ef4444; flex-shrink:0;"></i> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(cleanHandle)}</span>
+                            </a>
+                            <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(cleanHandle)}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'youtube')" data-tooltip="Sửa Kênh YouTube">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
+                        ${hasNickname ? `<div class="table-text-truncate text-muted" style="max-width:165px; font-size:11.5px; font-weight:500;" title="${escapeHtml(p.tiktok_nickname)}"><i class="fa-solid fa-id-badge" style="font-size:10px; opacity:0.7;"></i> ${escapeHtml(p.tiktok_nickname)}</div>` : ''}
+                    </div>` : `
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="text-muted" style="font-size:12px;"><i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Chưa gắn</span>
+                        <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '', ${p.followers_count || 0}, '', '${escapeHtml(p.browser_type || 'gpm')}', 'youtube')" data-tooltip="Gán Kênh YouTube Cho Profile" style="width:auto; padding:0 8px; font-size:10.5px; gap:4px;">
+                            <i class="fa-solid fa-plus"></i> Gán
                         </button>
-                    </div>
-                    ${hasNickname ? `<div class="table-text-truncate text-muted" style="max-width:165px; font-size:11.5px; font-weight:500;" title="${escapeHtml(p.tiktok_nickname)}"><i class="fa-solid fa-id-badge" style="font-size:10px; opacity:0.7;"></i> ${escapeHtml(p.tiktok_nickname)}</div>` : ''}
-                   </div>`
-                : `<div style="display:flex; align-items:center; gap:6px;">
-                    <span class="text-muted" style="font-size:12px;"><i class="fa-brands fa-tiktok"></i> Chưa gắn</span>
-                    <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}')" data-tooltip="Gán Nick TikTok Cho Profile" style="width:auto; padding:0 8px; font-size:10.5px; gap:4px;">
-                        <i class="fa-solid fa-plus"></i> Gán
-                    </button>
-                   </div>`;
+                    </div>`;
+            } else if (plat === 'facebook') {
+                const fbId = p.fb_page_id || p.tiktok_username || '';
+                const fbDisplay = p.tiktok_nickname || (fbId ? `FB: ${fbId}` : '');
+                usernameDisplay = fbId ? `
+                    <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                            <a href="https://www.facebook.com/${escapeHtml(fbId)}" target="_blank" class="table-text-truncate" style="max-width:150px; color:#60a5fa; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="FB: ${escapeHtml(fbId)}">
+                                <i class="fa-brands fa-facebook" style="color:#1877f2; flex-shrink:0;"></i> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(fbDisplay)}</span>
+                            </a>
+                            <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(fbId)}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'facebook')" data-tooltip="Sửa Page/Nick Facebook">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
+                        ${hasNickname && fbId !== p.tiktok_nickname ? `<div class="table-text-truncate text-muted" style="max-width:165px; font-size:11.5px; font-weight:500;" title="UID: ${escapeHtml(fbId)}"><i class="fa-solid fa-id-badge" style="font-size:10px; opacity:0.7;"></i> UID: ${escapeHtml(fbId)}</div>` : ''}
+                    </div>` : `
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="text-muted" style="font-size:12px;"><i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Chưa gắn</span>
+                        <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '', ${p.followers_count || 0}, '', '${escapeHtml(p.browser_type || 'gpm')}', 'facebook')" data-tooltip="Gán Page/Nick Facebook Cho Profile" style="width:auto; padding:0 8px; font-size:10.5px; gap:4px;">
+                            <i class="fa-solid fa-plus"></i> Gán
+                        </button>
+                    </div>`;
+            } else {
+                usernameDisplay = hasUsername
+                    ? `<div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                            <a href="https://www.tiktok.com/@${escapeHtml(p.tiktok_username)}" target="_blank" class="table-text-truncate" style="max-width:150px; color:var(--accent-cyan); font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="@${escapeHtml(p.tiktok_username)}${p.tiktok_uid ? ' (UID: ' + escapeHtml(p.tiktok_uid) + ')' : ''}">
+                                <i class="fa-brands fa-tiktok" style="flex-shrink:0;"></i> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@${escapeHtml(p.tiktok_username)}</span>
+                            </a>
+                            <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(p.tiktok_username || '')}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'tiktok')" data-tooltip="Sửa Nick TikTok & Chỉ Số">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
+                        ${hasNickname ? `<div class="table-text-truncate text-muted" style="max-width:165px; font-size:11.5px; font-weight:500;" title="${escapeHtml(p.tiktok_nickname)}"><i class="fa-solid fa-id-badge" style="font-size:10px; opacity:0.7;"></i> ${escapeHtml(p.tiktok_nickname)}</div>` : ''}
+                       </div>`
+                    : `<div style="display:flex; align-items:center; gap:6px;">
+                        <span class="text-muted" style="font-size:12px;"><i class="fa-brands fa-tiktok"></i> Chưa gắn</span>
+                        <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '', ${p.followers_count || 0}, '', '${escapeHtml(p.browser_type || 'gpm')}', 'tiktok')" data-tooltip="Gán Nick TikTok Cho Profile" style="width:auto; padding:0 8px; font-size:10.5px; gap:4px;">
+                            <i class="fa-solid fa-plus"></i> Gán
+                        </button>
+                       </div>`;
+            }
 
             const followersCount = p.followers_count || 0;
             const is10k = Boolean(p.eligible_10k || followersCount >= 10000);
@@ -2812,14 +3141,24 @@ function renderGpmProfilesTable() {
             return `
             <tr>
                 <td>
-                    <div class="table-text-truncate" style="max-width: 175px;" title="${escapeHtml(p.name)}">
+                    <div class="table-text-truncate" style="max-width: 180px; display:flex; align-items:center; gap:6px;" title="${escapeHtml(p.name)}">
+                        ${(() => {
+                    const b = (p.browser_type || 'gpm').toLowerCase();
+                    if (b === 'adspower') return '<span class="badge" style="background:rgba(249,115,22,0.15); color:#fb923c; font-size:10px;"><i class="fa-solid fa-bolt"></i> AdsPower</span>';
+                    if (b === 'dolphin') return '<span class="badge" style="background:rgba(6,182,212,0.15); color:#22d3ee; font-size:10px;"><i class="fa-solid fa-water"></i> Dolphin</span>';
+                    if (b === 'genlogin') return '<span class="badge" style="background:rgba(34,197,94,0.15); color:#4ade80; font-size:10px;"><i class="fa-solid fa-shield"></i> GenLogin</span>';
+                    return '<span class="badge" style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:10px;"><i class="fa-solid fa-cube"></i> GPM</span>';
+                })()}
                         <strong>${escapeHtml(p.name)}</strong>
                     </div>
                 </td>
                 <td>
-                    <div class="table-text-truncate" style="max-width: 170px;" title="${escapeHtml(p.raw_proxy || 'Direct IP')}">
-                        <code>${escapeHtml(p.raw_proxy || 'Direct IP')}</code>
-                    </div>
+                    ${(() => {
+                    const plat = (p.platform || 'tiktok').toLowerCase();
+                    if (plat === 'youtube') return '<span class="badge" style="background:rgba(255,0,0,0.12); color:#ff4d4d; font-size:10px;"><i class="fa-brands fa-youtube"></i> YouTube</span>';
+                    if (plat === 'facebook') return '<span class="badge" style="background:rgba(24,119,242,0.12); color:#60a5fa; font-size:10px;"><i class="fa-brands fa-facebook"></i> Facebook</span>';
+                    return '<span class="badge" style="background:rgba(255,0,80,0.12); color:#ff0050; font-size:10px;"><i class="fa-brands fa-tiktok"></i> TikTok</span>';
+                })()}
                 </td>
                 <td>${usernameDisplay}</td>
                 <td>${followersDisplay}</td>
@@ -2876,9 +3215,20 @@ function renderGpmProfilesTable() {
                                 <i class="fa-solid fa-bell" style="color:#34d399;"></i> Theo dõi (gửi khi đủ 10K)
                             </button>`}
                             ${hasUsername ? `
+                            ${plat === 'youtube' ? `
+                            <a href="https://www.youtube.com/${escapeHtml(p.channel_handle || p.tiktok_username)}" target="_blank" rel="noopener" class="action-dropdown-item" onclick="closeAllActionMenus()">
+                                <i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Mở kênh YouTube
+                            </a>` : plat === 'facebook' ? `
+                            <a href="https://www.facebook.com/${escapeHtml(p.fb_page_id || p.tiktok_username)}" target="_blank" rel="noopener" class="action-dropdown-item" onclick="closeAllActionMenus()">
+                                <i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Mở trang Facebook
+                            </a>` : `
                             <a href="https://www.tiktok.com/@${escapeHtml(p.tiktok_username)}" target="_blank" rel="noopener" class="action-dropdown-item" onclick="closeAllActionMenus()">
                                 <i class="fa-brands fa-tiktok" style="color:#00f2fe;"></i> Mở kênh TikTok
-                            </a>` : ''}
+                            </a>`}` : ''}
+                            ${plat === 'youtube' || plat === 'facebook' ? `
+                            <button type="button" class="action-dropdown-item" onclick="syncProfileChannels('${escapeHtml(p.gpm_id)}'); closeAllActionMenus();">
+                                <i class="fa-solid fa-layer-group" style="color:#a78bfa;"></i> Quét Kênh / Trang Con
+                            </button>` : ''}
                             <button type="button" class="action-dropdown-item" onclick="copyTextToClipboard('${escapeHtml(hasUsername ? p.tiktok_username : p.gpm_id)}', 'Đã sao chép!'); closeAllActionMenus();">
                                 <i class="fa-solid fa-copy" style="color:#94a3b8;"></i> Sao chép ${hasUsername ? 'Username' : 'GPM ID'}
                             </button>
@@ -2908,7 +3258,7 @@ function renderGpmProfilesTable() {
                     </div>
                     <div style="margin-top:12px; font-size:13px; color:var(--text-secondary);">
                         <p><strong>Followers:</strong> <span style="color:white; font-size:16px; font-weight:700;">${(e.followers_count || 0).toLocaleString()}</span></p>
-                        <p><strong>Profile GPM:</strong> ${escapeHtml(e.name)}</p>
+                        <p><strong>Profile:</strong> ${escapeHtml(e.name)}</p>
                         <p><strong>Proxy:</strong> ${escapeHtml(e.raw_proxy || 'Direct')}</p>
                         ${e.last_checked ? `<p><strong>Lần quét gần nhất:</strong> ${escapeHtml(e.last_checked)}</p>` : ''}
                     </div>
@@ -2967,7 +3317,7 @@ function cycleProfileNotifyStatus(gpmId, currentStatus) {
 async function deleteGpmProfileFromList(gpmId, profileName) {
     closeAllActionMenus();
     const ok = await showConfirmDialog({
-        title: 'Xóa Profile GPMLogin',
+        title: 'Xóa Profile',
         message: `Bạn có chắc chắn muốn XÓA profile "${profileName}" khỏi hệ thống Quản lý Farm?`,
         details: 'Hệ thống sẽ ngừng theo dõi và quản lý profile này.',
         confirmText: 'Xóa Profile',
@@ -2989,6 +3339,24 @@ async function deleteGpmProfileFromList(gpmId, profileName) {
     }
 }
 
+// Quét và đồng bộ tất cả kênh/trang con (YouTube channels, Facebook pages) cho 1 profile
+async function syncProfileChannels(gpmId) {
+    showToast('Đang quét kênh / trang con...');
+    try {
+        const res = await fetch(`/api/gpm/profiles/${gpmId}/channels/sync`, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            const ytCount = (data.youtube || []).length;
+            const fbCount = (data.facebook || []).length;
+            showToast(`✅ Đã tìm thấy ${ytCount} kênh YouTube + ${fbCount} trang Facebook!`);
+        } else {
+            showToast(data.message || 'Lỗi quét kênh', true);
+        }
+    } catch (err) {
+        showToast('Lỗi quét kênh: ' + err.message, true);
+    }
+}
+
 // Quét follower 1 profile cụ thể
 async function scanSingleProfileFollowers(gpmId, btn) {
     const origHtml = btn ? btn.innerHTML : '';
@@ -2996,7 +3364,7 @@ async function scanSingleProfileFollowers(gpmId, btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Quét...';
     }
-    showToast('Đang kết nối GPMLogin và trích xuất số follower TikTok...');
+    showToast('Đang kết nối và trích xuất số follower...');
     try {
         const res = await fetch(`/api/profiles/${gpmId}/scan`, { method: 'POST' });
         const data = await res.json();
@@ -3087,7 +3455,7 @@ async function checkScanProgress() {
 
             if (scanBtn) {
                 scanBtn.disabled = false;
-                scanBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass-chart"></i> Quét Follower Tất Cả Nick';
+                scanBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass-chart"></i> Quét Follower';
             }
 
             loadGpmProfiles();
@@ -3135,7 +3503,7 @@ async function scanAllProfilesFollowers(btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Khởi Động...';
     }
-    showToast('🚀 Bắt đầu quét Follower cho toàn bộ nick GPMLogin (Chế độ Low-RAM)...');
+    showToast('🚀 Bắt đầu quét Follower cho toàn bộ nick (Chế độ Low-RAM)...');
     try {
         const res = await fetch('/api/profiles/scan-all', { method: 'POST' });
         const data = await res.json();
@@ -3155,13 +3523,17 @@ async function scanAllProfilesFollowers(btn) {
 }
 
 // Quản lý Modal sửa Nick & Followers
-function openEditUsernameModal(gpmId, profileName, currentUsername, followers, currentNickname) {
+function openEditUsernameModal(gpmId, profileName, currentUsername, followers, currentNickname, browserType, platform) {
     document.getElementById('editProfileGpmId').value = gpmId;
     document.getElementById('editProfileName').value = profileName || gpmId;
     document.getElementById('editProfileUsername').value = (currentUsername || '').replace(/^@/, '');
     const nickInput = document.getElementById('editProfileNickname');
     if (nickInput) nickInput.value = currentNickname || '';
     document.getElementById('editProfileFollowers').value = followers || 0;
+    const bTypeSelect = document.getElementById('editProfileBrowserType');
+    if (bTypeSelect && browserType) bTypeSelect.value = browserType.toLowerCase();
+    const platSelect = document.getElementById('editProfilePlatform');
+    if (platSelect && platform) platSelect.value = platform.toLowerCase();
     const modal = document.getElementById('editProfileUsernameModal');
     if (modal) modal.classList.add('active');
 }
@@ -3200,7 +3572,12 @@ async function saveProfileUsernameFromModal(btn) {
         const resU = await fetch(`/api/profiles/${gpmId}/username`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username, nickname: nickname })
+            body: JSON.stringify({
+                username: username,
+                nickname: nickname,
+                browser_type: document.getElementById('editProfileBrowserType')?.value || 'gpm',
+                platform: document.getElementById('editProfilePlatform')?.value || 'tiktok'
+            })
         });
         const dataU = await resU.json();
         if (!resU.ok) {
@@ -3272,12 +3649,22 @@ async function loadFollowerSchedulerBadge() {
         if (data.enabled) {
             badge.className = 'badge badge-success';
             if (data.mode === 'daily_times') {
-                badge.textContent = `Bật (${data.times || '08:00, 20:00'})`;
+                const timesStr = (data.times || '').trim();
+                const timeList = timesStr.split(',').map(s => s.trim()).filter(Boolean);
+                badge.title = `Lịch quét tự động: ${timesStr || '08:00, 20:00'}`;
+                if (timeList.length <= 2) {
+                    badge.textContent = `Bật (${timeList.join(', ') || '08:00, 20:00'})`;
+                } else {
+                    // Truncate if more than 2 time slots: e.g. "Bật (08:00, 12:00 +2)"
+                    badge.textContent = `Bật (${timeList[0]}, ${timeList[1]} +${timeList.length - 2})`;
+                }
             } else {
+                badge.title = `Lịch quét tự động: Mỗi ${data.interval_hours || 6} giờ`;
                 badge.textContent = `Bật (Mỗi ${data.interval_hours || 6}h)`;
             }
         } else {
             badge.className = 'badge badge-secondary';
+            badge.title = 'Lịch quét định kỳ đang tắt';
             badge.textContent = 'Đang Tắt';
         }
     } catch (err) {
@@ -3382,25 +3769,57 @@ async function saveFollowerSchedulerSettings(btn) {
 }
 
 // 5. Upload Modal
-function openUploadModal(videoId) {
-    const video = cachedVideos.find(v => v.id == videoId);
-    if (!video || !video.rendered_path) {
+function openUploadModal(videoId, specificPath = null) {
+    const video = cachedVideos.find(v => v.id == videoId || v.yt_video_id === videoId);
+    if (!video) {
+        showToast('Không tìm thấy thông tin video!', 'warning');
+        return;
+    }
+
+    // Xác định đường dẫn file đã render:
+    // 1. Đường dẫn cụ thể truyền vào (ví dụ part đang phát trong Studio)
+    // 2. Hoặc từ activeStudioVideo nếu trùng khớp
+    // 3. Hoặc video.rendered_path
+    // 4. Hoặc part đầu tiên trong video.rendered_parts
+    let targetPath = specificPath;
+    if (!targetPath && typeof activeStudioVideo !== 'undefined' && activeStudioVideo && (activeStudioVideo.id == video.id || activeStudioVideo.yt_video_id == video.yt_video_id)) {
+        if (activeStudioVideo.rendered_parts && activeStudioVideo.rendered_parts.length > 0) {
+            const currentPart = activeStudioVideo.rendered_parts.find(p => p.part === activePlaybackPart) || activeStudioVideo.rendered_parts[0];
+            if (currentPart && currentPart.path) targetPath = currentPart.path;
+        }
+    }
+    if (!targetPath && video.rendered_path) {
+        targetPath = video.rendered_path;
+    }
+    if (!targetPath && video.rendered_parts && video.rendered_parts.length > 0) {
+        targetPath = video.rendered_parts[0].path;
+    }
+
+    if (!targetPath) {
         showToast('Video chưa được render AI!', 'warning');
         return;
     }
 
     const select = document.getElementById('modalProfileSelect');
     if (cachedGpmProfiles.length === 0) {
-        showToast('Vui lòng đồng bộ danh sách GPMLogin trước!', 'warning');
+        showToast('Vui lòng đồng bộ danh sách trước!', 'warning');
         return;
     }
 
-    select.innerHTML = cachedGpmProfiles.map(p => `
-        <option value="${p.gpm_id}">${escapeHtml(p.name)} (${p.raw_proxy || 'No Proxy'})</option>
-    `).join('');
+    select.innerHTML = cachedGpmProfiles.map(p => {
+        const pName = (p.name || `Profile ${p.gpm_id}`).trim();
+        const ttUser = p.tiktok_username ? (p.tiktok_username.startsWith('@') ? p.tiktok_username : '@' + p.tiktok_username) : (p.tiktok_nickname || 'Chưa gắn TikTok');
+        const fullLabel = `${pName} - ${ttUser}`;
+        const maxLen = 42;
+        const displayLabel = fullLabel.length > maxLen ? fullLabel.substring(0, maxLen - 3) + '...' : fullLabel;
+        return `<option value="${p.gpm_id}" title="${escapeHtml(fullLabel)}">${escapeHtml(displayLabel)}</option>`;
+    }).join('');
 
-    document.getElementById('modalVideoPath').value = video.rendered_path;
+    document.getElementById('modalVideoPath').value = targetPath;
     document.getElementById('modalVideoTitle').value = video.ai_title || video.title;
+    if (video.ai_tags && document.getElementById('modalVideoTags')) {
+        document.getElementById('modalVideoTags').value = video.ai_tags;
+    }
     document.getElementById('uploadModal').classList.add('active');
 }
 
@@ -3415,7 +3834,7 @@ async function executeUploadVideo() {
     const tags = document.getElementById('modalVideoTags')?.value || '';
 
     if (!profileId) {
-        markInputError('modalProfileSelect', 'Vui lòng chọn Profile GPMLogin để đăng video!');
+        markInputError('modalProfileSelect', 'Vui lòng chọn Profile để đăng video!');
         return;
     }
     if (!videoPath) {
@@ -3429,7 +3848,7 @@ async function executeUploadVideo() {
 
     const btn = document.getElementById('btnConfirmUpload');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang mở GPM & Upload...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang mở & Upload...';
 
     try {
         const res = await fetch('/api/tiktok/upload', {
@@ -4405,6 +4824,72 @@ async function openChannelSettingsModal(channelId) {
     const chNoSubShorts = document.getElementById('settingChannelDisableSubtitleForShorts');
     if (chNoSubShorts) chNoSubShorts.checked = (channel.disable_subtitle_for_shorts !== 0);
 
+    // Load cài đặt Lồng tiếng AI (Zero-Unoriginal Audio) riêng cho kênh
+    const chNarrSwitch = document.getElementById('settingChannelNarrationSwitch');
+    const chNarrWrap = document.getElementById('settingChannelNarrationWrap');
+    const chNarrLang = document.getElementById('settingChannelNarrationLanguage');
+    const chNarrGender = document.getElementById('settingChannelVoiceGender');
+    const chNarrStyle = document.getElementById('settingChannelNarrationStyle');
+    if (chNarrSwitch) {
+        chNarrSwitch.checked = (channel.narration_enabled === 1);
+        if (chNarrWrap) chNarrWrap.style.display = chNarrSwitch.checked ? 'block' : 'none';
+    }
+    if (chNarrLang) chNarrLang.value = channel.narration_language || 'inherit';
+    updateVoiceDropdownOptions('settingChannelVoiceGender', channel.narration_language || 'inherit', channel.voice_gender || 'inherit', true);
+    if (chNarrStyle) chNarrStyle.value = channel.narration_style || 'inherit';
+    const chNoNarrShorts = document.getElementById('settingChannelDisableNarrationForShorts');
+    if (chNoNarrShorts) chNoNarrShorts.checked = (channel.disable_narration_for_shorts !== 0);
+    const chKeepAudio = document.getElementById('settingChannelKeepOriginalScriptForShorts');
+    if (chKeepAudio) chKeepAudio.checked = (channel.keep_original_script_for_shorts !== 0);
+
+    const chTtsEngine = channel.tts_engine || 'edge-tts';
+    const chTtsRadio = document.querySelector(`input[name="channelTtsEngineRadio"][value="${chTtsEngine}"]`);
+    if (chTtsRadio) chTtsRadio.checked = true;
+    toggleChannelTtsEngine(chTtsEngine);
+    if (chTtsEngine === 'elevenlabs') {
+        populateElevenLabsVoicesToSelect('settingChannelElevenLabsVoiceId', channel.elevenlabs_voice_id || '');
+    }
+    const chElModel = document.getElementById('settingChannelElevenLabsModel');
+    if (chElModel && channel.elevenlabs_model) chElModel.value = channel.elevenlabs_model;
+
+    const chMpImgSwitch = document.getElementById('settingChannelUseAiImages');
+    const chMpImgWrap = document.getElementById('settingChannelImageStyleWrap');
+    const chMpImgStyle = document.getElementById('settingChannelImageStyle');
+    if (chMpImgSwitch) {
+        chMpImgSwitch.checked = (channel.use_ai_images === 1);
+        toggleAiStoryCard('settingChannel', chMpImgSwitch.checked);
+    }
+    if (chMpImgStyle && channel.image_style) chMpImgStyle.value = channel.image_style;
+    const chVisualSource = document.getElementById('settingChannelVisualSource');
+    if (chVisualSource && channel.visual_source) chVisualSource.value = channel.visual_source;
+    const chAiModel = document.getElementById('settingChannelAiImageModel');
+    if (chAiModel && channel.ai_image_model) chAiModel.value = channel.ai_image_model;
+    const chAiVideoModel = document.getElementById('settingChannelAiVideoModel');
+    if (chAiVideoModel && channel.ai_video_model) chAiVideoModel.value = channel.ai_video_model;
+    const chStockProvider = document.getElementById('settingChannelStockProvider');
+    if (chStockProvider && channel.stock_provider) chStockProvider.value = channel.stock_provider;
+
+
+    const chKbSwitch = document.getElementById('settingChannelKenBurnsSwitch');
+    if (chKbSwitch) chKbSwitch.checked = (channel.ken_burns_enabled !== 0);
+    const chEcSwitch = document.getElementById('settingChannelEndcardSwitch');
+    if (chEcSwitch) chEcSwitch.checked = (channel.endcard_enabled !== 0);
+
+    // Load Chế độ Xuất Biến Thể & Hook Tâm Lý riêng cho kênh
+    const chVariantMode = document.getElementById('settingChannelVariantMode');
+    const chHookAngle = document.getElementById('settingChannelHookAngle');
+    let currentVarMode = 'inherit';
+    if (channel.generate_variants === 1) {
+        currentVarMode = 'variants';
+    } else if (channel.generate_variants === 0) {
+        currentVarMode = 'single';
+    } else {
+        currentVarMode = 'inherit';
+    }
+    if (chVariantMode) chVariantMode.value = currentVarMode;
+    if (chHookAngle) chHookAngle.value = channel.hook_angle || 'inherit';
+    syncChannelVariantModeUI(currentVarMode);
+
     // Load và gán cài đặt BGM cho kênh
     populateChannelBgmSelect(channel.bgm_folder || '', channel.bgm_volume != null ? channel.bgm_volume : 0.15);
 
@@ -4523,7 +5008,32 @@ async function saveChannelSettings(btn) {
         subtitle_enabled: document.getElementById('settingChannelSubtitleSwitch')?.checked ? 1 : 0,
         subtitle_style: document.getElementById('settingChannelSubtitleStyle')?.value || 'inherit',
         subtitle_position: document.getElementById('settingChannelSubtitlePosition')?.value || 'inherit',
-        max_manual_videos: maxManual
+        max_manual_videos: maxManual,
+        narration_enabled: document.getElementById('settingChannelNarrationSwitch')?.checked ? 1 : 0,
+        narration_language: document.getElementById('settingChannelNarrationLanguage')?.value || 'inherit',
+        voice_gender: document.getElementById('settingChannelVoiceGender')?.value || 'inherit',
+        narration_style: document.getElementById('settingChannelNarrationStyle')?.value || 'inherit',
+        disable_narration_for_shorts: document.getElementById('settingChannelDisableNarrationForShorts')?.checked ? 1 : 0,
+        keep_original_script_for_shorts: document.getElementById('settingChannelKeepOriginalScriptForShorts')?.checked ? 1 : 0,
+        tts_engine: document.querySelector('input[name="channelTtsEngineRadio"]:checked')?.value || 'edge-tts',
+        elevenlabs_voice_id: document.getElementById('settingChannelElevenLabsVoiceId')?.value || '',
+        elevenlabs_model: document.getElementById('settingChannelElevenLabsModel')?.value || 'eleven_multilingual_v2',
+
+        ken_burns_enabled: document.getElementById('settingChannelKenBurnsSwitch')?.checked ? 1 : 0,
+        endcard_enabled: document.getElementById('settingChannelEndcardSwitch')?.checked ? 1 : 0,
+        use_ai_images: document.getElementById('settingChannelUseAiImages')?.checked ? 1 : 0,
+        image_style: document.getElementById('settingChannelImageStyle')?.value || 'cinematic',
+        visual_source: document.getElementById('settingChannelVisualSource')?.value || 'ai',
+        ai_image_model: document.getElementById('settingChannelAiImageModel')?.value || 'flux',
+        ai_video_model: document.getElementById('settingChannelAiVideoModel')?.value || 'fal_ltx',
+        stock_provider: document.getElementById('settingChannelStockProvider')?.value || 'all',
+        hook_angle: document.getElementById('settingChannelHookAngle')?.value || 'inherit',
+        generate_variants: (() => {
+            const vm = document.getElementById('settingChannelVariantMode')?.value || 'inherit';
+            if (vm === 'variants') return 1;
+            if (vm === 'single') return 0;
+            return -1;
+        })()
     };
 
     const origHtml = btn ? btn.innerHTML : '';
@@ -4538,7 +5048,12 @@ async function saveChannelSettings(btn) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        const data = await res.json();
+        let data = {};
+        try {
+            data = await res.json();
+        } catch (_) {
+            data = { detail: 'Lỗi máy chủ (' + res.status + '): Phản hồi không hợp lệ' };
+        }
         if (res.ok && data.status === 'success') {
             showToast('✅ Đã lưu cấu hình kênh thành công!', 'success');
             // Optimistically update cachedSavedChannels in memory so immediate re-opens show the new data
@@ -4817,7 +5332,7 @@ async function loadPipelineStatus() {
 
         const masterDesc = document.getElementById('masterSchedulerDesc');
         if (masterDesc) {
-            masterDesc.innerHTML = `Chu kỳ quét RSS (${interval} phút) &rarr; Tự động tải MP4 &rarr; AI Render 9:16 Beta &rarr; Tự đăng lên TikTok GPM`;
+            masterDesc.innerHTML = `Chu kỳ quét RSS (${interval} phút) &rarr; Tự động tải MP4 &rarr; AI Render 9:16 Beta &rarr; Tự đăng lên tài khoản`;
         }
         const pipeRssMeta = document.getElementById('pipeRssIntervalMeta');
         if (pipeRssMeta) {
@@ -4874,7 +5389,7 @@ async function loadPipelineStatus() {
                         'rendering': '<span class="badge badge-purple"><i class="fa-solid fa-spinner fa-spin"></i> Đang render AI</span>',
                         'rendered': '<span class="badge badge-gold"><i class="fa-solid fa-wand-magic-sparkles"></i> Đã render 9:16</span>',
                         'queued': '<span class="badge badge-warning" style="color:#f59e0b; border:1px solid rgba(245,158,11,0.3); background:rgba(245,158,11,0.1);"><i class="fa-regular fa-clock"></i> Chờ đăng TikTok</span>',
-                        'uploaded': '<span class="badge badge-success"><i class="fa-brands fa-tiktok"></i> Đã đăng TikTok</span>',
+                        'uploaded': '<span class="badge badge-success"><i class="fa-brands fa-tiktok"></i> Đã đăng</span>',
                         'error': '<span class="badge badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi</span>'
                     };
                     const statusHtml = statusBadgeMap[v.status] || `<span class="badge">${escapeHtml(v.status)}</span>`;
@@ -4950,7 +5465,7 @@ function renderKanbanPipeline(videos, uploadTasks) {
                         <i class="fa-solid fa-eye"></i> Xem Thử
                     </button>
                     <button class="btn btn-sm btn-primary" onclick="openUploadModal('${v.id}')" style="flex:1; font-size:11px; padding:4px;">
-                        <i class="fa-solid fa-cloud-arrow-up"></i> Đăng GPM
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Đăng
                     </button>
                 ` : ''}
             </div>
@@ -4965,7 +5480,7 @@ function renderKanbanPipeline(videos, uploadTasks) {
     }
     if (colSc) {
         colSc.innerHTML = scheduled.length ? scheduled.map(t => {
-            const nick = t.tiktok_username ? (t.tiktok_username.startsWith('@') ? t.tiktok_username : '@' + t.tiktok_username) : (t.gpm_profile_name || 'GPM Profile');
+            const nick = t.tiktok_username ? (t.tiktok_username.startsWith('@') ? t.tiktok_username : '@' + t.tiktok_username) : (t.gpm_profile_name || 'Profile');
             const isFailed = t.status === 'failed';
             return `
             <div class="kanban-task-card" style="${isFailed ? 'border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.05);' : ''}">
@@ -5048,7 +5563,10 @@ async function triggerProcessUploads() {
 
 // Master Scheduler Toggle
 async function toggleMasterScheduler(btn) {
-    if (btn) btn.disabled = true;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Lưu...';
+    }
     try {
         const res = await fetch('/api/pipeline/toggle-scheduler', { method: 'POST' });
         const data = await res.json();
@@ -5133,7 +5651,7 @@ async function loadCampaigns() {
             const chCount = c.channel_count || (c.channel_ids_list ? c.channel_ids_list.length : 1);
             const gpmCount = c.gpm_count || (c.gpm_profile_ids_list ? c.gpm_profile_ids_list.length : 1);
             const chTitle = chCount > 1 ? `${chCount} Kênh YouTube Nguồn` : (c.channel_name || 'Kênh nguồn');
-            const gpmTitle = gpmCount > 1 ? `${gpmCount} Dàn Nick TikTok` : (c.gpm_profile_name ? '@' + (c.tiktok_username || c.gpm_profile_name) : 'Nick GPM');
+            const gpmTitle = gpmCount > 1 ? `${gpmCount} Dàn Account` : (c.gpm_profile_name ? '@' + (c.tiktok_username || c.gpm_profile_name) : 'Nick');
 
             const distBadge = c.distribution_mode === 'round_robin'
                 ? '<span class="badge badge-cyan" title="Chống trùng: chia vòng tròn clip"><i class="fa-solid fa-arrows-spin"></i> Round-Robin (Không trùng)</span>'
@@ -5162,7 +5680,13 @@ async function loadCampaigns() {
             }
 
             const warmupBadge = c.warmup_mode ? '<span class="badge badge-gold" title="Chế độ warm-up nuôi nick mới"><i class="fa-solid fa-fire"></i> Warm-up</span>' : '';
+            const uploadBadge = (c.auto_upload === 0)
+                ? '<span class="badge" style="background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3);" title="Chỉ tải và render video về máy, không upload lên TikTok"><i class="fa-solid fa-film"></i> Chỉ Render</span>'
+                : '<span class="badge" style="background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.25);" title="Tự động upload lên dàn Account"><i class="fa-brands fa-tiktok"></i> Auto Upload</span>';
 
+            const narrationBadge = (c.narration_enabled === 1)
+                ? `<span class="badge" style="background:rgba(192, 132, 252, 0.15); color:#c084fc; border:1px solid rgba(192, 132, 252, 0.3); font-size:10.5px; padding:2px 6px;" title="Lồng tiếng AI & phụ đề đồng bộ: ${escapeHtml(c.narration_language || 'Gốc')}, Giọng: ${c.voice_gender === 'female' ? 'Nữ' : 'Nam'}, Style: ${c.narration_style || 'Giật gân'}"><i class="fa-solid fa-microphone-lines"></i> Lồng tiếng AI (${escapeHtml(c.narration_language || 'Gốc')})</span>`
+                : '';
             const bgmBadge = c.bgm_folder
                 ? `<span class="badge badge-info" title="BGM: ${escapeHtml(c.bgm_folder)} (${Math.round((c.bgm_volume || 0.15) * 100)}%)"><i class="fa-solid fa-music"></i> Nhạc: ${escapeHtml(c.bgm_folder)}</span>`
                 : '';
@@ -5188,6 +5712,7 @@ async function loadCampaigns() {
                         <span class="badge ${c.is_active ? 'badge-success' : 'badge-secondary'}">
                             <i class="fa-solid fa-circle-dot"></i> ${c.is_active ? 'Đang Chạy Auto' : 'Tạm Dừng'}
                         </span>
+                        ${uploadBadge}
                         <h4 class="campaign-card-title has-tooltip" title="${escapeHtml(c.name)}" data-tooltip="${escapeHtml(c.name)}">${escapeHtml(c.name)}</h4>
                         ${distBadge}
                         ${freqBadge}
@@ -5203,7 +5728,7 @@ async function loadCampaigns() {
                         <button class="btn btn-sm btn-secondary has-tooltip" onclick="openEditCampaignModal(${c.id})" data-tooltip="Chỉnh sửa cấu hình chiến dịch này">
                             <i class="fa-solid fa-pen-to-square text-cyan"></i> Sửa
                         </button>
-                        <button class="btn btn-sm ${c.is_active ? 'btn-secondary' : 'btn-success'} has-tooltip" onclick="toggleCampaign(${c.id})" data-tooltip="${c.is_active ? 'Tạm dừng quy trình tự động của chiến dịch này' : 'Bật chạy lại chiến dịch này'}">
+                        <button class="btn btn-sm ${c.is_active ? 'btn-secondary' : 'btn-success'} has-tooltip" onclick="toggleCampaign(${c.id}, this)" data-tooltip="${c.is_active ? 'Tạm dừng quy trình tự động của chiến dịch này' : 'Bật chạy lại chiến dịch này'}">
                             <i class="fa-solid ${c.is_active ? 'fa-pause' : 'fa-play'}"></i> ${c.is_active ? 'Tạm Dừng' : 'Kích Hoạt'}
                         </button>
                         <button class="btn btn-sm btn-danger has-tooltip tooltip-left" onclick="deleteCampaign(${c.id})" data-tooltip="Xóa vĩnh viễn chiến dịch này">
@@ -5234,7 +5759,7 @@ async function loadCampaigns() {
                         <div class="node-text">
                             <h5 title="${escapeHtml(c.aspect_ratio === '9:16_blur' ? '9:16 Nền Mờ' : (c.preset_name || 'Chuẩn Beta 9:16'))}">${escapeHtml(c.aspect_ratio === '9:16_blur' ? '9:16 Nền Mờ' : (c.preset_name || 'Chuẩn Beta 9:16'))}</h5>
                             <p title="${c.video_duration || 65}s Beta • Speed x${c.speed_factor} • ${c.flip_horizontal ? 'Lật hình' : 'Gốc'} • ${c.clips_per_video || 3} clips/video • ${c.add_part_label !== 0 ? 'Hiện Part' : 'Ẩn Part'}">${c.video_duration || 65}s Beta • Speed x${c.speed_factor} • ${c.flip_horizontal ? 'Lật hình' : 'Gốc'} • <strong>${c.clips_per_video || 3} clips/video</strong> • <span style="color:${c.add_part_label !== 0 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; font-weight:600;">${c.add_part_label !== 0 ? 'Hiện Part' : 'Ẩn Part'}</span></p>
-                            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:3px;">${subBadge}${bgmBadge}</div>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:3px;">${subBadge}${bgmBadge}${narrationBadge}</div>
                             <span class="pipeline-dir-tag" title="Thư mục lưu video 9:16: ${escapeHtml(rdDir)}"><i class="fa-solid fa-folder-open"></i> ${escapeHtml(rdDir)}</span>
                         </div>
                     </div>
@@ -5259,7 +5784,7 @@ async function loadCampaigns() {
                             <i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> Tạo lúc: ${escapeHtml(c.created_at || '')}
                         </span>
                         <span class="campaign-footer-meta-item" style="color:var(--accent-cyan);">
-                            <i class="fa-solid fa-bolt"></i> Phân phối: ${chCount} kênh &rarr; ${gpmCount} nick GPM (${c.distribution_mode === 'round_robin' ? 'Xoay vòng không trùng clip' : 'Chia đều'})
+                            <i class="fa-solid fa-bolt"></i> Phân phối: ${chCount} kênh &rarr; ${gpmCount} nick (${c.distribution_mode === 'round_robin' ? 'Xoay vòng không trùng clip' : 'Chia đều'})
                         </span>
                     </div>
                     <a href="javascript:void(0)" onclick="openCampaignLogs(${c.id}, '${escapeHtml(c.name)}')" class="campaign-history-link has-tooltip" data-tooltip="Xem nhật ký & tỷ lệ thành công">
@@ -5278,9 +5803,152 @@ async function loadCampaigns() {
 let modalAllSavedChannels = [];
 let modalAllGpmProfiles = [];
 
+// ========================================================
+// 6-TAB CAMPAIGN MODAL LOGIC & HELPERS
+// ========================================================
+function switchModalTab(prefix, tabName) {
+    const modalId = (prefix === 'new') ? 'newCampaignModal' : 'editCampaignModal';
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    modal.querySelectorAll('.modal-tab-nav').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabName) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    modal.querySelectorAll('.modal-tab-pane').forEach(pane => {
+        if (pane.id === `${prefix}CampPane-${tabName}`) {
+            pane.classList.add('active');
+            pane.style.display = 'flex';
+        } else {
+            pane.classList.remove('active');
+            pane.style.display = 'none';
+        }
+    });
+}
+window.switchModalTab = switchModalTab;
+
+function updateCampaignSourceModeUI(prefix, mode) {
+    const p = (prefix === 'new') ? 'campaign' : 'editCampaign';
+    const ytSection = document.getElementById(`${p}YoutubeSourceSection`);
+    const folderSection = document.getElementById(`${p}FolderSourceSection`);
+    const badge = document.getElementById(`${p}SourceModeBadge`);
+
+    if (mode === 'youtube') {
+        if (ytSection) ytSection.style.display = 'block';
+        if (folderSection) folderSection.style.display = 'none';
+        if (badge) {
+            badge.className = 'badge badge-primary';
+            badge.innerHTML = '<i class="fa-brands fa-youtube"></i> Chế độ: Chỉ Quét RSS YouTube';
+        }
+    } else if (mode === 'local_folder') {
+        if (ytSection) ytSection.style.display = 'none';
+        if (folderSection) folderSection.style.display = 'block';
+        if (badge) {
+            badge.className = 'badge badge-info';
+            badge.innerHTML = '<i class="fa-solid fa-folder-open"></i> Chế độ: Chỉ Dùng Kho Video Máy';
+        }
+    } else {
+        if (ytSection) ytSection.style.display = 'block';
+        if (folderSection) folderSection.style.display = 'block';
+        if (badge) {
+            badge.className = 'badge badge-success';
+            badge.innerHTML = '<i class="fa-solid fa-layer-group"></i> Chế độ: Tự Động Kết Hợp (Hybrid)';
+        }
+    }
+}
+window.updateCampaignSourceModeUI = updateCampaignSourceModeUI;
+
+async function populateElevenLabsVoicesToSelect(selectElId, selectedVoiceId = '') {
+    const selectEl = document.getElementById(selectElId);
+    if (!selectEl) return;
+    try {
+        const res = await fetch('/api/v2/voice/elevenlabs/voices');
+        const data = await res.json();
+        if (data.status === 'success' && Array.isArray(data.voices)) {
+            let html = '<option value="">-- Chọn Giọng Đọc ElevenLabs --</option>';
+            data.voices.forEach(v => {
+                const isSel = (v.voice_id === selectedVoiceId) ? 'selected' : '';
+                html += `<option value="${v.voice_id}" ${isSel}>${v.name} (${v.category || 'Cloned'})</option>`;
+            });
+            selectEl.innerHTML = html;
+        }
+    } catch (_) { }
+}
+window.populateElevenLabsVoicesToSelect = populateElevenLabsVoicesToSelect;
+
+function toggleCampaignTtsEngine(prefix, engine) {
+    const p = (prefix === 'new') ? 'campaign' : 'editCampaign';
+    const elWrap = document.getElementById(`${p}ElevenLabsWrap`);
+    if (engine === 'elevenlabs') {
+        if (elWrap) elWrap.style.display = 'block';
+        populateCampaignElevenLabsVoices(prefix);
+    } else {
+        if (elWrap) elWrap.style.display = 'none';
+    }
+}
+window.toggleCampaignTtsEngine = toggleCampaignTtsEngine;
+
+async function populateCampaignElevenLabsVoices(prefix, selectedVoiceId = '') {
+    const p = (prefix === 'new') ? 'campaign' : 'editCampaign';
+    return populateElevenLabsVoicesToSelect(`${p}ElevenLabsVoiceId`, selectedVoiceId);
+}
+window.populateCampaignElevenLabsVoices = populateCampaignElevenLabsVoices;
+
+function toggleChannelTtsEngine(engine) {
+    const elWrap = document.getElementById('settingChannelElevenLabsWrap');
+    if (engine === 'elevenlabs') {
+        if (elWrap) elWrap.style.display = 'block';
+        populateElevenLabsVoicesToSelect('settingChannelElevenLabsVoiceId');
+    } else {
+        if (elWrap) elWrap.style.display = 'none';
+    }
+}
+window.toggleChannelTtsEngine = toggleChannelTtsEngine;
+
+function toggleStudioTtsEngine(engine) {
+    const elWrap = document.getElementById('studioElevenLabsWrap');
+    if (engine === 'elevenlabs') {
+        if (elWrap) elWrap.style.display = 'block';
+        populateElevenLabsVoicesToSelect('studioElevenLabsVoiceId');
+    } else {
+        if (elWrap) elWrap.style.display = 'none';
+    }
+}
+window.toggleStudioTtsEngine = toggleStudioTtsEngine;
+
+function toggleCampaignNarration(prefix, isChecked) {
+    const p = (prefix === 'new') ? 'campaign' : 'editCampaign';
+    const wrap = document.getElementById(`${p}NarrationWrap`);
+    if (wrap) wrap.style.display = isChecked ? 'flex' : 'none';
+}
+window.toggleCampaignNarration = toggleCampaignNarration;
+
+function toggleCampaignAutoEngagement(prefix, isChecked) {
+    const p = (prefix === 'new') ? 'campaign' : 'editCampaign';
+    const wrap = document.getElementById(`${p}EngagementWrap`);
+    if (wrap) wrap.style.display = isChecked ? 'flex' : 'none';
+}
+window.toggleCampaignAutoEngagement = toggleCampaignAutoEngagement;
+
 async function openNewCampaignModal() {
     const modal = document.getElementById('newCampaignModal');
     if (!modal) return;
+    switchModalTab('new', 'source');
+
+    // Reset Source Mode radio to hybrid
+    const hybridRadio = document.querySelector('input[name="campaignSourceModeRadio"][value="hybrid"]');
+    if (hybridRadio) hybridRadio.checked = true;
+    updateCampaignSourceModeUI('new', 'hybrid');
+
+    // Reset local folder input & stats
+    const localFolderInp = document.getElementById('campaignLocalFolderInput');
+    if (localFolderInp) localFolderInp.value = '';
+    const localStats = document.getElementById('campaignLocalFolderStats');
+    if (localStats) localStats.innerHTML = '';
 
     // Reset inputs
     const nameInput = document.getElementById('campaignNameInput');
@@ -5300,6 +5968,22 @@ async function openNewCampaignModal() {
     if (maxDurInput) maxDurInput.value = '';
     const newCampNoSubShorts = document.getElementById('campaignDisableSubtitleForShorts');
     if (newCampNoSubShorts) newCampNoSubShorts.checked = true;  // default checked when subtitle is on
+    const newCampAiStory = document.getElementById('campaignUseAiImages');
+    if (newCampAiStory) newCampAiStory.checked = false;
+    toggleAiStoryCard('campaign', false);
+    const campVisSrc = document.getElementById('campaignVisualSource');
+    if (campVisSrc) campVisSrc.value = 'ai';
+    const campStkWrap = document.getElementById('campaignStockWrap');
+    if (campStkWrap) campStkWrap.style.display = 'none';
+
+    // Reset Narration & TTS
+    const newCampNarr = document.getElementById('campaignNarrationSwitch');
+    if (newCampNarr) newCampNarr.checked = false;
+    toggleCampaignNarration('new', false);
+    const edgeRadio = document.querySelector('input[name="campaignTtsEngineRadio"][value="edge-tts"]');
+    if (edgeRadio) edgeRadio.checked = true;
+    toggleCampaignTtsEngine('new', 'edge-tts');
+    populateCampaignElevenLabsVoices('new');
     // Reset subtitle switch & wrapper visibility
     const newSubSwitch = document.getElementById('campaignSubtitleSwitch');
     if (newSubSwitch) newSubSwitch.checked = true;
@@ -5310,11 +5994,29 @@ async function openNewCampaignModal() {
     if (clipsInput) clipsInput.value = '3';
     handleCampaignClipsInputChange('new', 3);
 
+    // Reset Golden 30-Minute Engagement options
+    const autoUpSwitch = document.getElementById('campaignAutoUploadSwitch');
+    if (autoUpSwitch) {
+        autoUpSwitch.checked = true;
+        toggleCampaignAutoUpload('new', true);
+    }
+    const newAutoEng = document.getElementById('campaignAutoEngagementSwitch');
+    if (newAutoEng) newAutoEng.checked = false;
+    toggleCampaignEngagementOptions('new', false);
+    const newAutoPin = document.getElementById('campaignAutoPinCommentSwitch');
+    if (newAutoPin) newAutoPin.checked = true;
+    const newPinDelay = document.getElementById('campaignPinCommentDelaySelect');
+    if (newPinDelay) newPinDelay.value = '3';
+    const newAutoRep = document.getElementById('campaignAutoReplyCommentsSwitch');
+    if (newAutoRep) newAutoRep.checked = true;
+    const newRepDelay = document.getElementById('campaignReplyCommentsDelaySelect');
+    if (newRepDelay) newRepDelay.value = '20';
+
     const chListEl = document.getElementById('campaignChannelsList');
     const gpmListEl = document.getElementById('campaignGpmList');
 
     if (chListEl) chListEl.innerHTML = '<div class="text-muted text-center py-2"><i class="fa-solid fa-spinner fa-spin"></i> Đang nạp danh sách kênh...</div>';
-    if (gpmListEl) gpmListEl.innerHTML = '<div class="text-muted text-center py-2"><i class="fa-solid fa-spinner fa-spin"></i> Đang nạp profile GPMLogin...</div>';
+    if (gpmListEl) gpmListEl.innerHTML = '<div class="text-muted text-center py-2"><i class="fa-solid fa-spinner fa-spin"></i> Đang nạp profile...</div>';
 
     modal.classList.add('show');
 
@@ -5333,7 +6035,7 @@ async function openNewCampaignModal() {
         modalAllGpmProfiles = await res.json();
         renderCampaignGpmCheckboxes(modalAllGpmProfiles);
     } catch (e) {
-        if (gpmListEl) gpmListEl.innerHTML = '<div class="text-danger text-center py-2">Lỗi nạp danh sách profile GPMLogin</div>';
+        if (gpmListEl) gpmListEl.innerHTML = '<div class="text-danger text-center py-2">Lỗi nạp danh sách profile</div>';
     }
 
     // 3. Restore persisted folder defaults from SQLite settings
@@ -5393,22 +6095,38 @@ function renderCampaignGpmCheckboxes(profiles) {
     if (!profiles.length) {
         gpmListEl.innerHTML = `
             <div class="text-muted text-center py-3" style="font-size:12px;">
-                Chưa có profile GPMLogin nào. Hãy bấm <strong>"Đồng Bộ GPM"</strong> ở tab "Dàn Nick TikTok"!
+                Chưa có profile GPMLogin nào. Hãy bấm <strong>"Đồng Bộ"</strong> ở tab "Dàn Account"!
             </div>
         `;
         updateSelectedGpmCount();
         return;
     }
 
-    gpmListEl.innerHTML = profiles.map((p, idx) => `
+    gpmListEl.innerHTML = profiles.map((p, idx) => {
+        const plat = (p.platform || 'tiktok').toLowerCase();
+        let platIcon = '<i class="fa-brands fa-tiktok" style="color:#ff0050;"></i>';
+        let platColor = 'var(--accent-gold)';
+        let displayName = `@${escapeHtml(p.tiktok_username || 'Chưa gắn')}`;
+        if (plat === 'youtube') {
+            platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444;"></i>';
+            platColor = '#ef4444';
+            displayName = escapeHtml(p.channel_handle || p.tiktok_username || 'YouTube');
+        } else if (plat === 'facebook') {
+            platIcon = '<i class="fa-brands fa-facebook" style="color:#1877f2;"></i>';
+            platColor = '#60a5fa';
+            displayName = escapeHtml(p.tiktok_nickname || `FB: ${p.fb_page_id || p.tiktok_username || ''}`);
+        }
+        return `
         <label class="multi-select-item" style="display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03);">
-            <input type="checkbox" class="campaign-gpm-check" value="${p.id}" ${idx < 3 ? 'checked' : ''} onchange="updateSelectedGpmCount()">
-            <i class="fa-solid fa-robot" style="color:var(--accent-gold); font-size:14px;"></i>
+            <input type="checkbox" class="campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-platform="${plat}" ${idx < 3 ? 'checked' : ''} onchange="updateSelectedGpmCount(); loadChannelPicker('${escapeHtml(p.gpm_id)}', '${plat}', this)">
+            ${platIcon}
             <span style="font-weight:600; color:#fff; flex:1;">${escapeHtml(p.name)}</span>
-            <span style="font-size:11px; color:var(--accent-gold);">@${escapeHtml(p.tiktok_username || 'Chưa gắn')}</span>
+            <span style="font-size:11px; color:${platColor};">${displayName}</span>
             <span class="badge ${p.eligible_10k ? 'badge-success' : 'badge-secondary'}" style="font-size:10px;">${(p.followers_count || 0).toLocaleString()} flw</span>
         </label>
-    `).join('');
+        <div id="channel-picker-${escapeHtml(p.gpm_id)}" class="channel-picker-container" style="display:none; margin-left:32px; padding:4px 8px; font-size:11.5px;"></div>
+        `;
+    }).join('');
 
     updateSelectedGpmCount();
 }
@@ -5417,6 +6135,7 @@ function updateSelectedChannelsCount() {
     const checked = document.querySelectorAll('.campaign-ch-check:checked');
     const badge = document.getElementById('campaignSelectedChannelsCount');
     if (badge) badge.textContent = `Đã chọn: ${checked.length} kênh`;
+    updateSourceModeBadge('new');
 }
 
 function updateSelectedGpmCount() {
@@ -5424,6 +6143,89 @@ function updateSelectedGpmCount() {
     const badge = document.getElementById('campaignSelectedGpmCount');
     if (badge) badge.textContent = `Đã chọn: ${checked.length} nick`;
 }
+
+// Channel Picker — hiển thị dropdown chọn kênh YouTube / trang Facebook cho mỗi profile
+async function loadChannelPicker(gpmId, platform, checkbox) {
+    const container = document.getElementById(`channel-picker-${gpmId}`);
+    if (!container) return;
+
+    if (!checkbox.checked) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    if (platform !== 'youtube' && platform !== 'facebook') {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    container.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách kênh...';
+
+    try {
+        const res = await fetch(`/api/gpm/profiles/${gpmId}/channels`);
+        const channels = await res.json();
+
+        if (!channels.length) {
+            // Chưa có dữ liệu — thử sync trước
+            container.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang quét kênh...';
+            const syncRes = await fetch(`/api/gpm/profiles/${gpmId}/channels/sync`, { method: 'POST' });
+            const syncData = await syncRes.json();
+            const resAfter = await fetch(`/api/gpm/profiles/${gpmId}/channels`);
+            const channelsAfter = await resAfter.json();
+
+            if (!channelsAfter.length) {
+                container.innerHTML = `<span class="text-muted" style="font-size:11px;"><i class="fa-solid fa-info-circle"></i> Chỉ có 1 kênh (mặc định)</span>`;
+                return;
+            }
+            renderChannelDropdown(container, channelsAfter, gpmId, platform);
+        } else {
+            renderChannelDropdown(container, channels, gpmId, platform);
+        }
+    } catch (err) {
+        container.innerHTML = `<span class="text-muted" style="font-size:11px;"><i class="fa-solid fa-exclamation-triangle"></i> Lỗi tải kênh</span>`;
+    }
+}
+
+function renderChannelDropdown(container, channels, gpmId, platform) {
+    if (channels.length <= 1) {
+        const ch = channels[0];
+        container.innerHTML = `<span style="font-size:11px; color:var(--text-secondary);"><i class="fa-solid fa-check-circle" style="color:#34d399;"></i> Kênh: <strong>${escapeHtml(ch.channel_name)}</strong></span>`;
+        return;
+    }
+
+    const icon = platform === 'youtube' ? 'fa-brands fa-youtube' : 'fa-brands fa-facebook';
+    const color = platform === 'youtube' ? '#ef4444' : '#1877f2';
+    const label = platform === 'youtube' ? 'Chọn kênh YouTube:' : 'Chọn trang Facebook:';
+
+    container.innerHTML = `
+        <div style="display:flex; align-items:center; gap:6px; padding:4px 0;">
+            <i class="${icon}" style="color:${color}; font-size:12px;"></i>
+            <span style="font-size:11px; color:var(--text-secondary);">${label}</span>
+            <select class="custom-select channel-select-for-profile" data-gpm-id="${escapeHtml(gpmId)}" data-platform="${platform}" style="font-size:11px; padding:2px 6px; max-width:220px;" onchange="handleChannelSelectionChange('${escapeHtml(gpmId)}', this.value)">
+                ${channels.map(ch => `
+                    <option value="${escapeHtml(ch.channel_id)}" ${ch.is_default ? 'selected' : ''}>
+                        ${escapeHtml(ch.channel_name)} ${ch.is_default ? '(mặc định)' : ''}
+                    </option>
+                `).join('')}
+            </select>
+        </div>
+    `;
+}
+
+async function handleChannelSelectionChange(gpmId, channelId) {
+    try {
+        const res = await fetch(`/api/gpm/profiles/${gpmId}/channels/${encodeURIComponent(channelId)}/set-default`, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast('✅ Đã chọn kênh upload mặc định cho profile!');
+        }
+    } catch (e) {
+        console.warn('Lỗi lưu kênh mặc định:', e);
+    }
+}
+
 
 function selectAllCampaignChannels(select) {
     const boxes = document.querySelectorAll('.campaign-ch-check');
@@ -5433,6 +6235,7 @@ function selectAllCampaignChannels(select) {
         }
     });
     updateSelectedChannelsCount();
+    updateSourceModeBadge('new');
 }
 
 function selectAllCampaignGpm(select) {
@@ -5485,6 +6288,9 @@ async function browseFolderForInput(inputId) {
         if (data.status === 'success' && data.path) {
             input.value = data.path;
             showToast(`Đã chọn: ${data.path}`);
+            // Update source mode badge if this is a campaign folder input
+            if (inputId === 'campaignLocalFolderInput') updateSourceModeBadge('new');
+            if (inputId === 'editCampaignLocalFolderInput') updateSourceModeBadge('edit');
         } else if (data.status === 'cancelled') {
             // User cancelled folder picker
         } else if (data.status === 'error') {
@@ -5514,46 +6320,78 @@ async function handleCreateCampaignSubmit(e) {
     const campNameInput = document.getElementById('campaignNameInput');
     const campName = campNameInput ? campNameInput.value.trim() : '';
 
-    // 1. Gather Selected Channels
+    // 1. Source: Select mode & validate
+    const localFolder = (document.getElementById('campaignLocalFolderInput')?.value || '').trim();
     const chBoxes = document.querySelectorAll('.campaign-ch-check:checked');
     const selectedChannelIds = Array.from(chBoxes).map(b => b.value);
-    if (selectedChannelIds.length === 0) {
-        showToast('⚠️ Vui lòng chọn ít nhất 1 kênh YouTube nguồn (hoặc chọn nhiều kênh 1, 2, 3...)!', 'warning');
+    const sourceModeRadio = document.querySelector('input[name="campaignSourceModeRadio"]:checked');
+    const sourceMode = sourceModeRadio ? sourceModeRadio.value : 'hybrid';
+
+    const hasChannels = selectedChannelIds.length > 0;
+    const hasFolder = localFolder.length > 0;
+
+    if (sourceMode === 'youtube' && !hasChannels) {
+        showToast('⚠️ Chế độ YouTube: Vui lòng chọn ít nhất 1 Kênh YouTube nguồn!', 'warning');
+        switchModalTab('new', 'source');
         return;
     }
+    if (sourceMode === 'local_folder' && !hasFolder) {
+        showToast('⚠️ Chế độ Kho Video Máy: Vui lòng nhập đường dẫn thư mục video trên máy tính!', 'warning');
+        switchModalTab('new', 'source');
+        return;
+    }
+    if (sourceMode === 'hybrid' && !hasChannels && !hasFolder) {
+        showToast('⚠️ Chế độ Kết Hợp: Vui lòng chọn Kênh YouTube nguồn HOẶC nhập Thư mục video trên máy!', 'warning');
+        switchModalTab('new', 'source');
+        return;
+    }
+
+    // Target Platforms
+    const targetPlatforms = [];
+    if (document.getElementById('newCampTargetTikTok')?.checked) targetPlatforms.push('tiktok');
+    if (document.getElementById('newCampTargetYouTube')?.checked) targetPlatforms.push('youtube');
+    if (document.getElementById('newCampTargetFacebook')?.checked) targetPlatforms.push('facebook');
+    if (targetPlatforms.length === 0) targetPlatforms.push('tiktok');
+
+    const autoUpload = document.getElementById('campaignAutoUploadSwitch')?.checked ? 1 : 0;
 
     // 2. Gather Selected GPM Profiles
     const gpmBoxes = document.querySelectorAll('.campaign-gpm-check:checked');
     const selectedGpmIds = Array.from(gpmBoxes).map(b => parseInt(b.value, 10)).filter(id => !isNaN(id));
-    if (selectedGpmIds.length === 0) {
-        showToast('⚠️ Vui lòng chọn ít nhất 1 Profile GPMLogin nhận video (hoặc chọn nhóm nick a, b, c...)!', 'warning');
+    if (autoUpload && selectedGpmIds.length === 0) {
+        showToast('⚠️ Vui lòng chọn ít nhất 1 Profile nhận video (hoặc bỏ chọn "Tự động tải lên TikTok" nếu chỉ muốn render)!', 'warning');
         return;
     }
 
-    // 1. Validate daily_limit
-    const dailyLimitInput = document.getElementById('campaignDailyLimitInput');
-    const rawDailyLimit = parseInt(dailyLimitInput?.value, 10);
-    if (isNaN(rawDailyLimit) || rawDailyLimit < 1) {
-        markInputError('campaignDailyLimitInput', 'Giới hạn video/ngày trên mỗi nick phải là số nguyên >= 1!');
-        return;
-    }
-    const safeDailyLimit = Math.max(1, rawDailyLimit);
+    let safeDailyLimit = 3;
+    let cleanScheduleStr = "11:30, 18:00, 20:30";
 
-    // 2. Validate post_schedule
-    const scheduleInput = document.getElementById('campaignScheduleInput');
-    const scheduleRaw = (scheduleInput?.value || '').trim();
-    const rawSlots = scheduleRaw.split(',').map(s => s.trim()).filter(Boolean);
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    const invalidSlot = rawSlots.find(s => !timeRegex.test(s));
-    if (!rawSlots.length || invalidSlot) {
-        markInputError('campaignScheduleInput', `Khung giờ đăng không hợp lệ: "${invalidSlot || 'trống'}". Định dạng chuẩn: HH:MM`);
-        return;
+    if (autoUpload) {
+        // 1. Validate daily_limit
+        const dailyLimitInput = document.getElementById('campaignDailyLimitInput');
+        const rawDailyLimit = parseInt(dailyLimitInput?.value, 10);
+        if (isNaN(rawDailyLimit) || rawDailyLimit < 1) {
+            markInputError('campaignDailyLimitInput', 'Giới hạn video/ngày trên mỗi nick phải là số nguyên >= 1!');
+            return;
+        }
+        safeDailyLimit = Math.max(1, rawDailyLimit);
+
+        // 2. Validate post_schedule
+        const scheduleInput = document.getElementById('campaignScheduleInput');
+        const scheduleRaw = (scheduleInput?.value || '').trim();
+        const rawSlots = scheduleRaw.split(',').map(s => s.trim()).filter(Boolean);
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        const invalidSlot = rawSlots.find(s => !timeRegex.test(s));
+        if (!rawSlots.length || invalidSlot) {
+            markInputError('campaignScheduleInput', `Khung giờ đăng không hợp lệ: "${invalidSlot || 'trống'}". Định dạng chuẩn: HH:MM`);
+            return;
+        }
+        const safeSlots = Array.from(new Set(rawSlots.map(s => {
+            const [h, m] = s.split(':');
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        })));
+        cleanScheduleStr = safeSlots.join(', ');
     }
-    const safeSlots = Array.from(new Set(rawSlots.map(s => {
-        const [h, m] = s.split(':');
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    })));
-    const cleanScheduleStr = safeSlots.join(', ');
 
     // Gather frequency & advanced options
     const freq = document.getElementById('campaignFrequencySelect')?.value || 'daily';
@@ -5627,6 +6465,8 @@ async function handleCreateCampaignSubmit(e) {
         include_longform: incLong,
         ai_model: document.getElementById('campaignAiModel')?.value || 'default',
         ai_provider: (document.getElementById('campaignAiModel')?.value || '').startsWith('gemini') ? 'gemini' : ((document.getElementById('campaignAiModel')?.value || '').startsWith('gpt') ? 'openai' : 'deepseek'),
+        hook_angle: document.getElementById('campaignHookAngle')?.value || 'auto',
+        generate_variants: document.getElementById('campaignGenerateVariants')?.checked ? 1 : 0,
         subtitle_enabled: document.getElementById('campaignSubtitleSwitch')?.checked ? 1 : 0,
         disable_subtitle_for_shorts: document.getElementById('campaignDisableSubtitleForShorts')?.checked ? 1 : 0,
         subtitle_style: document.getElementById('campaignSubtitleStyle')?.value || 'karaoke_yellow',
@@ -5645,7 +6485,33 @@ async function handleCreateCampaignSubmit(e) {
         warmup_mode: warmup,
         bgm_folder: document.getElementById('campaignBgmSwitch')?.checked ? (document.getElementById('campaignBgmFolder')?.value || '') : '',
         bgm_volume: bgmVol,
-        is_active: 1
+        is_active: 1,
+        auto_engagement_enabled: document.getElementById('campaignAutoEngagementSwitch')?.checked ? 1 : 0,
+        auto_pin_comment: document.getElementById('campaignAutoPinCommentSwitch')?.checked ? 1 : 0,
+        pin_comment_delay_mins: parseInt(document.getElementById('campaignPinCommentDelaySelect')?.value, 10) || 3,
+        auto_reply_comments: document.getElementById('campaignAutoReplyCommentsSwitch')?.checked ? 1 : 0,
+        reply_comments_delay_mins: parseInt(document.getElementById('campaignReplyCommentsDelaySelect')?.value, 10) || 20,
+        narration_enabled: document.getElementById('campaignNarrationSwitch')?.checked ? 1 : 0,
+        narration_language: document.getElementById('campaignNarrationLanguage')?.value || 'original',
+        voice_gender: document.getElementById('campaignVoiceGender')?.value || 'male',
+        narration_style: document.getElementById('campaignNarrationStyle')?.value || 'giat_gan',
+        disable_narration_for_shorts: document.getElementById('campaignDisableNarrationForShorts')?.checked ? 1 : 0,
+
+        ken_burns_enabled: document.getElementById('campaignKenBurnsSwitch')?.checked ? 1 : 0,
+        endcard_enabled: document.getElementById('campaignEndcardSwitch')?.checked ? 1 : 0,
+        use_ai_images: document.getElementById('campaignUseAiImages')?.checked ? 1 : 0,
+        image_style: document.getElementById('campaignImageStyle')?.value || 'cinematic',
+        visual_source: document.getElementById('campaignVisualSource')?.value || 'ai',
+        ai_image_model: document.getElementById('campaignAiImageModel')?.value || 'flux',
+        ai_video_model: document.getElementById('campaignAiVideoModel')?.value || 'fal_ltx',
+        stock_provider: document.getElementById('campaignStockProvider')?.value || 'all',
+        auto_upload: autoUpload,
+        source_mode: sourceMode,
+        local_folder_path: localFolder,
+        target_platforms: targetPlatforms.join(','),
+        tts_engine: document.querySelector('input[name="campaignTtsEngineRadio"]:checked')?.value || 'edge-tts',
+        elevenlabs_voice_id: document.getElementById('campaignElevenLabsVoiceId')?.value || null,
+        elevenlabs_model: document.getElementById('campaignElevenLabsModel')?.value || 'eleven_multilingual_v2'
     };
 
     try {
@@ -5654,7 +6520,12 @@ async function handleCreateCampaignSubmit(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        const data = await res.json();
+        let data = {};
+        try {
+            data = await res.json();
+        } catch (_) {
+            data = { detail: 'Lỗi máy chủ (' + res.status + '): Phản hồi không hợp lệ' };
+        }
         if (res.ok && data.status === 'success') {
             showToast(`✅ Đã tạo chiến dịch tự động thành công! (${selectedChannelIds.length} kênh &rarr; ${selectedGpmIds.length} nick TikTok)`, 'success');
             closeNewCampaignModal();
@@ -5673,16 +6544,24 @@ async function handleCreateCampaignSubmit(e) {
     }
 }
 
-async function toggleCampaign(id) {
+async function toggleCampaign(id, btn) {
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Lưu...';
+    }
     try {
         const res = await fetch(`/api/campaigns/${id}/toggle`, { method: 'POST' });
         const data = await res.json();
         if (data.status === 'success') {
             showToast(data.is_active ? '✅ Đã kích hoạt chiến dịch!' : '⏸️ Đã tạm dừng chiến dịch.');
-            loadCampaigns();
+            await loadCampaigns();
+        } else {
+            showToast('Lỗi thay đổi trạng thái chiến dịch', true);
+            if (btn) btn.disabled = false;
         }
     } catch (err) {
         showToast('Lỗi: ' + err.message, true);
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -5719,6 +6598,7 @@ let editCampaignOriginalData = null;
 async function openEditCampaignModal(id) {
     const modal = document.getElementById('editCampaignModal');
     if (!modal) return;
+    switchModalTab('edit', 'source');
 
     modal.classList.add('show');
     modal.classList.add('active');
@@ -5735,6 +6615,29 @@ async function openEditCampaignModal(id) {
 
         document.getElementById('editCampaignId').value = c.id;
         document.getElementById('editCampaignNameInput').value = c.name || '';
+
+        // Restore Source Mode & Local Folder
+        const sm = c.source_mode || 'hybrid';
+        const smRadio = document.querySelector(`input[name="editCampaignSourceModeRadio"][value="${sm}"]`);
+        if (smRadio) smRadio.checked = true;
+        updateCampaignSourceModeUI('edit', sm);
+
+        const localInp = document.getElementById('editCampaignLocalFolderInput');
+        if (localInp) localInp.value = c.local_folder_path || '';
+        const localStats = document.getElementById('editCampaignLocalFolderStats');
+        if (localStats) localStats.innerHTML = '';
+        const plats = (c.target_platforms || 'tiktok').split(',');
+        const tCheck = document.getElementById('editCampTargetTikTok');
+        const yCheck = document.getElementById('editCampTargetYouTube');
+        const fCheck = document.getElementById('editCampTargetFacebook');
+        if (tCheck) tCheck.checked = plats.includes('tiktok');
+        if (yCheck) yCheck.checked = plats.includes('youtube');
+        if (fCheck) fCheck.checked = plats.includes('facebook');
+        const editAutoUploadSwitch = document.getElementById('editCampaignAutoUploadSwitch');
+        if (editAutoUploadSwitch) {
+            editAutoUploadSwitch.checked = (c.auto_upload !== 0);
+            toggleCampaignAutoUpload('edit', editAutoUploadSwitch.checked);
+        }
 
         // Channels & Profiles lists
         if (!modalAllSavedChannels || !modalAllSavedChannels.length) {
@@ -5810,6 +6713,59 @@ async function openEditCampaignModal(id) {
         const subPos = document.getElementById('editCampaignSubtitlePosition');
         if (subPos) subPos.value = c.subtitle_position || 'center';
 
+        // Load cài đặt Lồng tiếng AI & ElevenLabs cho Edit Campaign
+        const editNarrSwitch = document.getElementById('editCampaignNarrationSwitch');
+        const editNarrWrap = document.getElementById('editCampaignNarrationWrap');
+        const editNarrLang = document.getElementById('editCampaignNarrationLanguage');
+        const editNarrGender = document.getElementById('editCampaignVoiceGender');
+        const editNarrStyle = document.getElementById('editCampaignNarrationStyle');
+        if (editNarrSwitch) {
+            editNarrSwitch.checked = (c.narration_enabled === 1);
+            toggleCampaignNarration('edit', editNarrSwitch.checked);
+        }
+
+        const editTtsEngine = c.tts_engine || 'edge-tts';
+        const editTtsRadio = document.querySelector(`input[name="editCampaignTtsEngineRadio"][value="${editTtsEngine}"]`);
+        if (editTtsRadio) editTtsRadio.checked = true;
+        toggleCampaignTtsEngine('edit', editTtsEngine);
+        populateCampaignElevenLabsVoices('edit', c.elevenlabs_voice_id || '');
+        const editElModel = document.getElementById('editCampaignElevenLabsModel');
+        if (editElModel && c.elevenlabs_model) editElModel.value = c.elevenlabs_model;
+        if (editNarrLang) editNarrLang.value = c.narration_language || 'original';
+        updateVoiceDropdownOptions('editCampaignVoiceGender', c.narration_language || 'original', c.voice_gender || 'male', false);
+        if (editNarrStyle) editNarrStyle.value = c.narration_style || 'giat_gan';
+        const editNoNarrShorts = document.getElementById('editCampaignDisableNarrationForShorts');
+        if (editNoNarrShorts) editNoNarrShorts.checked = (c.disable_narration_for_shorts !== 0);
+
+        const editMpImgSwitch = document.getElementById('editCampaignUseAiImages');
+        const editMpImgWrap = document.getElementById('editCampaignImageStyleWrap');
+        const editMpImgStyle = document.getElementById('editCampaignImageStyle');
+        if (editMpImgSwitch) {
+            editMpImgSwitch.checked = (c.use_ai_images === 1);
+            toggleAiStoryCard('editCampaign', editMpImgSwitch.checked);
+        }
+        if (editMpImgStyle && c.image_style) editMpImgStyle.value = c.image_style;
+        const editVisualSource = document.getElementById('editCampaignVisualSource');
+        if (editVisualSource && c.visual_source) {
+            editVisualSource.value = c.visual_source;
+            const editStockWrap = document.getElementById('editCampaignStockWrap');
+            if (editStockWrap) {
+                editStockWrap.style.display = (c.visual_source === 'stock' || c.visual_source === 'mixed') ? 'block' : 'none';
+            }
+        }
+        const editAiModel = document.getElementById('editCampaignAiImageModel');
+        if (editAiModel && c.ai_image_model) editAiModel.value = c.ai_image_model;
+        const editAiVideoModel = document.getElementById('editCampaignAiVideoModel');
+        if (editAiVideoModel && c.ai_video_model) editAiVideoModel.value = c.ai_video_model;
+        const editStockProvider = document.getElementById('editCampaignStockProvider');
+        if (editStockProvider && c.stock_provider) editStockProvider.value = c.stock_provider;
+
+
+        const editKbSwitch = document.getElementById('editCampaignKenBurnsSwitch');
+        if (editKbSwitch) editKbSwitch.checked = (c.ken_burns_enabled !== 0);
+        const editEcSwitch = document.getElementById('editCampaignEndcardSwitch');
+        if (editEcSwitch) editEcSwitch.checked = (c.endcard_enabled !== 0);
+
         const flipSwitch = document.getElementById('editCampaignFlipSwitch');
         if (flipSwitch) flipSwitch.checked = c.flip_horizontal === 1;
 
@@ -5884,6 +6840,25 @@ async function openEditCampaignModal(id) {
             if (bgmVolVal) bgmVolVal.textContent = Math.round(bgmVolInput.value * 100) + '%';
         }
 
+        // Golden 30-Minute Engagement restore
+        const autoEngSwitch = document.getElementById('editCampaignAutoEngagementSwitch');
+        const isEngOn = c.auto_engagement_enabled === 1;
+        if (autoEngSwitch) autoEngSwitch.checked = isEngOn;
+        toggleCampaignAutoEngagement('edit', isEngOn);
+        toggleCampaignEngagementOptions('edit', isEngOn);
+
+        const autoPinSwitch = document.getElementById('editCampaignAutoPinCommentSwitch');
+        if (autoPinSwitch) autoPinSwitch.checked = (c.auto_pin_comment !== 0);
+
+        const pinDelaySel = document.getElementById('editCampaignPinCommentDelaySelect');
+        if (pinDelaySel) pinDelaySel.value = String(c.pin_comment_delay_mins || 3);
+
+        const autoRepSwitch = document.getElementById('editCampaignAutoReplyCommentsSwitch');
+        if (autoRepSwitch) autoRepSwitch.checked = (c.auto_reply_comments !== 0);
+
+        const repDelaySel = document.getElementById('editCampaignReplyCommentsDelaySelect');
+        if (repDelaySel) repDelaySel.value = String(c.reply_comments_delay_mins || 20);
+
     } catch (err) {
         showToast('Lỗi nạp thông tin chiến dịch: ' + err.message, true);
         closeEditCampaignModal();
@@ -5933,7 +6908,7 @@ function renderEditCampaignGpmCheckboxes(profiles, selectedIds = []) {
     if (!gpmListEl) return;
 
     if (!profiles || !profiles.length) {
-        gpmListEl.innerHTML = '<div class="text-muted text-center py-3" style="font-size:12px;">Chưa có profile GPMLogin nào.</div>';
+        gpmListEl.innerHTML = '<div class="text-muted text-center py-3" style="font-size:12px;">Chưa có profile nào.</div>';
         updateEditSelectedGpmCount();
         return;
     }
@@ -5941,14 +6916,28 @@ function renderEditCampaignGpmCheckboxes(profiles, selectedIds = []) {
     const selSet = new Set((selectedIds || []).map(String));
     gpmListEl.innerHTML = profiles.map(p => {
         const isChecked = selSet.has(String(p.id));
+        const plat = (p.platform || 'tiktok').toLowerCase();
+        let platIcon = '<i class="fa-brands fa-tiktok" style="color:#ff0050; font-size:14px;"></i>';
+        let platColor = 'var(--accent-gold)';
+        let displayName = `@${escapeHtml(p.tiktok_username || 'Chưa gắn')}`;
+        if (plat === 'youtube') {
+            platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444; font-size:14px;"></i>';
+            platColor = '#ef4444';
+            displayName = escapeHtml(p.channel_handle || p.tiktok_username || 'YouTube');
+        } else if (plat === 'facebook') {
+            platIcon = '<i class="fa-brands fa-facebook" style="color:#1877f2; font-size:14px;"></i>';
+            platColor = '#60a5fa';
+            displayName = escapeHtml(p.tiktok_nickname || `FB: ${p.fb_page_id || p.tiktok_username || ''}`);
+        }
         return `
             <label class="multi-select-item" style="display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03);">
-                <input type="checkbox" class="edit-campaign-gpm-check" value="${p.id}" ${isChecked ? 'checked' : ''} onchange="updateEditSelectedGpmCount()">
-                <i class="fa-solid fa-robot" style="color:var(--accent-gold); font-size:14px;"></i>
+                <input type="checkbox" class="edit-campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-platform="${plat}" ${isChecked ? 'checked' : ''} onchange="updateEditSelectedGpmCount(); loadChannelPicker('${escapeHtml(p.gpm_id)}', '${plat}', this)">
+                ${platIcon}
                 <span style="font-weight:600; color:#fff; flex:1;">${escapeHtml(p.name)}</span>
-                <span style="font-size:11px; color:var(--accent-gold);">@${escapeHtml(p.tiktok_username || 'Chưa gắn')}</span>
+                <span style="font-size:11px; color:${platColor};">${displayName}</span>
                 <span class="badge ${p.eligible_10k ? 'badge-success' : 'badge-secondary'}" style="font-size:10px;">${(p.followers_count || 0).toLocaleString()} flw</span>
             </label>
+            <div id="channel-picker-${escapeHtml(p.gpm_id)}" class="channel-picker-container" style="display:none; margin-left:32px; padding:4px 8px; font-size:11.5px;"></div>
         `;
     }).join('');
 
@@ -5959,6 +6948,7 @@ function updateEditSelectedChannelsCount() {
     const checked = document.querySelectorAll('.edit-campaign-ch-check:checked');
     const badge = document.getElementById('editCampaignSelectedChannelsCount');
     if (badge) badge.textContent = `Đã chọn: ${checked.length} kênh`;
+    updateSourceModeBadge('edit');
 }
 
 function updateEditSelectedGpmCount() {
@@ -5975,6 +6965,7 @@ function selectAllEditCampaignChannels(select) {
         }
     });
     updateEditSelectedChannelsCount();
+    updateSourceModeBadge('edit');
 }
 
 function selectAllEditCampaignGpm(select) {
@@ -6028,42 +7019,67 @@ async function handleEditCampaignSubmit(e) {
 
     const chBoxes = document.querySelectorAll('.edit-campaign-ch-check:checked');
     const selectedChannelIds = Array.from(chBoxes).map(b => b.value);
-    if (selectedChannelIds.length === 0) {
-        showToast('⚠️ Vui lòng chọn ít nhất 1 kênh YouTube nguồn!', 'warning');
+    const editLocalFolder = (document.getElementById('editCampaignLocalFolderInput')?.value || '').trim();
+    const editSourceModeRadio = document.querySelector('input[name="editCampaignSourceModeRadio"]:checked');
+    const editSourceMode = editSourceModeRadio ? editSourceModeRadio.value : 'hybrid';
+
+    const editHasChannels = selectedChannelIds.length > 0;
+    const editHasFolder = editLocalFolder.length > 0;
+
+    if (editSourceMode === 'youtube' && !editHasChannels) {
+        showToast('⚠️ Chế độ YouTube: Vui lòng chọn ít nhất 1 Kênh YouTube nguồn!', 'warning');
+        switchModalTab('edit', 'source');
         return;
     }
+    if (editSourceMode === 'local_folder' && !editHasFolder) {
+        showToast('⚠️ Chế độ Kho Video Máy: Vui lòng nhập đường dẫn thư mục video trên máy tính!', 'warning');
+        switchModalTab('edit', 'source');
+        return;
+    }
+    if (editSourceMode === 'hybrid' && !editHasChannels && !editHasFolder) {
+        showToast('⚠️ Chế độ Kết Hợp: Vui lòng chọn ít nhất 1 Kênh YouTube hoặc nhập Thư mục video trên máy!', 'warning');
+        switchModalTab('edit', 'source');
+        return;
+    }
+
+    const autoUpload = document.getElementById('editCampaignAutoUploadSwitch')?.checked ? 1 : 0;
 
     const gpmBoxes = document.querySelectorAll('.edit-campaign-gpm-check:checked');
     const selectedGpmIds = Array.from(gpmBoxes).map(b => parseInt(b.value, 10)).filter(id => !isNaN(id));
-    if (selectedGpmIds.length === 0) {
-        showToast('⚠️ Vui lòng chọn ít nhất 1 Profile GPMLogin nhận video!', 'warning');
+    if (autoUpload && selectedGpmIds.length === 0) {
+        showToast('⚠️ Vui lòng chọn ít nhất 1 Profile nhận video (hoặc bỏ chọn "Tự động tải lên TikTok" nếu chỉ muốn render)!', 'warning');
         return;
     }
 
-    // 1. Validate daily_limit
-    const dailyLimitInput = document.getElementById('editCampaignDailyLimitInput');
-    const rawDailyLimit = parseInt(dailyLimitInput?.value, 10);
-    if (isNaN(rawDailyLimit) || rawDailyLimit < 1) {
-        markInputError('editCampaignDailyLimitInput', 'Giới hạn video/ngày trên mỗi nick phải là số nguyên >= 1!');
-        return;
-    }
-    const safeDailyLimit = Math.max(1, rawDailyLimit);
+    let safeDailyLimit = 3;
+    let cleanScheduleStr = "11:30, 18:00, 20:30";
 
-    // 2. Validate post_schedule
-    const scheduleInput = document.getElementById('editCampaignScheduleInput');
-    const scheduleRaw = (scheduleInput?.value || '').trim();
-    const rawSlots = scheduleRaw.split(',').map(s => s.trim()).filter(Boolean);
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    const invalidSlot = rawSlots.find(s => !timeRegex.test(s));
-    if (!rawSlots.length || invalidSlot) {
-        markInputError('editCampaignScheduleInput', `Khung giờ đăng không hợp lệ: "${invalidSlot || 'trống'}". Định dạng chuẩn: HH:MM`);
-        return;
+    if (autoUpload) {
+        // 1. Validate daily_limit
+        const dailyLimitInput = document.getElementById('editCampaignDailyLimitInput');
+        const rawDailyLimit = parseInt(dailyLimitInput?.value, 10);
+        if (isNaN(rawDailyLimit) || rawDailyLimit < 1) {
+            markInputError('editCampaignDailyLimitInput', 'Giới hạn video/ngày trên mỗi nick phải là số nguyên >= 1!');
+            return;
+        }
+        safeDailyLimit = Math.max(1, rawDailyLimit);
+
+        // 2. Validate post_schedule
+        const scheduleInput = document.getElementById('editCampaignScheduleInput');
+        const scheduleRaw = (scheduleInput?.value || '').trim();
+        const rawSlots = scheduleRaw.split(',').map(s => s.trim()).filter(Boolean);
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        const invalidSlot = rawSlots.find(s => !timeRegex.test(s));
+        if (!rawSlots.length || invalidSlot) {
+            markInputError('editCampaignScheduleInput', `Khung giờ đăng không hợp lệ: "${invalidSlot || 'trống'}". Định dạng chuẩn: HH:MM`);
+            return;
+        }
+        const safeSlots = Array.from(new Set(rawSlots.map(s => {
+            const [h, m] = s.split(':');
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        })));
+        cleanScheduleStr = safeSlots.join(', ');
     }
-    const safeSlots = Array.from(new Set(rawSlots.map(s => {
-        const [h, m] = s.split(':');
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    })));
-    const cleanScheduleStr = safeSlots.join(', ');
 
     const freq = document.getElementById('editCampaignFrequencySelect')?.value || 'daily';
     let intervalDays = 1;
@@ -6136,6 +7152,8 @@ async function handleEditCampaignSubmit(e) {
         include_longform: editIncLong,
         ai_model: document.getElementById('editCampaignAiModel')?.value || 'default',
         ai_provider: (document.getElementById('editCampaignAiModel')?.value || '').startsWith('gemini') ? 'gemini' : ((document.getElementById('editCampaignAiModel')?.value || '').startsWith('gpt') ? 'openai' : 'deepseek'),
+        hook_angle: document.getElementById('editCampaignHookAngle')?.value || 'auto',
+        generate_variants: document.getElementById('editCampaignGenerateVariants')?.checked ? 1 : 0,
         subtitle_enabled: document.getElementById('editCampaignSubtitleSwitch')?.checked ? 1 : 0,
         disable_subtitle_for_shorts: document.getElementById('editCampaignDisableSubtitleForShorts')?.checked ? 1 : 0,
         subtitle_style: document.getElementById('editCampaignSubtitleStyle')?.value || 'karaoke_yellow',
@@ -6154,7 +7172,37 @@ async function handleEditCampaignSubmit(e) {
         warmup_mode: warmup,
         bgm_folder: document.getElementById('editCampaignBgmSwitch')?.checked ? (document.getElementById('editCampaignBgmFolder')?.value || '') : '',
         bgm_volume: bgmVol,
-        is_active: editCampaignOriginalData ? editCampaignOriginalData.is_active : 1
+        is_active: editCampaignOriginalData ? editCampaignOriginalData.is_active : 1,
+        auto_engagement_enabled: document.getElementById('editCampaignAutoEngagementSwitch')?.checked ? 1 : 0,
+        auto_pin_comment: document.getElementById('editCampaignAutoPinCommentSwitch')?.checked ? 1 : 0,
+        pin_comment_delay_mins: parseInt(document.getElementById('editCampaignPinCommentDelaySelect')?.value, 10) || 3,
+        auto_reply_comments: document.getElementById('editCampaignAutoReplyCommentsSwitch')?.checked ? 1 : 0,
+        reply_comments_delay_mins: parseInt(document.getElementById('editCampaignReplyCommentsDelaySelect')?.value, 10) || 20,
+        narration_enabled: document.getElementById('editCampaignNarrationSwitch')?.checked ? 1 : 0,
+        narration_language: document.getElementById('editCampaignNarrationLanguage')?.value || 'original',
+        voice_gender: document.getElementById('editCampaignVoiceGender')?.value || 'male',
+        narration_style: document.getElementById('editCampaignNarrationStyle')?.value || 'giat_gan',
+        disable_narration_for_shorts: document.getElementById('editCampaignDisableNarrationForShorts')?.checked ? 1 : 0,
+
+        ken_burns_enabled: document.getElementById('editCampaignKenBurnsSwitch')?.checked ? 1 : 0,
+        endcard_enabled: document.getElementById('editCampaignEndcardSwitch')?.checked ? 1 : 0,
+        use_ai_images: document.getElementById('editCampaignUseAiImages')?.checked ? 1 : 0,
+        image_style: document.getElementById('editCampaignImageStyle')?.value || 'cinematic',
+        visual_source: document.getElementById('editCampaignVisualSource')?.value || 'ai',
+        ai_image_model: document.getElementById('editCampaignAiImageModel')?.value || 'flux',
+        ai_video_model: document.getElementById('editCampaignAiVideoModel')?.value || 'fal_ltx',
+        stock_provider: document.getElementById('editCampaignStockProvider')?.value || 'all',
+        auto_upload: autoUpload,
+        source_mode: editSourceMode,
+        local_folder_path: editLocalFolder,
+        tts_engine: document.querySelector('input[name="editCampaignTtsEngineRadio"]:checked')?.value || 'edge-tts',
+        elevenlabs_voice_id: document.getElementById('editCampaignElevenLabsVoiceId')?.value || null,
+        elevenlabs_model: document.getElementById('editCampaignElevenLabsModel')?.value || 'eleven_multilingual_v2',
+        target_platforms: [
+            document.getElementById('editCampTargetTikTok')?.checked ? 'tiktok' : null,
+            document.getElementById('editCampTargetYouTube')?.checked ? 'youtube' : null,
+            document.getElementById('editCampTargetFacebook')?.checked ? 'facebook' : null
+        ].filter(Boolean).join(',') || 'tiktok'
     };
 
     try {
@@ -6163,7 +7211,12 @@ async function handleEditCampaignSubmit(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        const data = await res.json();
+        let data = {};
+        try {
+            data = await res.json();
+        } catch (_) {
+            data = { detail: 'Lỗi máy chủ (' + res.status + '): Phản hồi không hợp lệ' };
+        }
         if (res.ok && data.status === 'success') {
             showToast('✅ Đã lưu cập nhật chiến dịch thành công!', 'success');
             closeEditCampaignModal();
@@ -6290,7 +7343,7 @@ async function refreshCurrentCampaignLogs() {
                         <i class="fa-solid fa-cloud-arrow-down text-cyan" style="font-size:32px; opacity:0.6; margin-bottom:10px; display:block;"></i>
                         <div style="font-size:14px; font-weight:700; color:#fff;">Chưa phát hiện video nào từ các kênh nguồn này</div>
                         <div style="font-size:12px; color:var(--text-muted); margin-top:4px; max-width:480px; margin-left:auto; margin-right:auto;">
-                            Hệ thống sẽ tự động quét RSS mỗi 15 phút, tải video MP4 gốc, render dọc 9:16 và phân phối lên dàn nick TikTok GPMLogin theo lịch.
+                            Hệ thống sẽ tự động quét RSS mỗi 15 phút, tải video MP4 gốc, render dọc 9:16 và phân phối lên dàn Account theo lịch.
                         </div>
                         <button type="button" class="btn btn-sm btn-accent mt-3" onclick="triggerCampaignTestRun()" style="background:linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color:#05131e; font-weight:700;">
                             <i class="fa-solid fa-bolt"></i> Bấm Quét & Tải Thử Ngay
@@ -6621,8 +7674,8 @@ function renderStudioVideoList() {
                         <span class="badge ${activeStudioVideo && activeStudioVideo.id === v.id && activePlaybackType === 'rendered' && activePlaybackPart === p.part ? 'badge-cyan' : 'badge-secondary'}" 
                             style="cursor:pointer; font-size:10.5px; padding:2px 8px; border-radius:4px; flex-shrink:0;" 
                             onclick="selectStudioVideo('${v.yt_video_id || v.id}', 'rendered', ${p.part})"
-                            title="Bấm để phát nhanh Part ${p.part}">
-                            Part ${p.part}
+                            title="Bấm để phát nhanh ${p.tag || ('Part ' + p.part)}">
+                            ${p.tag || ('Part ' + p.part)}
                         </span>
                     `).join('')}
                 </div>
@@ -6821,15 +7874,53 @@ function updateStudioShortFormVisibility(isShort) {
     const clipsGroup = document.getElementById('studioClipsPerVideoGroup');
     const partWrap = document.getElementById('studioAddPartLabelWrap');
     const shortNotice = document.getElementById('studioShortNotice');
+    const isVariants = document.getElementById('studioGenerateVariants')?.checked ?? false;
 
     if (isShort) {
         if (clipsGroup) clipsGroup.style.display = 'none';
         if (partWrap) partWrap.style.display = 'none';
         if (shortNotice) shortNotice.style.display = 'block';
     } else {
-        if (clipsGroup) clipsGroup.style.display = 'block';
-        if (partWrap) partWrap.style.display = 'flex';
         if (shortNotice) shortNotice.style.display = 'none';
+        if (isVariants) {
+            if (clipsGroup) clipsGroup.style.display = 'none';
+            if (partWrap) partWrap.style.display = 'none';
+        } else {
+            if (clipsGroup) clipsGroup.style.display = 'block';
+            if (partWrap) partWrap.style.display = 'flex';
+        }
+    }
+}
+
+function syncStudioVariantModeUI(mode) {
+    const isVariants = (mode === 'variants');
+    const durVal = parseFloat(activeStudioVideo?.duration) || 0;
+    const isShort = activeStudioVideo && ((durVal > 0 && durVal <= 180) || activeStudioVideo.is_short === true || activeStudioVideo.is_short === 1);
+
+    const hookAngleWrap = document.getElementById('studioHookAngleWrap');
+    const noticeWrap = document.getElementById('studioVariantsNoticeWrap');
+    const clipsGroup = document.getElementById('studioClipsPerVideoGroup');
+    const partWrap = document.getElementById('studioAddPartLabelWrap');
+    const genVariantsCheck = document.getElementById('studioGenerateVariants');
+
+    if (genVariantsCheck) {
+        genVariantsCheck.checked = isVariants;
+    }
+
+    if (isVariants) {
+        // Khi chọn 3 Biến Thể A/B/C: Tự động ẩn góc Hook, ẩn Số clip cắt và ẩn Đóng dấu PART X
+        if (hookAngleWrap) hookAngleWrap.style.display = 'none';
+        if (noticeWrap) noticeWrap.style.display = 'block';
+        if (clipsGroup) clipsGroup.style.display = 'none';
+        if (partWrap) partWrap.style.display = 'none';
+    } else {
+        // Khi chọn 1 Clip Tốt Nhất: Hiện góc Hook, và nếu là video dài thì hiện lại Số clip cắt & Đóng dấu PART
+        if (hookAngleWrap) hookAngleWrap.style.display = 'block';
+        if (noticeWrap) noticeWrap.style.display = 'none';
+        if (!isShort) {
+            if (clipsGroup) clipsGroup.style.display = 'block';
+            if (partWrap) partWrap.style.display = 'flex';
+        }
     }
 }
 
@@ -6855,6 +7946,7 @@ function selectStudioVideo(videoId, playType = null, partNum = 1) {
     }
 
     renderStudioVideoList();
+    ensureAudioCategoriesLoaded();
 
     // Ẩn/hiện "Số clip cắt" và "Đóng dấu PART X" nếu là video short-form (<= 180s / 3 phút)
     const durVal = parseFloat(v.duration) || 0;
@@ -6892,7 +7984,9 @@ function selectStudioVideo(videoId, playType = null, partNum = 1) {
             partBadge.textContent = 'VIDEO GỐC';
             partBadge.style.background = 'rgba(234, 179, 8, 0.85)';
         } else {
-            partBadge.textContent = `PART ${activePlaybackPart} (9:16)`;
+            const curRp = v.rendered_parts ? v.rendered_parts.find(p => p.part === activePlaybackPart) : null;
+            const tagLabel = curRp && curRp.tag ? curRp.tag : `PART ${activePlaybackPart}`;
+            partBadge.textContent = `${tagLabel} (9:16)`;
             partBadge.style.background = 'rgba(0, 242, 254, 0.85)';
         }
     }
@@ -6915,10 +8009,13 @@ function selectStudioVideo(videoId, playType = null, partNum = 1) {
             source.src = playUrl;
             player.onloadedmetadata = () => {
                 if (player.duration && isFinite(player.duration)) {
-                    if (!v.duration || v.duration === 0) {
+                    if (activePlaybackType === 'original' && (!v.duration || v.duration === 0)) {
                         v.duration = Math.round(player.duration);
                     }
-                    updateStudioShortFormVisibility(player.duration <= 180);
+                    // Kiểm tra Short-form LUÔN dựa trên thời lượng video gốc (v.duration), tuyệt đối KHÔNG dùng thời lượng của Part đã render (player.duration)!
+                    const origDur = parseFloat(v.duration) || 0;
+                    const isShort = (origDur > 0 && origDur <= 180) || v.is_short === true || v.is_short === 1;
+                    updateStudioShortFormVisibility(isShort);
                 }
             };
             player.load();
@@ -7058,16 +8155,34 @@ async function renderStudioActiveVideo(btn) {
     const clipsCount = isShort ? 1 : (parseInt(document.getElementById('studioClipsPerVideo')?.value) || 1);
     const flip = document.getElementById('studioFlipHorizontal')?.checked ?? true;
     const speed = document.getElementById('studioSpeedFactor')?.checked ? 1.03 : 1.0;
-    const addPart = isShort ? false : (document.getElementById('studioAddPartLabel')?.checked ?? true);
+    const generateVariants = isShort ? false : (document.getElementById('studioGenerateVariants')?.checked ?? false);
+    const addPart = (generateVariants || isShort || clipsCount <= 1) ? false : (document.getElementById('studioAddPartLabel')?.checked ?? true);
     const genHook = document.getElementById('studioGenerateAiHook')?.checked ?? true;
     const selectedModel = document.getElementById('studioAiModelSelect')?.value || 'default';
     const enableSub = document.getElementById('studioEnableSubtitles')?.checked ?? true;
     const subStyle = document.getElementById('studioSubtitleStyle')?.value || 'karaoke_yellow';
     const subPos = document.getElementById('studioSubtitlePosition')?.value || 'center';
     const isSmartCurate = document.getElementById('studioSmartCurate')?.checked ?? true;
+    const hookAngle = document.getElementById('studioHookAngle')?.value || 'auto';
     const isEnableBgm = document.getElementById('studioEnableBgm')?.checked ?? false;
     const bgmFolder = isEnableBgm ? (document.getElementById('studioBgmFolder')?.value || null) : null;
     const bgmVolume = parseFloat(document.getElementById('studioBgmVolume')?.value || 0.15);
+    const useAiImages = document.getElementById('studioUseAiImages')?.checked ?? false;
+    const imageStyle = document.getElementById('studioImageStyle')?.value || 'cinematic';
+    const visualSource = document.getElementById('studioVisualSource')?.value || 'ai';
+    const aiImageModel = document.getElementById('studioAiImageModel')?.value || 'flux';
+    const aiVideoModel = document.getElementById('studioAiVideoModel')?.value || 'fal_ltx';
+    const stockProvider = document.getElementById('studioStockProvider')?.value || 'all';
+    const mpNarrLang = document.getElementById('studioMpNarrationLanguage')?.value || 'vi';
+    const mpVoice = document.getElementById('studioMpVoiceGender')?.value || 'male';
+    const mpNarrStyle = document.getElementById('studioMpNarrationStyle')?.value || 'giat_gan';
+    const studioTtsEngine = document.querySelector('input[name="studioTtsEngineRadio"]:checked')?.value || 'edge-tts';
+    const studioElevenLabsVoiceId = document.getElementById('studioElevenLabsVoiceId')?.value || '';
+    const studioElevenLabsModel = document.getElementById('studioElevenLabsModel')?.value || 'eleven_multilingual_v2';
+    const studioKenBurns = document.getElementById('studioKenBurnsSwitch')?.checked ?? true;
+    const studioEndcard = document.getElementById('studioEndcardSwitch')?.checked ?? true;
+    const studioKeepOrig = document.getElementById('studioKeepOriginalScriptForShorts')?.checked ?? true;
+    const studioDisableNarrShorts = document.getElementById('studioDisableNarrationForShorts')?.checked ?? true;
 
     if (duration < 10 || duration > 3600) {
         markInputError('studioDurationRange', 'Thời lượng render mỗi clip phải từ 10 đến 3600 giây!');
@@ -7085,10 +8200,14 @@ async function renderStudioActiveVideo(btn) {
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Render AI 9:16...';
+        btn.innerHTML = useAiImages ? '<i class="fa-solid fa-wand-magic-sparkles fa-spin"></i> Đang Tạo Video AI Story...' : '<i class="fa-solid fa-spinner fa-spin"></i> Đang Render AI 9:16...';
     }
 
-    showToast(`Bắt đầu render AI (Model: ${selectedModel}, Cắt: ${clipsCount} clip, Thời lượng: ${duration}s, Subtitles: ${enableSub ? 'Bật' : 'Tắt'}, BGM: ${bgmFolder || 'Không'})...`);
+    if (useAiImages) {
+        showToast(`Bắt đầu tạo video AI Story: 100% Ảnh AI (${imageStyle}) & Lồng tiếng mới (${mpNarrLang})...`);
+    } else {
+        showToast(`Bắt đầu render AI (Model: ${selectedModel}, Cắt: ${clipsCount} clip, Thời lượng: ${duration}s, Subtitles: ${enableSub ? 'Bật' : 'Tắt'}, BGM: ${bgmFolder || 'Không'})...`);
+    }
 
     try {
         const endpoint = isSmartCurate ? '/api/video/render-smart-ai' : '/api/video/render';
@@ -7105,7 +8224,25 @@ async function renderStudioActiveVideo(btn) {
             subtitle_position: subPos,
             clips_count: clipsCount,
             bgm_folder: bgmFolder,
-            bgm_volume: bgmVolume
+            bgm_volume: bgmVolume,
+            generate_variants: generateVariants,
+            hook_angle: hookAngle,
+            use_ai_images: useAiImages,
+            image_style: imageStyle,
+            visual_source: visualSource,
+            ai_image_model: aiImageModel,
+            ai_video_model: aiVideoModel,
+            stock_provider: stockProvider,
+            narration_language: mpNarrLang,
+            voice_gender: mpVoice,
+            narration_style: mpNarrStyle,
+            tts_engine: studioTtsEngine,
+            elevenlabs_voice_id: studioElevenLabsVoiceId,
+            elevenlabs_model: studioElevenLabsModel,
+            ken_burns_enabled: studioKenBurns,
+            endcard_enabled: studioEndcard,
+            keep_original_script_for_shorts: studioKeepOrig,
+            disable_narration_for_shorts: studioDisableNarrShorts
         } : {
             video_id: activeStudioVideo.yt_video_id,
             duration: duration,
@@ -7118,7 +8255,23 @@ async function renderStudioActiveVideo(btn) {
             ai_model: selectedModel !== 'default' ? selectedModel : null,
             clips_count: clipsCount,
             bgm_folder: bgmFolder,
-            bgm_volume: bgmVolume
+            bgm_volume: bgmVolume,
+            use_ai_images: useAiImages,
+            image_style: imageStyle,
+            visual_source: visualSource,
+            ai_image_model: aiImageModel,
+            ai_video_model: aiVideoModel,
+            stock_provider: stockProvider,
+            narration_language: mpNarrLang,
+            voice_gender: mpVoice,
+            narration_style: mpNarrStyle,
+            tts_engine: studioTtsEngine,
+            elevenlabs_voice_id: studioElevenLabsVoiceId,
+            elevenlabs_model: studioElevenLabsModel,
+            ken_burns_enabled: studioKenBurns,
+            endcard_enabled: studioEndcard,
+            keep_original_script_for_shorts: studioKeepOrig,
+            disable_narration_for_shorts: studioDisableNarrShorts
         };
 
         const res = await fetch(endpoint, {
@@ -7158,7 +8311,15 @@ function openUploadModalForActiveStudioVideo() {
         showToast('Vui lòng chọn video trước!', true);
         return;
     }
-    openUploadModal(activeStudioVideo.id);
+    let targetPath = null;
+    if (activeStudioVideo.rendered_parts && activeStudioVideo.rendered_parts.length > 0) {
+        const cur = activeStudioVideo.rendered_parts.find(p => p.part === activePlaybackPart) || activeStudioVideo.rendered_parts[0];
+        if (cur && cur.path) targetPath = cur.path;
+    }
+    if (!targetPath && activeStudioVideo.rendered_path) {
+        targetPath = activeStudioVideo.rendered_path;
+    }
+    openUploadModal(activeStudioVideo.id, targetPath);
 }
 
 async function triggerManualPipelineScan(btn) {
@@ -7198,6 +8359,22 @@ async function loadApiKeySettings() {
         const oaiEl = document.getElementById('settingOpenAiKey');
         if (oaiEl) oaiEl.value = data.openai_api_key || '';
 
+        const pexEl = document.getElementById('settingPexelsKey');
+        if (pexEl) pexEl.value = data.pexels_api_key || '';
+        const pixEl = document.getElementById('settingPixabayKey');
+        if (pixEl) pixEl.value = data.pixabay_api_key || '';
+        const pollEl = document.getElementById('settingPollinationsKey');
+        if (pollEl) pollEl.value = data.pollinations_api_key || '';
+
+        const falEl = document.getElementById('settingFalKey');
+        if (falEl) falEl.value = data.fal_api_key || '';
+        const elKeyEl = document.getElementById('settingElevenLabsKey');
+        if (elKeyEl) elKeyEl.value = data.elevenlabs_api_key || '';
+        const klingAkEl = document.getElementById('settingKlingAccessKey');
+        if (klingAkEl) klingAkEl.value = data.kling_access_key || '';
+        const klingSkEl = document.getElementById('settingKlingSecretKey');
+        if (klingSkEl) klingSkEl.value = data.kling_secret_key || '';
+
         const provEl = document.getElementById('settingAiProvider');
         if (provEl && data.ai_provider) provEl.value = data.ai_provider;
 
@@ -7205,7 +8382,15 @@ async function loadApiKeySettings() {
         if (dsModelEl && data.deepseek_model) dsModelEl.value = data.deepseek_model;
 
         const gemModelEl = document.getElementById('settingGeminiModel');
-        if (gemModelEl && data.gemini_model) gemModelEl.value = data.gemini_model;
+        if (gemModelEl) {
+            if (data.gemini_model) gemModelEl.value = data.gemini_model;
+            if (!gemModelEl.value && gemModelEl.options.length > 0) {
+                gemModelEl.selectedIndex = 0;
+            }
+        }
+
+        const gemUrlEl = document.getElementById('settingGeminiBaseUrl');
+        if (gemUrlEl) gemUrlEl.value = data.gemini_base_url || '';
 
         const oaiModelEl = document.getElementById('settingOpenAiModel');
         if (oaiModelEl && data.openai_model) oaiModelEl.value = data.openai_model;
@@ -7239,6 +8424,15 @@ async function loadApiKeySettings() {
 
         const gpmEl = document.getElementById('settingGpmUrl');
         if (gpmEl) gpmEl.value = data.gpm_api_base_url || '';
+
+        const adsEl = document.getElementById('settingAdsPowerUrl');
+        if (adsEl) adsEl.value = data.adspower_api_base_url || '';
+
+        const dolEl = document.getElementById('settingDolphinUrl');
+        if (dolEl) dolEl.value = data.dolphin_api_base_url || '';
+
+        const genEl = document.getElementById('settingGenLoginUrl');
+        if (genEl) genEl.value = data.genlogin_api_base_url || '';
 
         // Render key pool status table
         renderKeyPoolTable(data.youtube_key_pool || []);
@@ -7354,6 +8548,57 @@ function validateMinDurationInput(input) {
  *   Shorts checked (both or shorts-only) → value=0, min=0, DISABLED
  *   Only Longform checked                → min=180, value≥180, ENABLED
  */
+function toggleCampaignAutoUpload(mode, isChecked) {
+    const isNew = mode === 'new';
+    const actionsWrap = document.getElementById(isNew ? 'campaignAccountActionsWrap' : 'editCampaignAccountActionsWrap');
+    const notice = document.getElementById(isNew ? 'campaignNoUploadNotice' : 'editCampaignNoUploadNotice');
+    const selectionWrap = document.getElementById(isNew ? 'campaignAccountSelectionWrap' : 'editCampaignAccountSelectionWrap');
+
+    if (actionsWrap) {
+        actionsWrap.style.display = isChecked ? 'flex' : 'none';
+    }
+    if (notice) {
+        notice.style.display = isChecked ? 'none' : 'block';
+    }
+    if (selectionWrap) {
+        selectionWrap.style.display = isChecked ? 'block' : 'none';
+    }
+}
+
+function toggleAiStoryCard(prefix, isChecked) {
+    let wrapId = prefix === 'campaign' ? 'campaignImageStyleWrap' : (prefix === 'editCampaign' ? 'editCampaignImageStyleWrap' : (prefix === 'studio' ? 'studioAiStoryWrap' : 'settingChannelImageStyleWrap'));
+    const wrap = document.getElementById(wrapId);
+    if (wrap) wrap.style.display = isChecked ? (prefix === 'studio' ? 'flex' : 'block') : 'none';
+
+    // Ẩn 2 checkbox Shorts (Tắt phụ đề cho Shorts & Giữ âm thanh gốc cho Shorts) khi bật AI Story; hiện lại khi tắt
+    let subShortsWrapId = prefix === 'campaign' ? 'campaignDisableSubtitleWrap' : (prefix === 'editCampaign' ? 'editCampaignDisableSubtitleWrap' : 'settingChannelDisableSubtitleWrap');
+    let narrShortsWrapId = prefix === 'campaign' ? 'campaignDisableNarrationWrap' : (prefix === 'editCampaign' ? 'editCampaignDisableNarrationWrap' : 'settingChannelDisableNarrationWrap');
+
+    const subShortsWrap = document.getElementById(subShortsWrapId);
+    const narrShortsWrap = document.getElementById(narrShortsWrapId);
+    if (subShortsWrap) subShortsWrap.style.display = isChecked ? 'none' : 'block';
+    if (narrShortsWrap) narrShortsWrap.style.display = isChecked ? 'none' : 'block';
+
+    // Khi bật AI Story, tự động kích hoạt & mở panel Lồng Tiếng AI nếu đang tắt để người dùng thấy rõ giọng đọc
+    if (isChecked) {
+        let narrSwitchId = prefix === 'campaign' ? 'campaignNarrationSwitch' : (prefix === 'editCampaign' ? 'editCampaignNarrationSwitch' : (prefix === 'studio' ? 'studioNarrationSwitch' : 'settingChannelNarrationSwitch'));
+        let narrWrapId = prefix === 'campaign' ? 'campaignNarrationWrap' : (prefix === 'editCampaign' ? 'editCampaignNarrationWrap' : (prefix === 'studio' ? 'studioNarrationWrap' : 'settingChannelNarrationWrap'));
+        const narrSwitch = document.getElementById(narrSwitchId);
+        const narrWrap = document.getElementById(narrWrapId);
+        if (narrSwitch && !narrSwitch.checked) {
+            narrSwitch.checked = true;
+            if (narrWrap) narrWrap.style.display = (prefix === 'studio' ? 'flex' : 'block');
+        }
+    }
+}
+
+function toggleCampaignEngagementOptions(prefix, isChecked) {
+    const wrap = document.getElementById(`campaignEngagementOptions_${prefix}`);
+    if (wrap) {
+        wrap.style.display = isChecked ? 'flex' : 'none';
+    }
+}
+
 function applyMinDurationState(shortsCb, longformCb, minInput, savedValue) {
     if (!minInput) return;
     const onlyLongform = (longformCb ? longformCb.checked : true) && !(shortsCb ? shortsCb.checked : true);
@@ -7554,9 +8799,14 @@ async function saveApiKeySettings(btn) {
         deepseek_api_key: document.getElementById('settingDeepSeekKey')?.value || '',
         gemini_api_key: document.getElementById('settingGeminiKey')?.value || '',
         openai_api_key: document.getElementById('settingOpenAiKey')?.value || '',
+        pexels_api_key: document.getElementById('settingPexelsKey')?.value || '',
+        pixabay_api_key: document.getElementById('settingPixabayKey')?.value || '',
+        pollinations_api_key: document.getElementById('settingPollinationsKey')?.value || '',
+        elevenlabs_api_key: document.getElementById('settingElevenLabsKey')?.value || '',
         ai_provider: document.getElementById('settingAiProvider')?.value || 'deepseek',
         deepseek_model: document.getElementById('settingDeepSeekModel')?.value || 'deepseek-chat',
-        gemini_model: document.getElementById('settingGeminiModel')?.value || 'gemini-2.5-flash',
+        gemini_model: document.getElementById('settingGeminiModel')?.value || 'gemini-2.0-flash',
+        gemini_base_url: document.getElementById('settingGeminiBaseUrl')?.value || '',
         openai_model: document.getElementById('settingOpenAiModel')?.value || 'gpt-4o-mini',
         whisper_model_size: document.getElementById('settingWhisperModel')?.value || 'base',
         enable_dynamic_subtitles: document.getElementById('settingDynamicSubtitles')?.checked ?? true,
@@ -7567,6 +8817,9 @@ async function saveApiKeySettings(btn) {
         telegram_bot_token: document.getElementById('settingTelegramToken')?.value || '',
         telegram_chat_id: document.getElementById('settingTelegramChatId')?.value || '',
         gpm_api_base_url: gpmUrl,
+        adspower_api_base_url: document.getElementById('settingAdsPowerUrl')?.value.trim() || '',
+        dolphin_api_base_url: document.getElementById('settingDolphinUrl')?.value.trim() || '',
+        genlogin_api_base_url: document.getElementById('settingGenLoginUrl')?.value.trim() || '',
     };
 
     try {
@@ -7595,6 +8848,7 @@ async function saveApiKeySettings(btn) {
             await loadApiKeySettings(); // refresh pool status
             loadPipelineStatus();
             loadAiUsageStats();
+            if (typeof checkSystemIssuesCount === 'function') checkSystemIssuesCount();
         } else {
             if (resultEl) resultEl.innerHTML = `<span style="color:#f87171;"><i class="fa-solid fa-circle-xmark"></i> ${escapeHtml(data.detail || data.message || 'Lỗi không xác định')}</span>`;
             showToast('Lỗi khi lưu cài đặt: ' + (data.detail || data.message || 'Không xác định'), 'error');
@@ -7669,7 +8923,8 @@ function getFilteredAiLogs() {
         list = list.filter(l => {
             const m = (l.model || '').toLowerCase();
             const p = (l.provider || '').toLowerCase();
-            return m.includes(target) || p.includes(target);
+            const t = (l.task || '').toLowerCase();
+            return m.includes(target) || p.includes(target) || t.includes(target);
         });
     }
 
@@ -7875,12 +9130,38 @@ function renderAiLogsTable() {
             : `<span class="badge" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); font-size:11px;" title="${escapeHtml(l.error_message || '')}">Lỗi</span>`;
 
         const timeStr = l.created_at ? l.created_at.replace('T', ' ').slice(0, 19) : '—';
-        const provBadge = `<div class="table-text-truncate" style="max-width:180px;" title="${escapeHtml(l.provider)} (${escapeHtml(l.model)})"><span style="font-weight:600; color:#fff;">${escapeHtml(l.provider)}</span> <span style="color:var(--text-muted); font-size:11px;">${escapeHtml(l.model)}</span></div>`;
+        const pLower = (l.provider || '').toLowerCase();
+        const mLower = (l.model || '').toLowerCase();
+        const pColor = pLower.includes('deepseek') ? '#0070f3' :
+            pLower.includes('gemini') ? '#10b981' :
+                pLower.includes('openai') || mLower.includes('dall-e') ? '#10a37f' :
+                    pLower.includes('fal') || mLower.includes('ltx') || mLower.includes('wan') ? '#f97316' :
+                        pLower.includes('kling') ? '#ec4899' :
+                            pLower.includes('flux') || pLower.includes('pollinations') ? '#06b6d4' :
+                                pLower.includes('banana') ? '#eab308' :
+                                    pLower.includes('imagen') ? '#4285f4' :
+                                        pLower.includes('whisper') ? '#a855f7' : '#8b5cf6';
+
+        const provBadge = `<div class="table-text-truncate" style="max-width:180px;" title="${escapeHtml(l.provider)} (${escapeHtml(l.model)})"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:${pColor}; margin-right:5px;"></span><span style="font-weight:600; color:#fff;">${escapeHtml(l.provider)}</span> <span style="color:var(--text-muted); font-size:11px;">${escapeHtml(l.model)}</span></div>`;
+
+        const taskRaw = l.task || 'general';
+        let taskBadge = `<span class="badge badge-secondary" style="font-size:10.5px;">${escapeHtml(taskRaw)}</span>`;
+        if (taskRaw === 'video_generation') {
+            taskBadge = `<span class="badge" style="background:rgba(249,115,22,0.15); color:#f97316; border:1px solid rgba(249,115,22,0.3); font-size:10.5px;"><i class="fa-solid fa-film"></i> Video AI</span>`;
+        } else if (taskRaw === 'image_generation') {
+            taskBadge = `<span class="badge" style="background:rgba(6,182,212,0.15); color:#06b6d4; border:1px solid rgba(6,182,212,0.3); font-size:10.5px;"><i class="fa-solid fa-image"></i> Ảnh AI</span>`;
+        } else if (taskRaw === 'speech_to_text') {
+            taskBadge = `<span class="badge" style="background:rgba(168,85,247,0.15); color:#a855f7; border:1px solid rgba(168,85,247,0.3); font-size:10.5px;"><i class="fa-solid fa-microphone-lines"></i> Whisper</span>`;
+        } else if (taskRaw === 'aistory_scenes') {
+            taskBadge = `<span class="badge" style="background:rgba(59,130,246,0.15); color:#3b82f6; border:1px solid rgba(59,130,246,0.3); font-size:10.5px;"><i class="fa-solid fa-book-open"></i> Phân Cảnh AI</span>`;
+        } else if (taskRaw === 'seed_debate_comment') {
+            taskBadge = `<span class="badge" style="background:rgba(234,179,8,0.15); color:#eab308; border:1px solid rgba(234,179,8,0.3); font-size:10.5px;"><i class="fa-solid fa-comment-dots"></i> Seeding</span>`;
+        }
 
         return `<tr>
             <td style="white-space:nowrap; color:var(--text-muted); font-size:11.5px;">${escapeHtml(timeStr)}</td>
             <td>${provBadge}</td>
-            <td><span class="badge badge-secondary" style="font-size:10.5px;">${escapeHtml(l.task || 'general')}</span></td>
+            <td>${taskBadge}</td>
             <td><div class="table-text-truncate" style="max-width:120px; font-family:monospace; font-size:11px; color:#38bdf8;" title="${escapeHtml(l.video_id || '')}">${escapeHtml(l.video_id || '—')}</div></td>
             <td style="text-align:right; font-weight:600; color:#c084fc;">${(l.total_tokens || 0).toLocaleString()}</td>
             <td style="text-align:right; font-weight:700; color:#22c55e;">$${(l.estimated_cost || 0).toFixed(4)}</td>
@@ -7932,9 +9213,29 @@ async function loadAiUsageStats() {
                 bdBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:18px; color:var(--text-muted);">Chưa có dữ liệu phân bổ. Khi render video AI, hệ thống sẽ tự động tổng hợp.</td></tr>`;
             } else {
                 bdBody.innerHTML = breakdown.map(item => {
-                    const provColor = (item.provider || '').toLowerCase().includes('deepseek') ? '#0070f3' :
-                        (item.provider || '').toLowerCase().includes('gemini') ? '#10b981' :
-                            (item.provider || '').toLowerCase().includes('openai') ? '#10a37f' : '#eab308';
+                    const pLower = (item.provider || '').toLowerCase();
+                    const mLower = (item.model || '').toLowerCase();
+                    const provColor = pLower.includes('deepseek') ? '#0070f3' :
+                        pLower.includes('gemini') ? '#10b981' :
+                            pLower.includes('openai') || mLower.includes('dall-e') ? '#10a37f' :
+                                pLower.includes('fal') || mLower.includes('ltx') || mLower.includes('wan') ? '#f97316' :
+                                    pLower.includes('kling') ? '#ec4899' :
+                                        pLower.includes('flux') || pLower.includes('pollinations') ? '#06b6d4' :
+                                            pLower.includes('banana') ? '#eab308' :
+                                                pLower.includes('imagen') ? '#4285f4' :
+                                                    pLower.includes('whisper') ? '#a855f7' : '#8b5cf6';
+
+                    let taskDesc = "Xử lý AI";
+                    if (pLower.includes('fal') || pLower.includes('kling') || mLower.includes('ltx') || mLower.includes('wan') || (item.task || '').includes('video')) {
+                        taskDesc = "Sinh Video Động Chuyển Cảnh (Video AI)";
+                    } else if (pLower.includes('flux') || pLower.includes('banana') || pLower.includes('imagen') || mLower.includes('dall-e') || (item.task || '').includes('image')) {
+                        taskDesc = "Sinh Ảnh AI Phân Cảnh (Image AI)";
+                    } else if (pLower.includes('whisper') || mLower.includes('whisper') || (item.task || '').includes('speech')) {
+                        taskDesc = "Nhận Dạng Âm Thanh & Phụ Đề (STT)";
+                    } else {
+                        taskDesc = "Phân Tích Hook & Kịch Bản AI Story / Curation";
+                    }
+
                     return `<tr>
                         <td style="font-weight:600;">
                             <div class="table-text-truncate" style="max-width:200px;" title="${escapeHtml(item.provider)} (${escapeHtml(item.model)})">
@@ -7942,7 +9243,7 @@ async function loadAiUsageStats() {
                                 ${escapeHtml(item.provider)} <span style="color:var(--text-muted); font-size:11px;">(${escapeHtml(item.model)})</span>
                             </div>
                         </td>
-                        <td style="color:var(--text-secondary); font-size:11.5px;">Phân tích Hook & Viral Curation</td>
+                        <td style="color:var(--text-secondary); font-size:11.5px;">${escapeHtml(taskDesc)}</td>
                         <td style="text-align:right; font-weight:700;">${(item.calls || 0).toLocaleString()}</td>
                         <td style="text-align:right; color:#a855f7;">${(item.total_tokens || 0).toLocaleString()}</td>
                         <td style="text-align:right; color:var(--text-muted);">${item.avg_duration_ms ? (item.avg_duration_ms / 1000).toFixed(2) + 's' : '—'}</td>
@@ -9025,7 +10326,7 @@ async function loadSystemIssues() {
 
             if (issue.category === 'tiktok_account') {
                 icon = isErr ? 'fa-ban text-danger' : 'fa-user-shield text-warning';
-                actionBtn = `<button class="btn btn-xs btn-secondary" onclick="closeSystemIssuesModal(); switchTab('tab-gpm-farm');"><i class="fa-solid fa-users-gear"></i> Mở Nick GPM</button>`;
+                actionBtn = `<button class="btn btn-xs btn-secondary" onclick="closeSystemIssuesModal(); switchTab('tab-gpm-farm');"><i class="fa-solid fa-users-gear"></i> Mở Nick</button>`;
             } else if (issue.category === 'video_error') {
                 icon = 'fa-video-slash text-danger';
                 actionBtn = `<button class="btn btn-xs btn-secondary" onclick="closeSystemIssuesModal(); switchTab('tab-sources');"><i class="fa-brands fa-youtube"></i> Xem Nguồn</button>`;
@@ -9110,7 +10411,7 @@ async function runDiagnosticsCheck(inModal = true) {
             </div>
             <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">Đang Quét Toàn Diện Môi Trường Cài Đặt...</h4>
             <p style="margin: 8px auto 0 auto; max-width: 500px; color: var(--text-muted); font-size: 13px; line-height: 1.5;">
-                Kiểm tra FFmpeg video engine, NVIDIA GPU NVENC, Node.js yt-dlp, Playwright automation, GPMLogin API, AI Keys và quyền ghi thư mục lưu trữ.
+                Kiểm tra FFmpeg video engine, NVIDIA GPU NVENC, Node.js yt-dlp, Playwright automation, Local API, AI Keys và quyền ghi thư mục lưu trữ.
             </p>
             <div style="display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; padding: 6px 16px; border-radius: 20px; background: rgba(0,242,254,0.1); border: 1px solid rgba(0,242,254,0.3); font-size: 12px; color: var(--accent-cyan);">
                 <i class="fa-solid fa-bolt fa-fade"></i> Vui lòng đợi trong giây lát...
@@ -9210,26 +10511,12 @@ async function runDiagnosticsCheck(inModal = true) {
                     <span class="badge ${pw.installed ? 'badge-success' : 'badge-danger'}">${pw.installed ? 'Đã Cài' : 'Thiếu'}</span>
                 </div>
                 <div class="diag-card-body">
-                    <div class="diag-meta-row"><span class="diag-meta-label">Tác vụ:</span> <span class="diag-meta-value">Tự đăng TikTok qua GPM</span></div>
+                    <div class="diag-meta-row"><span class="diag-meta-label">Tác vụ:</span> <span class="diag-meta-value">Tự đăng Tài Khoản</span></div>
                     <div class="diag-meta-row"><span class="diag-meta-label">Trạng thái:</span> <span class="diag-meta-value">${escapeHtml(pw.detail || 'OK')}</span></div>
                 </div>
             </div>
         `;
 
-        // Card 4: GPMLogin App API
-        const gpm = data.checks.gpm;
-        html += `
-            <div class="diag-card">
-                <div class="diag-card-header">
-                    <span class="diag-card-title"><i class="fa-solid fa-globe" style="color:#06b6d4;"></i> GPMLogin Local</span>
-                    <span class="badge ${gpm.running ? 'badge-success' : 'badge-danger'}">${gpm.running ? 'Online' : 'Offline'}</span>
-                </div>
-                <div class="diag-card-body">
-                    <div class="diag-meta-row"><span class="diag-meta-label">Cổng kết nối:</span> <span class="diag-meta-value">${escapeHtml(gpm.api_url || 'N/A')}</span></div>
-                    <div class="diag-meta-row"><span class="diag-meta-label">Số Profile:</span> <span class="diag-meta-value">${gpm.profile_count || 0} Profiles</span></div>
-                </div>
-            </div>
-        `;
 
         // Card 5: AI Cloud Providers
         const ai = data.checks.ai;
@@ -9301,7 +10588,7 @@ async function runDiagnosticsCheck(inModal = true) {
 // --- AUDIO STUDIO (KHO ÂM THANH & BGM PLAYLIST) ---
 // ==========================================================================
 
-let cachedAudioCategories = [];
+// cachedAudioCategories is declared globally at top of app.js
 let currentSelectedAudioCategory = 'general';
 let rawAudioSearchResults = [];
 let audioSortField = 'default';
@@ -10616,6 +11903,8 @@ function populateAllBgmSelects(categories) {
             const isInherit = currentVal === 'inherit' ? 'selected' : '';
             html += `<option value="inherit" ${isInherit}>-- Theo cài đặt BGM của từng Kênh nguồn --</option>`;
         }
+        const isAuto = currentVal === 'auto' ? 'selected' : '';
+        html += `<option value="auto" ${isAuto}>🤖 Tự Động Chọn Theo Nội Dung (AI Smart Mood)</option>`;
         cats.forEach(c => {
             const isSel = c.id === currentVal ? 'selected' : '';
             html += `<option value="${escapeHtml(c.id)}" ${isSel}>${escapeHtml(c.display_name || c.name)} (${c.track_count || 0} bài)</option>`;
@@ -10626,9 +11915,16 @@ function populateAllBgmSelects(categories) {
     // 1. Modal Kênh YouTube
     const chSel = document.getElementById('settingBgmFolder');
     if (chSel) {
-        const val = chSel.value;
-        chSel.innerHTML = makeOptions('-- Không Dùng Nhạc Nền --', val, false);
-        if (val) chSel.value = val;
+        const val = (chSel.value && chSel.value.trim() !== '') ? chSel.value.trim() : 'inherit';
+        let html = `<option value="inherit" ${val === 'inherit' ? 'selected' : ''}>-- 🔗 Kế Thừa Từ Cài Đặt Chiến Dịch (Mặc Định) --</option>`;
+        html += `<option value="auto" ${val === 'auto' ? 'selected' : ''}>🤖 Tự Động Chọn Theo Nội Dung (AI Smart Mood)</option>`;
+        html += `<option value="none" ${val === 'none' ? 'selected' : ''}>-- 🚫 Tắt Nhạc Nền Riêng Cho Kênh Này --</option>`;
+        cats.forEach(c => {
+            const isSel = c.id === val ? 'selected' : '';
+            html += `<option value="${escapeHtml(c.id)}" ${isSel}>${escapeHtml(c.display_name || c.name)} (${c.track_count || 0} bài)</option>`;
+        });
+        chSel.innerHTML = html;
+        chSel.value = val;
     }
 
     // 2. Video Studio Recipe
@@ -10672,8 +11968,10 @@ async function populateChannelBgmSelect(selectedFolder, selectedVolume) {
         }
 
         if (select) {
-            const targetVal = selectedFolder || '';
-            let html = `<option value="">-- Không Dùng Nhạc Nền --</option>`;
+            const targetVal = (selectedFolder && selectedFolder.trim() !== '') ? selectedFolder.trim() : 'inherit';
+            let html = `<option value="inherit" ${targetVal === 'inherit' ? 'selected' : ''}>-- 🔗 Kế Thừa Từ Cài Đặt Chiến Dịch (Mặc Định) --</option>`;
+            html += `<option value="auto" ${targetVal === 'auto' ? 'selected' : ''}>🤖 Tự Động Chọn Theo Nội Dung (AI Smart Mood)</option>`;
+            html += `<option value="none" ${targetVal === 'none' ? 'selected' : ''}>-- 🚫 Tắt Nhạc Nền Riêng Cho Kênh Này --</option>`;
             cachedAudioCategories.forEach(c => {
                 const isSel = (c.id === targetVal) ? 'selected' : '';
                 html += `<option value="${escapeHtml(c.id)}" ${isSel}>${escapeHtml(c.display_name || c.name)} (${c.track_count || 0} bài)</option>`;
@@ -10714,3 +12012,311 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+// --- A/B Testing Variants Report Modal (Gap 3 & Gap 5) ---
+function openVariantsReportModal() {
+    const modal = document.getElementById('modalVariantsReport');
+    if (modal) modal.style.display = 'flex';
+    loadVariantsReport();
+}
+
+function closeVariantsReportModal() {
+    const modal = document.getElementById('modalVariantsReport');
+    if (modal) modal.style.display = 'none';
+}
+
+async function loadVariantsReport() {
+    const container = document.getElementById('variantsReportModalBody');
+    if (!container) return;
+    container.innerHTML = '<div class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Đang phân tích chỉ số A/B Testing...</div>';
+
+    try {
+        const res = await fetch('/api/analytics/variants-report');
+        if (!res.ok) throw new Error('Không thể tải báo cáo A/B Testing');
+        const data = await res.json();
+
+        const variants = data.variants || {};
+        const topHooks = data.top_performing_hooks || [];
+        const winning = data.winning_variant;
+        const recommendation = data.recommendation || 'Chưa đủ dữ liệu thống kê video để đưa ra kết luận.';
+
+        let html = '';
+
+        // 1. Recommendation Banner
+        html += `
+        <div style="background:linear-gradient(135deg, rgba(168,85,247,0.15), rgba(0,242,254,0.1)); border:1px solid rgba(168,85,247,0.3); border-radius:8px; padding:14px 16px; margin-bottom:18px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <span class="badge" style="background:#a855f7; color:#fff; font-size:11px; padding:3px 8px;">
+                    <i class="fa-solid fa-trophy"></i> Winner: ${winning || 'Đang theo dõi'}
+                </span>
+                <span style="font-size:13px; font-weight:700; color:#fff;">Kết Luận Thuật Toán TikTok A/B Testing</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--text-muted); margin:0; line-height:1.5;">${recommendation}</p>
+        </div>`;
+
+        // 2. Comparison Grid (VarA, VarB, VarC)
+        const variantConfigs = [
+            { key: 'VarA', label: 'Var A: Góc Tò Mò', sub: 'Curiosity Angle', color: '#38bdf8' },
+            { key: 'VarB', label: 'Var B: Góc Tranh Luận', sub: 'Controversy Angle', color: '#f59e0b' },
+            { key: 'VarC', label: 'Var C: Góc Cao Trào', sub: 'Climax Angle', color: '#ec4899' }
+        ];
+
+        html += '<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:20px;">';
+        variantConfigs.forEach(vc => {
+            const vData = variants[vc.key] || { total_posts: 0, total_views: 0, avg_views: 0, retention_rate_3s: 0, avg_completion_rate: 0 };
+            const isWinner = winning === vc.key;
+            html += `
+            <div style="background:rgba(255,255,255,0.03); border:1px solid ${isWinner ? vc.color : 'rgba(255,255,255,0.08)'}; border-radius:8px; padding:14px; position:relative;">
+                ${isWinner ? `<span style="position:absolute; top:8px; right:8px; background:${vc.color}; color:#000; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px;">WINNER</span>` : ''}
+                <div style="font-weight:700; font-size:13px; color:${vc.color}; margin-bottom:2px;">${vc.label}</div>
+                <div style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">${vc.sub}</div>
+                
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:12px;">
+                    <span style="color:var(--text-muted);">Số clip đã đăng:</span>
+                    <strong style="color:#fff;">${vData.total_posts}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:12px;">
+                    <span style="color:var(--text-muted);">Lượt view trung bình:</span>
+                    <strong style="color:#fff;">${Math.round(vData.avg_views || 0).toLocaleString()}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:12px;">
+                    <span style="color:var(--text-muted);">Giữ chân 3s đầu:</span>
+                    <strong style="color:${vData.retention_rate_3s >= 60 ? '#10b981' : '#f59e0b'};">${vData.retention_rate_3s || 0}%</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:12px;">
+                    <span style="color:var(--text-muted);">Tỷ lệ xem hết:</span>
+                    <strong style="color:#fff;">${vData.avg_completion_rate || 0}%</strong>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+
+        // 3. Top Winning Hooks Table
+        html += `
+        <div style="margin-top:10px;">
+            <h4 style="font-size:13px; color:#fff; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-bolt text-yellow"></i> Top Các Câu Hook 3.5s Có Lượt View Cao Nhất
+            </h4>`;
+
+        if (topHooks.length === 0) {
+            html += '<div class="text-center py-3 text-muted" style="font-size:12px; background:rgba(255,255,255,0.02); border-radius:6px;">Chưa có dữ liệu thống kê câu hook. Hệ thống sẽ tích lũy sau các đợt quét video.</div>';
+        } else {
+            html += '<div style="overflow-x:auto;"><table class="table" style="font-size:12px; width:100%;">';
+            html += '<thead><tr><th>Câu Hook 3.5s</th><th>Biến thể</th><th>Lượt Xem</th><th>Retention 3s</th></tr></thead><tbody>';
+            topHooks.forEach(th => {
+                const ret3s = th.views_count > 0 ? Math.round((th.views_3s_count / th.views_count) * 100) : 0;
+                html += `
+                <tr>
+                    <td style="font-weight:700; color:#fff;">${th.hook_copy || 'N/A'}</td>
+                    <td><span class="badge badge-info" style="font-size:10px;">${th.variant_tag || 'Standard'}</span></td>
+                    <td style="color:#00f2fe;">${(th.views_count || 0).toLocaleString()}</td>
+                    <td style="color:${ret3s >= 60 ? '#10b981' : '#f59e0b'};">${ret3s}%</td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+        }
+        html += '</div>';
+
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = `<div class="text-center py-4 text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi tải báo cáo: ${e.message}</div>`;
+    }
+}
+
+function syncCampaignVariantModeUI(type, mode) {
+    const isVariants = (mode === 'variants');
+    const pfx = (type === 'edit') ? 'editCampaign' : 'campaign';
+
+    const hookAngleWrap = document.getElementById(`${pfx}HookAngleWrap`);
+    const noticeWrap = document.getElementById(`${pfx}VariantsNoticeWrap`);
+    const clipsCol = document.getElementById(`${pfx}ClipsColWrap`);
+    const genCheck = document.getElementById(`${pfx}GenerateVariants`);
+    const partSwitch = document.getElementById(`${pfx}AddPartLabelSwitch`);
+
+    if (genCheck) genCheck.checked = isVariants;
+
+    if (isVariants) {
+        if (hookAngleWrap) hookAngleWrap.style.display = 'none';
+        if (noticeWrap) noticeWrap.style.display = 'block';
+        if (clipsCol) clipsCol.style.display = 'none';
+        if (partSwitch) partSwitch.checked = false;
+    } else {
+        if (hookAngleWrap) hookAngleWrap.style.display = 'block';
+        if (noticeWrap) noticeWrap.style.display = 'none';
+        if (clipsCol) clipsCol.style.display = 'block';
+        if (partSwitch) partSwitch.checked = true;
+    }
+}
+
+function syncChannelVariantModeUI(mode) {
+    const hookAngleWrap = document.getElementById('settingChannelHookAngleWrap');
+    const noticeWrap = document.getElementById('settingChannelVariantsNoticeWrap');
+    if (mode === 'variants') {
+        if (hookAngleWrap) hookAngleWrap.style.display = 'none';
+        if (noticeWrap) noticeWrap.style.display = 'block';
+    } else {
+        if (hookAngleWrap) hookAngleWrap.style.display = 'block';
+        if (noticeWrap) noticeWrap.style.display = 'none';
+    }
+}
+
+
+/* ─── CAMPAIGN MODAL TABS & MULTI-SOURCE & RSS MANAGEMENT ─── */
+/* ─── SOURCE STEP TABS (YouTube / Folder) inside Campaign Modals ─── */
+function switchSourceStepTab(prefix, tabName) {
+    // tabName is 'yt' or 'folder'
+    const tabs = ['yt', 'folder'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`${prefix}SourceTabBtn_${t}`);
+        const pane = document.getElementById(`${prefix}SourcePane_${t}`);
+        if (btn) {
+            if (t === tabName) btn.classList.add('active');
+            else btn.classList.remove('active');
+        }
+        if (pane) {
+            pane.style.display = (t === tabName) ? 'block' : 'none';
+        }
+    });
+}
+window.switchSourceStepTab = switchSourceStepTab;
+
+function updateSourceModeBadge(prefix) {
+    const badge = document.getElementById(`${prefix}SourceModeBadge`);
+    if (!badge) return;
+
+    const chPrefix = (prefix === 'new') ? '' : 'edit-';
+    const chClass = (prefix === 'new') ? '.campaign-ch-check:checked' : '.edit-campaign-ch-check:checked';
+    const folderInputId = (prefix === 'new') ? 'campaignLocalFolderInput' : 'editCampaignLocalFolderInput';
+
+    const checkedCount = document.querySelectorAll(chClass).length;
+    const folderVal = (document.getElementById(folderInputId)?.value || '').trim();
+    const hasChannels = checkedCount > 0;
+    const hasFolder = folderVal.length > 0;
+
+    if (hasChannels && hasFolder) {
+        badge.className = 'badge badge-success';
+        badge.innerHTML = '<i class="fa-solid fa-layer-group"></i> Nguồn: ' + checkedCount + ' Kênh YouTube + Thư Mục';
+    } else if (hasChannels) {
+        badge.className = 'badge badge-info';
+        badge.innerHTML = '<i class="fa-brands fa-youtube"></i> Nguồn: ' + checkedCount + ' Kênh YouTube';
+    } else if (hasFolder) {
+        badge.className = 'badge badge-warning';
+        badge.innerHTML = '<i class="fa-solid fa-folder-open"></i> Nguồn: Thư Mục Cục Bộ';
+    } else {
+        badge.className = 'badge badge-secondary';
+        badge.innerHTML = '<i class="fa-solid fa-question-circle"></i> Chưa chọn nguồn';
+    }
+}
+window.updateSourceModeBadge = updateSourceModeBadge;
+
+async function scanCampaignLocalFolder(prefix) {
+    const input = document.getElementById(prefix === 'new' ? 'campaignLocalFolderInput' : `${prefix}CampaignLocalFolderInput`) || document.getElementById(`${prefix}CampaignLocalFolderInput`);
+    const statusEl = document.getElementById(prefix === 'new' ? 'campaignLocalFolderStats' : `${prefix}CampaignLocalFolderStats`) || document.getElementById(`${prefix}CampaignLocalScanStatus`);
+    const folder = input ? input.value.trim() : '';
+    if (!folder) {
+        showToast('⚠️ Vui lòng nhập đường dẫn thư mục video trên máy tính!', 'warning');
+        return;
+    }
+    if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-cyan"></i> Đang quét thư mục video...';
+    fetch('/api/v2/pipeline/scan_folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder_path: folder })
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success' || data.success) {
+                const count = data.count || data.files?.length || 0;
+                if (statusEl) {
+                    statusEl.innerHTML = `<span style="color:#10b981; font-weight:700;"><i class="fa-solid fa-circle-check"></i> Đã tìm thấy ${count} video hợp lệ (.mp4, .mov, .mkv) trong thư mục!</span>`;
+                }
+                showToast(`✅ Đã tìm thấy ${count} video sẵn sàng trong thư mục!`, 'success');
+            } else {
+                if (statusEl) {
+                    statusEl.innerHTML = `<span style="color:#ef4444; font-weight:600;"><i class="fa-solid fa-circle-exclamation"></i> Không thể quét thư mục: ${data.message || 'Lỗi không xác định'}</span>`;
+                }
+                showToast('⚠️ Không thể quét thư mục: ' + (data.message || 'Lỗi'), 'warning');
+            }
+        })
+        .catch(err => {
+            if (statusEl) {
+                statusEl.innerHTML = `<span style="color:#ef4444; font-weight:600;"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi kết nối khi quét thư mục</span>`;
+            }
+            showToast('Lỗi quét thư mục: ' + err.message, 'error');
+        });
+}
+window.scanCampaignLocalFolder = scanCampaignLocalFolder;
+
+window.syncAllRssSwitches = function (enabled) {
+    const swBanner = document.getElementById('bannerRssToggleSwitch');
+    const lblBanner = document.getElementById('bannerRssStatusLabel');
+    if (swBanner) swBanner.checked = enabled;
+    if (lblBanner) {
+        lblBanner.textContent = enabled ? 'Đang BẬT' : 'ĐÃ TẮT';
+        lblBanner.style.color = enabled ? 'var(--accent-cyan)' : '#f87171';
+    }
+
+    const swVm = document.getElementById('toggleRssScanSwitch');
+    const lblVm = document.getElementById('lblRssStatus');
+    if (swVm) swVm.checked = enabled;
+    if (lblVm) {
+        lblVm.innerText = enabled ? 'RSS: BẬT' : 'RSS: ĐÃ TẮT';
+        lblVm.style.color = enabled ? '#38bdf8' : '#f87171';
+    }
+
+    const step1Badge = document.getElementById('step1RssBadge');
+    if (step1Badge) {
+        if (enabled) {
+            step1Badge.className = 'badge badge-success';
+            step1Badge.innerHTML = '<i class="fa-solid fa-signal"></i> RSS: BẬT';
+        } else {
+            step1Badge.className = 'badge badge-warning';
+            step1Badge.innerHTML = '<i class="fa-solid fa-ban"></i> RSS: TẮT';
+        }
+    }
+};
+
+window.togglePipelineRss = async function (enabled) {
+    try {
+        const res = await fetch('/api/v2/pipeline/toggle_rss', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: Boolean(enabled) })
+        });
+        const data = await res.json();
+        const state = (data.rss_scan_enabled !== undefined) ? data.rss_scan_enabled : enabled;
+        syncAllRssSwitches(state);
+        showToast(state ? '📡 Đã BẬT tự động quét RSS YouTube!' : '⏸️ Đã TẮT quét RSS YouTube. Hệ thống chỉ xử lý video từ thư mục!', 'info');
+    } catch (e) {
+        console.error('Lỗi chuyển chế độ RSS:', e);
+        showToast('Lỗi cập nhật RSS: ' + e.message, 'error');
+    }
+};
+
+async function loadInitialRssAndHost() {
+    try {
+        const resRss = await fetch('/api/v2/pipeline/rss_status');
+        const dataRss = await resRss.json();
+        if (dataRss && dataRss.rss_scan_enabled !== undefined) {
+            syncAllRssSwitches(dataRss.rss_scan_enabled);
+        }
+    } catch (e) { }
+
+    try {
+        const resHost = await fetch('/api/v2/system/info');
+        const dataHost = await resHost.json();
+        if (dataHost && dataHost.computer_name) {
+            const el = document.getElementById('sidebarComputerName');
+            if (el) el.textContent = dataHost.computer_name;
+        }
+    } catch (e) { }
+}
+
+window.handleVisualSourceChange = function (el, targetWrapId) {
+    if (!el) return;
+    const isStock = el.value === 'stock' || el.value === 'mixed';
+    const target = document.getElementById(targetWrapId);
+    if (target) {
+        target.style.display = isStock ? 'block' : 'none';
+    }
+};

@@ -82,7 +82,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='TikTokFarm',
+    name='ShortsFarm',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -106,5 +106,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name='TikTokFarm',
+    name='ShortsFarm',
 )

@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 import random
@@ -432,7 +433,7 @@ class AudioManager:
                 "-af", "asetnsamples=n=44100,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=-",
                 "-f", "null", "-"
             ]
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=15, creationflags=0x08000000 if sys.platform == 'win32' else 0)
             lines = res.stdout.splitlines()
 
             samples = []
@@ -482,31 +483,110 @@ class AudioManager:
             logger.debug(f"Không thể quét drop offset cho {p.name}: {e}")
             return 0.0
 
+    def _classify_mood_with_llm(self, transcript_text: str) -> Optional[str]:
+        """
+        Dùng LLM (DeepSeek/Gemini/OpenAI) phân tích nội dung transcript để chọn thư mục nhạc nền phù hợp nhất.
+        Chi phí cực thấp (~0.001 cent/lần gọi, ~30 tokens).
+        Trả về tên folder hoặc None nếu LLM không khả dụng.
+        """
+        if not transcript_text or len(transcript_text.strip()) < 10:
+            return None
+
+        # Lấy danh sách thư mục nhạc thực tế có bài hát
+        available_folders = []
+        if self.music_dir.exists():
+            for d in sorted(self.music_dir.iterdir()):
+                if d.is_dir() and not d.name.startswith("."):
+                    tracks = [f for f in d.glob("*.*") if f.is_file() and f.suffix.lower() in ALLOWED_AUDIO_EXTENSIONS]
+                    if tracks:
+                        display = THEME_DISPLAY_NAMES.get(d.name, d.name.replace("_", " ").title())
+                        available_folders.append(f"{d.name} ({display}, {len(tracks)} tracks)")
+
+        if not available_folders:
+            return None
+
+        folder_list = "\n".join(f"- {f}" for f in available_folders)
+
+        try:
+            from backend.modules.ai_addon.llm_curator import llm_curator
+
+            system_prompt = (
+                "You are a TikTok background music mood classifier. "
+                "Given a video transcript excerpt, pick the SINGLE best-matching music folder.\n"
+                "Reply with ONLY the folder name (e.g. horror_mystery), nothing else. No explanation."
+            )
+            user_prompt = (
+                f"Available BGM folders:\n{folder_list}\n\n"
+                f"Video transcript:\n\"{transcript_text[:500]}\"\n\n"
+                f"Which folder best matches the mood/tone of this content? Reply with ONLY the folder name."
+            )
+
+            result = llm_curator.query_llm(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                task="bgm_mood_classify"
+            )
+
+            if result:
+                cleaned = result.strip()
+                # Xử lý trường hợp LLM trả về JSON thay vì plain text
+                if "{" in cleaned:
+                    try:
+                        import json as _json
+                        parsed = _json.loads(cleaned)
+                        if isinstance(parsed, dict):
+                            cleaned = str(parsed.get("folder") or parsed.get("mood") or parsed.get("category") or list(parsed.values())[0])
+                    except Exception:
+                        pass
+                cleaned = cleaned.strip().lower().replace(" ", "_").strip('"' + "'`.- ")
+                # Xác nhận folder trả về thực sự tồn tại
+                candidate_dir = self.music_dir / cleaned
+                if candidate_dir.exists() and candidate_dir.is_dir():
+                    logger.info(f"🎵 [LLM MOOD] AI phân tích mood thành công: '{cleaned}' (từ transcript)")
+                    return cleaned
+                else:
+                    logger.debug(f"LLM trả về folder '{cleaned}' không tồn tại, fallback keyword matching")
+        except Exception as e:
+            logger.debug(f"LLM mood classify không khả dụng, fallback keyword matching: {e}")
+
+        return None
+
+    def _classify_mood_keywords(self, text_lower: str) -> str:
+        """Fallback: Phân loại mood bằng keyword matching đơn giản (không cần LLM)."""
+        if any(k in text_lower for k in ("ma", "quỷ", "kinh dị", "u ám", "bí ẩn", "rùng rợn", "creepy", "horror", "ghost", "mystery", "scary", "dark", "hallucin", "survival", "nightmare", "haunted", "demon")):
+            return "horror_mystery"
+        elif any(k in text_lower for k in ("chill", "lofi", "lo-fi", "tâm sự", "thư giãn", "podcast", "study", "relax", "tài chính", "tiền", "meditation", "calm")):
+            return "lofi_chill"
+        elif any(k in text_lower for k in ("động lực", "hành động", "tốc độ", "speed", "xe", "drift", "workout", "gym", "hype", "phonk", "chiến", "viral", "fight", "war", "combat", "beast")):
+            return "phonk_hype"
+        elif any(k in text_lower for k in ("buồn", "cảm động", "chia tay", "nước mắt", "piano", "drama", "câu chuyện", "bài học", "cuộc sống", "emotional", "heartbreak", "loss", "grief", "died", "death")):
+            return "storytelling_piano"
+        else:
+            return "general"
+
     def get_smart_bgm(self, folder_or_mood: Optional[str] = None, transcript_text: str = "") -> Tuple[Optional[str], float, str]:
         """
-        Lựa chọn nhạc nền thông minh:
-        1. Nhận diện Mood từ transcript hoặc folder chỉ định
-        2. Chọn bài hát phù hợp nhất trong thư mục
-        3. Dò điểm Beat Drop tối ưu để bắt đầu phát
+        Lựa chọn nhạc nền thông minh (AI-Powered Mood Detection):
+        1. Ưu tiên dùng LLM (DeepSeek/Gemini) phân tích mood từ nội dung transcript
+        2. Fallback sang keyword matching nếu LLM không khả dụng
+        3. Chọn bài hát ngẫu nhiên trong thư mục phù hợp
+        4. Dò điểm Beat Drop tối ưu để bắt đầu phát
         Trả về: (audio_path, start_offset_seconds, category_name)
         """
         import random
         target_folder = (folder_or_mood or "").strip().lower()
+        if target_folder in ("none", "off", "disable", "disabled", "no_bgm"):
+            return None, 0.0, "none"
 
-        # Mapping từ khóa cảm xúc sang thư mục mặc định
-        text_lower = f"{target_folder} {transcript_text}".lower()
-
-        if target_folder in ("auto", "", "default", "none", "inherit"):
-            if any(k in text_lower for k in ("ma", "quỷ", "kinh dị", "u ám", "bí ẩn", "rùng rợn", "creepy", "horror", "ghost", "mystery", "scary", "dark")):
-                target_folder = "horror_mystery"
-            elif any(k in text_lower for k in ("chill", "lofi", "lo-fi", "tâm sự", "thư giãn", "podcast", "study", "relax", "tài chính", "tiền")):
-                target_folder = "lofi_chill"
-            elif any(k in text_lower for k in ("động lực", "hành động", "tốc độ", "speed", "xe", "drift", "workout", "gym", "hype", "phonk", "chiến", "viral")):
-                target_folder = "phonk_hype"
-            elif any(k in text_lower for k in ("buồn", "cảm động", "chia tay", "nước mắt", "piano", "drama", "câu chuyện", "bài học", "cuộc sống")):
-                target_folder = "storytelling_piano"
+        if target_folder in ("auto", "", "default", "inherit"):
+            # Ưu tiên 1: LLM phân tích mood thông minh từ nội dung thực tế
+            llm_mood = self._classify_mood_with_llm(transcript_text)
+            if llm_mood:
+                target_folder = llm_mood
             else:
-                target_folder = "general"
+                # Ưu tiên 2: Keyword matching fallback (mở rộng thêm từ khóa)
+                text_lower = f"{target_folder} {transcript_text}".lower()
+                target_folder = self._classify_mood_keywords(text_lower)
 
         target_dir = self.music_dir / target_folder
         if not target_dir.exists() or not target_dir.is_dir():
@@ -534,6 +614,60 @@ class AudioManager:
         # Dò điểm Beat Drop tối ưu
         drop_offset = self.find_beat_drop_offset(str(selected))
         return str(selected), drop_offset, used_cat
+
+    def get_distinct_bgm_tracks(
+        self,
+        folder_or_mood: Optional[str] = None,
+        count: int = 3,
+        transcript_text: str = ""
+    ) -> List[Tuple[str, float]]:
+        """
+        Lấy danh sách `count` bài BGM hoàn toàn khác nhau để gán riêng cho từng Variant (A/B/C)
+        hoặc từng tài khoản trong farm nhằm triệt tiêu hoàn toàn trùng lặp Audio Fingerprint.
+        Tự động phân tích mood từ nội dung transcript nếu folder_or_mood là 'auto' hoặc rỗng.
+        """
+        import random
+        target_folder = (folder_or_mood or "").strip().lower()
+        if target_folder in ("none", "off", "disable", "disabled", "no_bgm"):
+            return []
+        text_lower = f"{target_folder} {transcript_text}".lower()
+
+        if target_folder in ("auto", "", "default", "inherit"):
+            # Ưu tiên 1: LLM phân tích mood thông minh
+            llm_mood = self._classify_mood_with_llm(transcript_text)
+            if llm_mood:
+                target_folder = llm_mood
+            else:
+                # Ưu tiên 2: Keyword matching fallback
+                target_folder = self._classify_mood_keywords(text_lower)
+
+        target_dir = self.music_dir / target_folder
+        tracks: List[Path] = []
+        if target_dir.exists() and target_dir.is_dir():
+            tracks = [
+                f for f in target_dir.glob("*.*")
+                if f.is_file() and f.suffix.lower() in ALLOWED_AUDIO_EXTENSIONS
+            ]
+
+        # Nếu thư mục hiện tại không đủ số bài yêu cầu, lấy thêm bài từ các thư mục khác
+        if len(tracks) < count:
+            other_tracks = [
+                f for f in self.music_dir.glob("*/*.*")
+                if f.is_file() and f.suffix.lower() in ALLOWED_AUDIO_EXTENSIONS and f not in tracks
+            ]
+            random.shuffle(other_tracks)
+            tracks.extend(other_tracks)
+
+        if not tracks:
+            return []
+
+        random.shuffle(tracks)
+        chosen = tracks[:count]
+        result = []
+        for p in chosen:
+            offset = self.find_beat_drop_offset(str(p))
+            result.append((str(p), offset))
+        return result
 
 audio_manager = AudioManager()
 

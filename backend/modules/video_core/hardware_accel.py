@@ -35,7 +35,7 @@ def is_nvenc_available() -> bool:
         "-f", "null", "-"
     ]
     try:
-        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=0x08000000 if sys.platform == 'win32' else 0)
         _NVENC_CACHE = (res.returncode == 0)
     except Exception:
         _NVENC_CACHE = False

@@ -42,6 +42,24 @@ from starlette.responses import Response
 
 logger = get_logger("api")
 
+def check_active_license(action_name: str = "Tác vụ này"):
+    """
+    Kiểm tra bản quyền phần mềm theo HWID máy tính.
+    Nếu chưa kích hoạt hoặc bị hủy key -> Chặn ngay lập tức, ghi nhật ký cảnh báo và ném HTTP 403.
+    """
+    from backend.modules.license_manager import get_license_info
+    info = get_license_info()
+    if not info.get("is_active"):
+        hwid = info.get("hwid", "UNKNOWN")
+        msg = f"[BẢN QUYỀN] Từ chối tác vụ '{action_name}': Máy tính chưa kích hoạt License Key hợp lệ (HWID: {hwid})."
+        log_event("WARNING", msg)
+        logger.warning(msg)
+        raise HTTPException(
+            status_code=403,
+            detail="Tính năng này yêu cầu bản quyền. Vui lòng kích hoạt License Key để tiếp tục."
+        )
+    return True
+
 app = FastAPI(title="ShortsStack & AI Video Engine", version="1.0.0")
 
 # --- Security Hardening (OWASP / NIST SP 800-218 / ISO 27034) ---
@@ -1424,6 +1442,7 @@ def retry_upload_task(task_id: int):
 
 @app.post("/api/pipeline/process-uploads")
 def trigger_process_uploads(bg_tasks: BackgroundTasks):
+    check_active_license("Đăng Bài Hàng Đợi")
     def _run_upload():
         try:
             scheduler._process_pending_uploads()
@@ -1701,6 +1720,7 @@ def sanitize_campaign_schedule(raw_str: str) -> str:
 
 @app.post("/api/campaigns")
 def create_campaign(req: CreateCampaignRequest):
+    check_active_license("Tạo & Kích Hoạt Chiến Dịch")
     if not req.name or not req.name.strip():
         raise HTTPException(status_code=400, detail="Tên chiến dịch không được để trống!")
     source_mode = req.source_mode or "hybrid"
@@ -2292,6 +2312,8 @@ def toggle_campaign(campaign_id: int):
         conn.close()
         raise HTTPException(status_code=404, detail="Không tìm thấy chiến dịch")
     new_state = 0 if row["is_active"] == 1 else 1
+    if new_state == 1:
+        check_active_license("Kích Hoạt Chiến Dịch")
     cursor.execute("UPDATE campaigns SET is_active = ? WHERE id = ?", (new_state, campaign_id))
     conn.commit()
     conn.close()
@@ -2314,6 +2336,7 @@ def delete_campaign(campaign_id: int):
 # --- Video Download & AI Edit API ---
 @app.post("/api/video/download")
 def download_video(req: DownloadVideoRequest, bg_tasks: BackgroundTasks):
+    check_active_license("Tải Video")
     clean_url = (req.url or "").strip()
     if not clean_url:
         raise HTTPException(status_code=400, detail="Vui lòng nhập liên kết video (YouTube, Douyin, Xiaohongshu, Facebook, Instagram...)!")
@@ -2924,6 +2947,7 @@ def get_youtube_stream_url(url: str):
 @app.post("/api/audio/download-yt")
 def download_youtube_audio_track(req: DownloadYtAudioRequest):
     """Tải bài hát từ YouTube No-Copyright vào thư mục chủ đề"""
+    check_active_license("Tải Nhạc BGM")
     clean_url = (req.url or "").strip()
     if not clean_url:
         raise HTTPException(status_code=400, detail="Vui lòng nhập link hoặc Video ID YouTube!")
@@ -3034,6 +3058,7 @@ def get_ai_story_stock_providers():
 
 @app.post("/api/video/render")
 def render_video_ai(req: RenderVideoRequest):
+    check_active_license("AI Render Video")
     if not req.video_id or not req.video_id.strip():
         raise HTTPException(status_code=400, detail="Vui lòng chọn video hợp lệ để render!")
     if req.duration is not None and (req.duration < 10 or req.duration > 3600):
@@ -3136,6 +3161,7 @@ def render_video_ai(req: RenderVideoRequest):
 
 @app.post("/api/video/render-smart-ai")
 def render_smart_ai_video(req: SmartRenderVideoRequest):
+    check_active_license("AI Smart Render Video")
     """
     Quy trình phân tích và render AI thông minh trọn gói:
     1. faster-whisper trích xuất transcript & word-level timestamps
@@ -3220,6 +3246,7 @@ def render_smart_ai_video(req: SmartRenderVideoRequest):
 # --- TikTok Upload API ---
 @app.post("/api/tiktok/upload")
 def upload_tiktok(req: UploadVideoRequest):
+    check_active_license("Đăng Video Lên TikTok")
     if not req.gpm_profile_id or not req.gpm_profile_id.strip():
         raise HTTPException(status_code=400, detail="Vui lòng chọn Profile GPMLogin để upload!")
     if not req.video_path or not req.video_path.strip():
@@ -4157,7 +4184,19 @@ def api_verify_license():
 @app.post("/api/v2/license/deactivate")
 def api_deactivate_license():
     """Gỡ bản quyền trên máy tính này để nhập key khác"""
-    return do_deactivate_license()
+    res = do_deactivate_license()
+    # Ngay lập tức tạm dừng mọi chiến dịch đang hoạt động để dừng quét & đăng tự động
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE campaigns SET is_active = 0 WHERE is_active = 1")
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"[LICENSE] Lỗi tạm dừng campaigns khi hủy bản quyền: {e}")
+
+    log_event("WARNING", "[BẢN QUYỀN] Bản quyền trên máy tính này đã được hủy/gỡ bỏ. Mọi tính năng tải video, AI Render và Auto-Pilot bị khóa ngay lập tức.")
+    return res
 
 @app.get("/api/version/check")
 @app.get("/api/v2/version/check")

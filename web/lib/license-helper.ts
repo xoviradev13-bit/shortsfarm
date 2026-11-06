@@ -58,14 +58,16 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
 
 export function generateLicenseKey(plan: string): string {
   const prefix = 'SS';
-  let planTag = 'LIFE';
-  if (plan === 'pro_1pc' || plan === 'monthly') planTag = 'PRO1';
-  else if (plan === 'studio_3pc' || plan === 'yearly') planTag = 'STU3';
-  else if (plan === 'agency_5pc' || plan === 'lifetime') planTag = 'AGE5';
+  let planTag = 'PRO';
+  if (plan === 'studio_3pc' || plan === 'yearly') planTag = 'STU';
+  else if (plan === 'agency_5pc' || plan === 'lifetime') planTag = 'AGE';
+  else if (plan === 'trial') planTag = 'TRI';
+
   const part1 = crypto.randomBytes(2).toString('hex').toUpperCase();
-  const part2 = crypto.randomBytes(3).toString('hex').toUpperCase();
+  const part2 = crypto.randomBytes(2).toString('hex').toUpperCase();
   const part3 = crypto.randomBytes(2).toString('hex').toUpperCase();
-  return `${prefix}-${planTag}-${part1}-${part2}${part3}`;
+  const part4 = crypto.randomBytes(2).toString('hex').toUpperCase();
+  return `${prefix}-${planTag}-${part1}-${part2}-${part3}-${part4}`;
 }
 
 export async function fulfillOrder(orderCode: number) {

@@ -7,9 +7,63 @@ window.LicenseManager = {
     currentInfo: null,
     updateInfo: null,
 
-    init: function () {
-        this.fetchStatus();
+    appendLog: function (message, level = 'warning') {
+        const timeStr = new Date().toLocaleTimeString('vi-VN');
+        const prefix = level === 'error' ? '[ERROR]' : (level === 'warning' ? '[WARNING]' : '[INFO]');
+        console.warn(`${prefix} ${message}`);
+
+        const logTerminal = document.getElementById('logTerminal');
+        if (logTerminal) {
+            const line = document.createElement('div');
+            line.className = `log-line ${level}`;
+            line.innerHTML = `[${timeStr}] ${prefix} ${message}`;
+            logTerminal.insertBefore(line, logTerminal.firstChild);
+        }
+
+        const fileLogTerminal = document.getElementById('fileLogTerminal');
+        if (fileLogTerminal) {
+            const fLine = document.createElement('div');
+            fLine.className = `log-line ${level}`;
+            fLine.innerHTML = `[${timeStr}] ${prefix} ${message}`;
+            fileLogTerminal.insertBefore(fLine, fileLogTerminal.firstChild);
+        }
+    },
+
+    isActive: function () {
+        return !!(this.currentInfo && this.currentInfo.is_active);
+    },
+
+    requireLicense: function (actionName = 'Tác vụ này') {
+        if (this.isActive()) return true;
+
+        const msg = 'Tính năng này yêu cầu bản quyền. Vui lòng kích hoạt License Key để tiếp tục.';
+
+        // 1. Ghi log cảnh báo vào Terminal Nhật Ký Hệ Thống
+        this.appendLog(`[BẢN QUYỀN] Tác vụ bị từ chối (${actionName}): Máy tính chưa kích hoạt License Key hợp lệ.`, 'warning');
+
+        // 2. Bật Toast thông báo
+        if (typeof showToast === 'function') {
+            showToast(`🔒 ${msg}`, 'warning');
+        } else {
+            alert(msg);
+        }
+
+        // 3. Tự động mở Modal kích hoạt
+        this.openLicenseModal();
+        return false;
+    },
+
+    init: async function () {
+        const info = await this.fetchStatus();
         this.checkForUpdates(false); // Check ngầm khi mở app
+
+        // Level 1: Tự động mở Modal kích hoạt nếu máy tính chưa kích hoạt bản quyền
+        if (info && !info.is_active) {
+            this.appendLog('[BẢN QUYỀN] Khởi động ứng dụng: Chưa kích hoạt bản quyền. Vui lòng dán License Key để mở khóa đầy đủ.', 'warning');
+            setTimeout(() => {
+                this.openLicenseModal();
+            }, 800);
+        }
 
         // Lắng nghe phím ESC để đóng mọi modal mở
         window.addEventListener('keydown', (e) => {
@@ -234,10 +288,28 @@ window.LicenseManager = {
             const res = await fetch('/api/license/deactivate', { method: 'POST' });
             const data = await res.json();
             if (data.success) {
-                if (typeof showToast === 'function') {
-                    showToast('Đã hủy liên kết bản quyền thành công. Bạn có thể kích hoạt key mới.', 'info');
+                // Khóa ngay lập tức bộ nhớ cục bộ trên client
+                if (this.currentInfo) {
+                    this.currentInfo.is_active = false;
+                    this.currentInfo.status = 'unlicensed';
+                    this.currentInfo.plan = 'unlicensed';
+                    this.currentInfo.license_key = '';
                 }
+                this.renderUI(this.currentInfo);
+
+                // Ghi log cảnh báo vào Terminal
+                this.appendLog('[BẢN QUYỀN] Bản quyền trên máy tính này đã được hủy/gỡ bỏ. Mọi tính năng tải video, AI Render và Auto-Pilot đã bị khóa ngay lập tức.', 'warning');
+
+                if (typeof showToast === 'function') {
+                    showToast('Đã hủy liên kết bản quyền thành công. Các tính năng chính đã bị khóa.', 'info');
+                }
+
                 await this.fetchStatus();
+
+                // Tự động bật Modal kích hoạt để người dùng dán License Key mới
+                setTimeout(() => {
+                    this.openLicenseModal();
+                }, 400);
             } else {
                 if (typeof showToast === 'function') {
                     showToast(data.message || 'Không thể hủy liên kết bản quyền.', 'error');

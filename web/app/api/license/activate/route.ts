@@ -21,7 +21,15 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, message: 'Dữ liệu gửi lên không đúng định dạng JSON.' },
+        { status: 400 }
+      );
+    }
     const rawKey = body?.license_key;
     const rawHwid = body?.hwid;
     const rawDeviceName = body?.device_name;

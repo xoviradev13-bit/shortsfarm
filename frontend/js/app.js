@@ -2624,6 +2624,9 @@ async function toggleSaveChannelById(channelId) {
 
 // 3. AI Video Editor
 async function downloadSingleVideo() {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Tải Video Đơn')) {
+        return;
+    }
     const inputEl = document.getElementById('directDownloadUrl');
     const url = inputEl ? inputEl.value.trim() : '';
     const btn = document.getElementById('btnDownloadVideo');
@@ -2717,6 +2720,9 @@ async function loadVideos() {
 }
 
 async function renderVideoAI(ytVideoId, btn) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('AI Render Video')) {
+        return;
+    }
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Render...';
@@ -3828,6 +3834,9 @@ function closeUploadModal() {
 }
 
 async function executeUploadVideo() {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Đăng Video Lên TikTok')) {
+        return;
+    }
     const profileId = document.getElementById('modalProfileSelect')?.value;
     const videoPath = (document.getElementById('modalVideoPath')?.value || '').trim();
     const title = (document.getElementById('modalVideoTitle')?.value || '').trim();
@@ -5545,6 +5554,9 @@ async function retryUploadTask(taskId) {
 }
 
 async function triggerProcessUploads() {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Đăng Bài Tự Động')) {
+        return;
+    }
     try {
         const res = await fetch('/api/pipeline/process-uploads', { method: 'POST' });
         const data = await res.json();
@@ -5935,6 +5947,9 @@ function toggleCampaignAutoEngagement(prefix, isChecked) {
 window.toggleCampaignAutoEngagement = toggleCampaignAutoEngagement;
 
 async function openNewCampaignModal() {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Tạo Chiến Dịch Tự Động')) {
+        return;
+    }
     const modal = document.getElementById('newCampaignModal');
     if (!modal) return;
     switchModalTab('new', 'source');
@@ -6314,6 +6329,9 @@ function closeNewCampaignModal() {
 
 async function handleCreateCampaignSubmit(e) {
     e.preventDefault();
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Kích Hoạt Chiến Dịch')) {
+        return;
+    }
     const btn = document.getElementById('btnSubmitCampaign');
 
     // Validate Campaign Name
@@ -6545,6 +6563,12 @@ async function handleCreateCampaignSubmit(e) {
 }
 
 async function toggleCampaign(id, btn) {
+    const camp = cachedCampaigns.find(c => c.id === id);
+    const isCurrentlyActive = camp ? (camp.is_active === 1) : false;
+    // Nếu chiến dịch đang tắt và người dùng muốn BẬT -> bắt buộc phải có License Key hợp lệ
+    if (!isCurrentlyActive && window.LicenseManager && !window.LicenseManager.requireLicense('Kích Hoạt Chiến Dịch')) {
+        return;
+    }
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Lưu...';
@@ -8144,6 +8168,9 @@ function handleStudioClipsPerVideoChange(val) {
 }
 
 async function renderStudioActiveVideo(btn) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('AI Render Video Studio')) {
+        return;
+    }
     if (!activeStudioVideo) {
         showToast('Vui lòng chọn 1 video từ danh sách bên trái trước!', 'warning');
         return;
@@ -11834,6 +11861,9 @@ function closeDownloadAudioCategoryModal() {
 }
 
 async function confirmDownloadAudioTrack(btn) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Tải Nhạc Nền BGM')) {
+        return;
+    }
     const urlInputGroup = document.getElementById('downloadAudioUrlInputGroup');
     const isManual = urlInputGroup && urlInputGroup.style.display !== 'none';
     const targetInputId = isManual ? 'downloadAudioTrackCustomUrl' : 'downloadAudioTrackUrl';

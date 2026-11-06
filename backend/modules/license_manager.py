@@ -205,8 +205,8 @@ def activate_license(license_key: str) -> Dict[str, Any]:
                 "max_devices": int(max_dev),
                 "hwid": hwid,
             }
-        elif status_code in (400, 403, 404):
-            # Lỗi từ logic máy chủ (ví dụ vượt quá số máy, key sai, hết hạn)
+        elif status_code in (400, 403, 404) and isinstance(resp, dict) and ("success" in resp or "message" in resp):
+            # Lỗi phản hồi nghiệp vụ từ máy chủ bản quyền (ví dụ vượt quá số máy, key sai, hết hạn)
             msg = resp.get("message") or resp.get("error") or "Không thể kích hoạt mã bản quyền này."
             return {"success": False, "message": msg, "status_code": status_code}
         else:

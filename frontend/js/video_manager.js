@@ -121,6 +121,9 @@ async function ingestScannedVideos() {
 
 // 3. Tải Video 7 Nền Tảng (Clean Watermark)
 async function triggerMultiDownload() {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Tải Video Đa Nền Tảng')) {
+        return;
+    }
     const inputUrl = document.getElementById('inputMultiDownloadUrl');
     const url = inputUrl ? inputUrl.value.trim() : '';
     if (!url) {
@@ -191,7 +194,7 @@ async function loadElevenLabsInfo() {
             allElevenVoices = dataVoices.voices || [];
             const sel = document.getElementById('selectElevenVoiceList');
             if (sel && allElevenVoices.length > 0) {
-                sel.innerHTML = allElevenVoices.map(v => 
+                sel.innerHTML = allElevenVoices.map(v =>
                     `<option value="${v.voice_id}">${v.name} (${v.description || v.category})</option>`
                 ).join('');
             }
@@ -206,7 +209,7 @@ async function loadElevenLabsInfo() {
                 if (channels.length === 0) {
                     selCh.innerHTML = '<option value="">Chưa có kênh nào. Hãy thêm kênh trong tab Kênh Nguồn</option>';
                 } else {
-                    selCh.innerHTML = channels.map(c => 
+                    selCh.innerHTML = channels.map(c =>
                         `<option value="${c.channel_id}">${c.title || c.channel_id} (Giọng: ${c.tts_engine || 'edge-tts'})</option>`
                     ).join('');
                 }
@@ -311,7 +314,7 @@ async function generateTestTtsSpeech() {
             if (player) {
                 player.src = `/media/downloads/${data.file_path.split(/[\\\\/]/).pop()}`;
                 player.style.display = 'inline-block';
-                player.play().catch(() => {});
+                player.play().catch(() => { });
             }
         } else {
             alertBox.innerHTML = `<span class="text-danger">Lỗi: ${data.detail || data.message}</span>`;
@@ -342,15 +345,15 @@ async function loadVideoLibraryTable() {
         }
 
         tbody.innerHTML = list.map(v => {
-            const statusBadge = v.status === 'rendered' 
+            const statusBadge = v.status === 'rendered'
                 ? '<span class="badge badge-success" style="font-size:11px;"><i class="fa-solid fa-circle-check" style="margin-right:4px;"></i>Đã Render AI</span>'
                 : v.status === 'rendering'
-                ? '<span class="badge" style="background:rgba(245, 158, 11, 0.2); color:#fbbf24; font-size:11px;"><i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i>Đang Render</span>'
-                : v.status === 'uploaded'
-                ? '<span class="badge" style="background:rgba(56, 189, 248, 0.2); color:#38bdf8; font-size:11px;"><i class="fa-solid fa-cloud-arrow-up" style="margin-right:4px;"></i>Đã Đăng</span>'
-                : '<span class="badge" style="background:rgba(255, 255, 255, 0.08); color:var(--text-muted); font-size:11px;"><i class="fa-solid fa-download" style="margin-right:4px;"></i>Đã Tải Sẵn</span>';
+                    ? '<span class="badge" style="background:rgba(245, 158, 11, 0.2); color:#fbbf24; font-size:11px;"><i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i>Đang Render</span>'
+                    : v.status === 'uploaded'
+                        ? '<span class="badge" style="background:rgba(56, 189, 248, 0.2); color:#38bdf8; font-size:11px;"><i class="fa-solid fa-cloud-arrow-up" style="margin-right:4px;"></i>Đã Đăng</span>'
+                        : '<span class="badge" style="background:rgba(255, 255, 255, 0.08); color:var(--text-muted); font-size:11px;"><i class="fa-solid fa-download" style="margin-right:4px;"></i>Đã Tải Sẵn</span>';
 
-            const existsBadge = v.file_exists 
+            const existsBadge = v.file_exists
                 ? '<span style="color:#22c55e; font-size:11.5px; font-weight:600;"><i class="fa-solid fa-check"></i> Có file</span>'
                 : '<span style="color:#ef4444; font-size:11.5px; font-weight:600;"><i class="fa-solid fa-xmark"></i> Mất file</span>';
 
@@ -361,8 +364,8 @@ async function loadVideoLibraryTable() {
             const sourceBadge = isDirect
                 ? `<span class="badge" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); font-size:11px;"><i class="fa-solid fa-link" style="margin-right:4px;"></i>Direct Links</span>`
                 : isYt
-                ? `<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); font-size:11px;" title="${escapeHtml(sourceText)}"><i class="fa-brands fa-youtube" style="margin-right:4px;"></i>${escapeHtml(sourceText)}</span>`
-                : `<span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px;"><i class="fa-solid fa-folder" style="margin-right:4px;"></i>${escapeHtml(sourceText)}</span>`;
+                    ? `<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); font-size:11px;" title="${escapeHtml(sourceText)}"><i class="fa-brands fa-youtube" style="margin-right:4px;"></i>${escapeHtml(sourceText)}</span>`
+                    : `<span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px;"><i class="fa-solid fa-folder" style="margin-right:4px;"></i>${escapeHtml(sourceText)}</span>`;
 
             const vKey = v.yt_video_id || v.id;
 

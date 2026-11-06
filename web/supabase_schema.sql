@@ -128,15 +128,24 @@ ALTER TABLE public.activations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_releases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
--- Cho phép đọc công khai thông tin releases & ghi nhận lượt tải
-CREATE POLICY "Public read releases" ON public.app_releases FOR SELECT USING (true);
-CREATE POLICY "Public insert downloads" ON public.downloads FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public read download count" ON public.downloads FOR SELECT USING (true);
-CREATE POLICY "Service role full access orders" ON public.orders USING (true) WITH CHECK (true);
+-- Xóa các policy cũ nếu có
+DROP POLICY IF EXISTS "Public read releases" ON public.app_releases;
+DROP POLICY IF EXISTS "Public insert downloads" ON public.downloads;
+DROP POLICY IF EXISTS "Public read download count" ON public.downloads;
+DROP POLICY IF EXISTS "Service role full access orders" ON public.orders;
+DROP POLICY IF EXISTS "Service role full access licenses" ON public.licenses;
+DROP POLICY IF EXISTS "Service role full access activations" ON public.activations;
 
--- Đối với licenses & activations:
--- Next.js API Routes dùng SUPABASE_SERVICE_ROLE_KEY (hoặc anon key với RPC)
--- Để bảo vệ không cho client bên ngoài đọc lén toàn bộ danh sách key:
-CREATE POLICY "Service role full access licenses" ON public.licenses USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access activations" ON public.activations USING (true) WITH CHECK (true);
+-- A. Bảng APP_RELEASES & DOWNLOADS: Cho phép đọc phiên bản & ghi nhận tải về
+CREATE POLICY "Public read releases" ON public.app_releases FOR SELECT TO public USING (true);
+CREATE POLICY "Manage releases service role" ON public.app_releases FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+CREATE POLICY "Public insert downloads" ON public.downloads FOR INSERT TO public WITH CHECK (true);
+CREATE POLICY "Public read download count" ON public.downloads FOR SELECT TO public USING (true);
+CREATE POLICY "Manage downloads service role" ON public.downloads FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- B. Bảng LICENSES, ORDERS, ACTIVATIONS: Khóa chặt 100%, chỉ cho phép service_role
+CREATE POLICY "Service role full access licenses" ON public.licenses TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access orders" ON public.orders TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access activations" ON public.activations TO service_role USING (true) WITH CHECK (true);
 

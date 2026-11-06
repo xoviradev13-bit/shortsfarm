@@ -119,7 +119,7 @@ SERVER_PORT = 8088
 # Application Version & Licensing Portal
 APP_VERSION = "1.0.0"
 LICENSE_PORTAL_URL = os.getenv("LICENSE_PORTAL_URL", "http://localhost:3000").rstrip("/")
-FALLBACK_PORTAL_URL = "https://shortsstack.vercel.app"
+FALLBACK_PORTAL_URL = os.getenv("FALLBACK_PORTAL_URL", "https://shortsstack.com").rstrip("/")
 
 def save_env_config(updates: Dict[str, str]) -> bool:
     """Cập nhật các biến cấu hình vào file .env và cập nhật môi trường runtime"""

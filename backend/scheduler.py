@@ -321,6 +321,15 @@ class BackgroundScheduler:
         last_upload_check = 0
         last_watchdog_check = 0
         while self.is_running:
+            # Kiểm tra trạng thái bản quyền: Nếu máy chưa kích hoạt key -> Không xử lý hàng đợi upload
+            try:
+                from backend.modules.license_manager import get_license_info
+                if not get_license_info().get("is_active"):
+                    time.sleep(10)
+                    continue
+            except Exception:
+                pass
+
             now = time.time()
             # Watchdog kiểm tra các task bị treo > stuck_timeout_minutes (quét mỗi 30 giây)
             if self.watchdog_enabled and (now - last_watchdog_check >= 30):
@@ -347,6 +356,15 @@ class BackgroundScheduler:
         """Vòng lặp quét RSS, tải video và render AI chạy ngầm riêng biệt"""
         last_rss_check = 0
         while self.is_running:
+            # Kiểm tra trạng thái bản quyền: Nếu máy chưa kích hoạt key -> Không quét hoặc tải video ngầm
+            try:
+                from backend.modules.license_manager import get_license_info
+                if not get_license_info().get("is_active"):
+                    time.sleep(15)
+                    continue
+            except Exception:
+                pass
+
             now = time.time()
             rss_delay_secs = max(60, self.rss_interval_minutes * 60)
             if now - last_rss_check >= rss_delay_secs:

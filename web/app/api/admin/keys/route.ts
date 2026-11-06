@@ -100,11 +100,17 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < Number(count); i++) {
       let key = custom_key?.trim().toUpperCase();
       if (!key || count > 1) {
-        // Sinh key dạng: SS-XXXX-XXXX-XXXX
+        // Sinh key chuẩn định dạng bảo mật cao: SS-[TIER]-[XXXX]-[XXXX]-[XXXX]-[XXXX]
+        let tag = 'PRO';
+        if (plan === 'studio_3pc' || plan === 'yearly') tag = 'STU';
+        else if (plan === 'agency_5pc' || plan === 'lifetime') tag = 'AGE';
+        else if (plan === 'trial') tag = 'TRI';
+
         const randPart1 = crypto.randomBytes(2).toString('hex').toUpperCase();
         const randPart2 = crypto.randomBytes(2).toString('hex').toUpperCase();
         const randPart3 = crypto.randomBytes(2).toString('hex').toUpperCase();
-        key = `SS-${randPart1}-${randPart2}-${randPart3}`;
+        const randPart4 = crypto.randomBytes(2).toString('hex').toUpperCase();
+        key = `SS-${tag}-${randPart1}-${randPart2}-${randPart3}-${randPart4}`;
       }
 
       const newLicense = await prisma.license.create({

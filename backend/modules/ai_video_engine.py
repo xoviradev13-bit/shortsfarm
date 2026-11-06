@@ -46,7 +46,7 @@ def sanitize_filename(text: Optional[str], max_length: int = 30) -> str:
 
 class AIVideoEngine:
     """
-    Enterprise SaaS AI Video Engine for ShortsFarm:
+    Enterprise SaaS AI Video Engine for ShortsStack:
     - Multi-provider Cloud LLM: DeepSeek, Gemini, OpenAI
     - Local Speech-to-Text: faster-whisper (CTranslate2)
     - Dynamic Subtitles: ASS Karaoke word-level popups

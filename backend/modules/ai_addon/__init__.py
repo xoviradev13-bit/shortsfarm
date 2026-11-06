@@ -1,5 +1,5 @@
 """
-AI Add-on Module for ShortsFarm
+AI Add-on Module for ShortsStack
 Includes:
 - LLM Curation (DeepSeek, Gemini, OpenAI)
 - Speech-to-Text Transcription (faster-whisper)

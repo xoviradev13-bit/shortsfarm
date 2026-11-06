@@ -58,12 +58,12 @@ async function run() {
 
     console.log(`2. Đang gửi email kiểm tra tới ${user}...`);
     const info = await transporter.sendMail({
-      from: `ShortsFarm Studio <${from}>`,
+      from: `ShortsStack Studio <${from}>`,
       to: user,
-      subject: '🚀 [ShortsFarm] Email Test Kích Hoạt Bản Quyền Thành Công',
+      subject: '🚀 [ShortsStack] Email Test Kích Hoạt Bản Quyền Thành Công',
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #070A13; color: #E2E8F0; padding: 24px; border-radius: 12px; max-width: 550px; margin: 0 auto; border: 1px solid #1E293B;">
-          <h2 style="color: #F43F5E; margin-top: 0;">ShortsFarm AI Studio</h2>
+          <h2 style="color: #F43F5E; margin-top: 0;">ShortsStack AI Studio</h2>
           <p style="color: #34D399; font-weight: bold; font-size: 16px;">🎉 Cấu hình Nodemailer SMTP thành công!</p>
           <p style="color: #94A3B8; font-size: 14px;">Hệ thống email tự động đã sẵn sàng gửi License Key cho khách hàng ngay khi có thanh toán VietQR.</p>
           <div style="background: #1E293B; border: 1px dashed #F43F5E; padding: 12px; border-radius: 8px; margin: 16px 0; text-align: center;">

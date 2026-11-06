@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsfarm.vercel.app';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.app';
 
 export const viewport: Viewport = {
   themeColor: [
@@ -17,16 +17,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'ShortsFarm - Hệ Thống Nuôi Kênh & Tự Động Reup Video AI Đa Nền Tảng',
-    template: '%s | ShortsFarm Studio',
+    default: 'ShortsStack - Hệ Thống Nuôi Kênh & Tự Động Reup Video AI Đa Nền Tảng',
+    template: '%s | ShortsStack Studio',
   },
   description:
     'Phần mềm tự động tải video Douyin, Xiaohongshu, YouTube không logo, render lách bản quyền bằng AI thông minh (Ken Burns, Voiceover) và tự động đăng lịch đa nền tảng TikTok Beta, YouTube Shorts, Reels qua Antidetect Browser.',
-  applicationName: 'ShortsFarm',
-  authors: [{ name: 'ShortsFarm Systems', url: siteUrl }],
+  applicationName: 'ShortsStack',
+  authors: [{ name: 'ShortsStack Systems', url: siteUrl }],
   generator: 'Next.js',
   keywords: [
-    'ShortsFarm',
+    'ShortsStack',
     'tool reup video tiktok',
     'lách bản quyền video tiktok',
     'tải video douyin không logo',
@@ -42,8 +42,8 @@ export const metadata: Metadata = {
     'tiktok creator rewards',
     'cắt ghép video tự động',
   ],
-  creator: 'ShortsFarm Systems',
-  publisher: 'ShortsFarm Systems',
+  creator: 'ShortsStack Systems',
+  publisher: 'ShortsStack Systems',
   category: 'Software',
   formatDetection: {
     email: false,
@@ -60,26 +60,26 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'vi_VN',
     url: siteUrl,
-    title: 'ShortsFarm - Hệ Thống Nuôi Kênh & Tự Động Reup Video AI Đa Nền Tảng',
+    title: 'ShortsStack - Hệ Thống Nuôi Kênh & Tự Động Reup Video AI Đa Nền Tảng',
     description:
       'Tải video Douyin & Xiaohongshu sạch logo, render lách bản quyền AI và auto đăng đa nền tảng TikTok, YouTube Shorts, Facebook Reels qua GPMLogin & GenLogin.',
-    siteName: 'ShortsFarm',
+    siteName: 'ShortsStack',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'ShortsFarm - AI Video Engine & Multi-Channel Auto Uploader',
+        alt: 'ShortsStack - AI Video Engine & Multi-Channel Auto Uploader',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ShortsFarm - AI Video Engine & Multi-Channel Auto Uploader',
+    title: 'ShortsStack - AI Video Engine & Multi-Channel Auto Uploader',
     description:
       'Hệ thống tự động tải video Douyin, Xiaohongshu, render lách bản quyền AI và auto upload lên TikTok Beta, YouTube Shorts, Reels.',
     images: ['/og-image.png'],
-    creator: '@shortsfarm',
+    creator: '@shortsstack',
   },
   robots: {
     index: true,

@@ -2,7 +2,7 @@
 tray_manager.py
 ---------------
 Quản lý Khay Hệ Thống (System Tray) và Khởi Động Cùng Windows (Auto-start)
-cho ứng dụng Desktop ShortsFarm.
+cho ứng dụng Desktop ShortsStack.
 
 Tính năng:
 1. Thu nhỏ xuống System Tray khi bấm nút Đóng (X) hoặc Thu nhỏ (Minimize).
@@ -194,7 +194,7 @@ def hide_to_tray():
     if _global_window:
         try:
             _global_window.hide()
-            notify_tray("ShortsFarm", "Ứng dụng đang chạy ngầm trong Khay Hệ Thống.")
+            notify_tray("ShortsStack", "Ứng dụng đang chạy ngầm trong Khay Hệ Thống.")
         except Exception as e:
             log_event("WARNING", f"[TrayManager] Lỗi ẩn window: {e}")
 
@@ -333,9 +333,9 @@ def setup_tray(window=None) -> pystray.Icon:
 
     image = get_tray_image()
     _tray_icon = pystray.Icon(
-        name="ShortsFarm",
+        name="ShortsStack",
         icon=image,
-        title="ShortsFarm & AI Engine (Đang chạy ngầm)",
+        title="ShortsStack & AI Engine (Đang chạy ngầm)",
         menu=menu
     )
 

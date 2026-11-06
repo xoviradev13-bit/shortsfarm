@@ -1,5 +1,5 @@
 -- =========================================================================
--- TikTokFarm & Video AI Studio - Supabase Schema
+-- ShortsStack & Video AI Studio - Supabase Schema
 -- Hướng dẫn: Copy toàn bộ nội dung file này và paste vào:
 -- Supabase Dashboard -> SQL Editor -> Click 'Run'
 -- =========================================================================
@@ -91,7 +91,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON public.orders(customer_e
 INSERT INTO public.app_releases (version, download_url, release_notes, is_mandatory, is_latest)
 VALUES (
     '2.1.0',
-    'https://github.com/your-repo/tiktok-farm/releases/download/v2.1.0/ShortsFarm_Setup_v2.1.0.exe',
+    'https://github.com/your-repo/tiktok-farm/releases/download/v2.1.0/ShortsStack_Setup_v2.1.0.exe',
     'Bổ sung kết nối GPMLogin, GenLogin CDP và tải đa nền tảng Douyin, Xiaohongshu sạch logo.',
     false,
     true
@@ -102,18 +102,18 @@ ON CONFLICT (version) DO NOTHING;
 INSERT INTO public.licenses (license_key, customer_name, customer_email, plan, max_devices, expires_at, notes)
 VALUES 
 (
-    'SF-DEMO-VIP1-2026', 
+    'SS-DEMO-VIP1-2026', 
     'Nguyễn Văn A', 
-    'demo@shortsfarm.com', 
+    'demo@shortsstack.com', 
     'monthly', 
     1, 
     now() + INTERVAL '30 days',
     'Key mẫu test 30 ngày'
 ),
 (
-    'SF-LIFE-PRO8-9999', 
+    'SS-LIFE-PRO8-9999', 
     'Admin Owner', 
-    'admin@shortsfarm.com', 
+    'admin@shortsstack.com', 
     'lifetime', 
     5, 
     NULL,

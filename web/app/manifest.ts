@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ShortsFarm - AI Video Engine & Multi-Channel Auto Uploader',
-    short_name: 'ShortsFarm',
+    name: 'ShortsStack - AI Video Engine & Multi-Channel Auto Uploader',
+    short_name: 'ShortsStack',
     description: 'Hệ thống tự động tải video Douyin, Xiaohongshu, render lách bản quyền AI và auto upload lên TikTok Beta, YouTube Shorts, Reels.',
     start_url: '/',
     display: 'standalone',

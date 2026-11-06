@@ -8,11 +8,11 @@ import requests
 from pathlib import Path
 
 CURRENT_VERSION = "2.1.0"
-VERSION_API_URL = os.environ.get("LICENSE_SERVER_URL", "https://tiktokfarm.vercel.app").rstrip("/") + "/api/version"
+VERSION_API_URL = os.environ.get("LICENSE_SERVER_URL", "https://shortsstack.vercel.app").rstrip("/") + "/api/version"
 
 def print_banner():
     print("=" * 60)
-    print(f"      TIKTOKFARM AI STUDIO - LAUNCHER & AUTO-UPDATER")
+    print(f"      SHORTSSTACK AI STUDIO - LAUNCHER & AUTO-UPDATER")
     print(f"                 Phiên bản hiện tại: v{CURRENT_VERSION}")
     print("=" * 60)
 
@@ -117,12 +117,12 @@ def verify_license() -> bool:
 
 def launch_main_app():
     """Khởi động ứng dụng chính"""
-    print("\n[OK] Đang khởi động hệ thống TikTokFarm Studio...")
+    print("\n[OK] Đang khởi động hệ thống ShortsStack Studio...")
     main_py = Path(__file__).resolve().parent / "main.py"
     
     if getattr(sys, "frozen", False):
         # Nếu đã build thành file .exe
-        app_exe = Path(sys.executable).parent / "TikTokFarm.exe"
+        app_exe = Path(sys.executable).parent / "ShortsStack.exe"
         if app_exe.exists():
             subprocess.Popen([str(app_exe)])
             sys.exit(0)

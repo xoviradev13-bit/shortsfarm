@@ -86,7 +86,7 @@ class YouTubeRSSMonitor:
                     "key": api_key
                 }
                 api_url = f"https://www.googleapis.com/youtube/v3/playlistItems?{urllib.parse.urlencode(params)}"
-                req = urllib.request.Request(api_url, headers={"User-Agent": "ShortsFarm/1.0"})
+                req = urllib.request.Request(api_url, headers={"User-Agent": "ShortsStack/1.0"})
                 with urllib.request.urlopen(req, timeout=8) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     for it in data.get("items", []):

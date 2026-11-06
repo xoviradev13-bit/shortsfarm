@@ -13,7 +13,7 @@ if sys.platform == "win32":
         pass
     try:
         import ctypes
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ShortsFarm.AutoTool.App.1.0")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ShortsStack.AutoTool.App.1.0")
     except Exception:
         pass
 try:
@@ -58,7 +58,7 @@ def start_server():
     server.run()
 
 def apply_native_window_icon(window_title: str):
-    """Gán icon thương hiệu ShortsFarm vào thanh tiêu đề Native Window (thay thế icon Python)"""
+    """Gán icon thương hiệu ShortsStack vào thanh tiêu đề Native Window (thay thế icon Python)"""
     if sys.platform != "win32":
         return
     import ctypes
@@ -97,7 +97,7 @@ def apply_native_window_icon(window_title: str):
     threading.Thread(target=_apply, daemon=True).start()
 
 def find_app_window() -> int:
-    """Tìm HWND của cửa sổ ShortsFarm (kể cả khi đang bị ẩn trong System Tray)"""
+    """Tìm HWND của cửa sổ ShortsStack (kể cả khi đang bị ẩn trong System Tray)"""
     if sys.platform != "win32":
         return 0
     import ctypes
@@ -109,7 +109,7 @@ def find_app_window() -> int:
         if length > 0:
             buff = ctypes.create_unicode_buffer(length + 1)
             user32.GetWindowTextW(hwnd, buff, length + 1)
-            if "ShortsFarm" in buff.value or "TikTok Auto Farm" in buff.value:
+            if "ShortsStack" in buff.value or "ShortsFarm" in buff.value or "TikTok Auto Farm" in buff.value:
                 found_hwnd[0] = hwnd
                 return False  # Dừng quét khi đã tìm thấy
         return True
@@ -120,7 +120,7 @@ def find_app_window() -> int:
 
 def acquire_single_instance_lock() -> bool:
     """
-    Đảm bảo chỉ có DUY NHẤT 1 instance ShortsFarm chạy cùng lúc trên Windows.
+    Đảm bảo chỉ có DUY NHẤT 1 instance ShortsStack chạy cùng lúc trên Windows.
     - Nếu đã có cửa sổ Desktop App đang mở: đưa cửa sổ lên trước và kích hoạt.
     - Nếu phát hiện tiến trình ngầm cũ không có cửa sổ Desktop (hoặc port bị giữ):
       tự động giải phóng tiến trình cũ để cửa sổ Desktop App mới mở lên cho người dùng,
@@ -129,7 +129,7 @@ def acquire_single_instance_lock() -> bool:
     if sys.platform != "win32":
         return True
     import ctypes
-    mutex_name = "Global\\TikTokAutoFarm_App_Mutex"
+    mutex_name = "Global\\ShortsStack_App_Mutex"
     kernel32 = ctypes.windll.kernel32
     user32 = ctypes.windll.user32
     handle = kernel32.CreateMutexW(None, False, mutex_name)
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     if not acquire_single_instance_lock():
         sys.exit(0)
     init_db()
-    log_event("INFO", "Khởi động ứng dụng Desktop ShortsFarm...")
+    log_event("INFO", "Khởi động ứng dụng Desktop ShortsStack...")
 
     # Giải phóng port nếu bị kẹt từ phiên trước
     if is_port_in_use(SERVER_PORT, SERVER_HOST):
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     time.sleep(1.2)
     dashboard_url = f"http://{SERVER_HOST}:{SERVER_PORT}"
     print(f"\n=======================================================")
-    print(f"🚀 SHORTSFARM & AI ENGINE ĐANG CHẠY TẠI:")
+    print(f"🚀 SHORTSSTACK & AI ENGINE ĐANG CHẠY TẠI:")
     print(f"👉 {dashboard_url}")
     print(f"=======================================================\n")
 
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     # Chạy giao diện Desktop trên Main Thread (Bắt buộc cho Windows GUI)
     if webview:
         try:
-            window_title = "ShortsFarm & AI Video Engine"
+            window_title = "ShortsStack & AI Video Engine"
             window = webview.create_window(
                 window_title,
                 dashboard_url,

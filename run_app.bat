@@ -1,9 +1,9 @@
 @echo off
-title ShortsFarm & AI Video Engine
+title ShortsStack & AI Video Engine
 color 0b
 
 echo ========================================================
-echo   SHORTSFARM - AI VIDEO ENGINE & AUTO UPLOADER
+echo   SHORTSSTACK - AI VIDEO ENGINE & AUTO UPLOADER
 echo ========================================================
 echo.
 

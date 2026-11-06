@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
-    <title>ShortsFarm & AI Video Engine</title>
+    <title>ShortsStack & AI Video Engine</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,10 +26,10 @@
 
         <div class="brand">
             <div class="brand-icon">
-                <img src="/logo/app-logo.png" alt="ShortsFarm" class="brand-logo-img">
+                <img src="/logo/app-logo.png" alt="ShortsStack" class="brand-logo-img">
             </div>
             <div class="brand-text">
-                <h2>SHORTSFARM</h2>
+                <h2>SHORTSSTACK</h2>
                 <p>AI Engine & Auto Upload</p>
             </div>
             <!-- Toggle anchored on brand bottom divider -->
@@ -112,15 +112,17 @@
                     Đăng Tài Khoản</p>
             </div>
             <div class="topbar-actions">
-                <button class="btn btn-warning btn-sm has-tooltip tooltip-left" id="btnSystemIssues"
-                    onclick="openSystemIssuesModal()" style="display:none;"
-                    data-tooltip="Xem các cảnh báo & sự cố lỗi hệ thống">
-                    <i class="fa-solid fa-triangle-exclamation"></i> <span id="issueBadgeText">0 Cảnh Báo</span>
+                <button class="btn btn-secondary btn-sm has-tooltip tooltip-left" id="btnTopbarLicense"
+                    onclick="window.LicenseManager.openLicenseModal()"
+                    data-tooltip="Xem thông tin bản quyền hoặc kích hoạt License Key">
+                    <i class="fa-solid fa-shield-halved" id="topbarLicenseIcon" style="color:var(--text-muted);"></i>
+                    <i class="fa-solid fa-shield-halved" id="topbarLicenseIcon" style="color: #ffffff;"></i>
+                    <span id="topbarLicenseText">Bản Quyền</span>
                 </button>
-                <button class="btn btn-secondary btn-sm has-tooltip tooltip-left" id="btnDiagnostics"
-                    onclick="openDiagnosticsModal()"
-                    data-tooltip="Kiểm tra môi trường cài đặt (FFmpeg, Node.js, GPU, Keys)">
-                    <i class="fa-solid fa-stethoscope"></i> Chẩn Đoán
+                <button class="btn btn-info btn-sm has-tooltip tooltip-left" id="btnUpdateAvailable"
+                    onclick="window.LicenseManager.openUpdateModal()" style="display:none;"
+                    data-tooltip="Đã có phiên bản mới! Bấm để xem chi tiết và tải về">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> <span id="updateBadgeText">v1.0.1 Mới</span>
                 </button>
                 <div class="browser-selector-wrapper">
                     <select id="selectActiveBrowser" class="btn btn-secondary btn-sm"
@@ -3090,7 +3092,7 @@
                                     class="fa-solid fa-rotate"></i> Làm mới</button>
                         </div>
                         <div class="log-terminal" id="logTerminal" style="height: 480px; overflow-y: auto;">
-                            <div class="log-line info">[INIT] Hệ thống ShortsFarm & AI Engine đã khởi động thành công.
+                            <div class="log-line info">[INIT] Hệ thống ShortsStack & AI Engine đã khởi động thành công.
                             </div>
                         </div>
                     </div>
@@ -3121,6 +3123,156 @@
                         <button class="btn btn-sm btn-secondary" onclick="loadApiKeySettings()"><i
                                 class="fa-solid fa-rotate"></i> Làm Mới</button>
                     </div>
+
+                    <!-- BẢN QUYỀN PHẦN MỀM & HWID -->
+                    <div class="settings-section mt-3"
+                        style="background: rgba(244, 63, 94, 0.03); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 12px; padding: 18px 20px;">
+                        <div class="settings-section-header"
+                            style="justify-content: space-between; align-items: center; display: flex; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fa-solid fa-shield-halved" style="color: #F43F5E; font-size: 22px;"></i>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #fff;">Bản Quyền
+                                        Phần Mềm & Thiết Bị (License Key)</h4>
+                                    <p class="panel-sub" style="margin: 2px 0 0 0;">Kiểm soát số máy tính sử dụng theo
+                                        từng gói (1 PC / 3 PCs / 5 PCs - Vĩnh Viễn) qua mã phần cứng HWID.</p>
+                                </div>
+                            </div>
+                            <div id="settingLicenseStatusBadge">
+                                <span class="badge badge-secondary"><i class="fa-solid fa-spinner fa-spin"></i> Đang
+                                    tải...</span>
+                            </div>
+                        </div>
+
+                        <!-- Card thông tin phần cứng HWID -->
+                        <div
+                            style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px 16px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <span
+                                    style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">Mã
+                                    Thiết Bị Máy Tính Này (HWID):</span>
+                                <div style="font-family: monospace; font-size: 13.5px; font-weight: 700; color: #38bdf8; margin-top: 3px;"
+                                    id="settingLicenseHwid">Đang quét...</div>
+                            </div>
+                            <button type="button" class="btn btn-xs btn-secondary"
+                                onclick="window.LicenseManager.copyHwid()"
+                                title="Sao chép HWID gửi cho Admin nếu cần hỗ trợ">
+                                <i class="fa-regular fa-copy"></i> Sao Chép HWID
+                            </button>
+                        </div>
+
+                        <!-- Trạng thái 1: Đã kích hoạt -->
+                        <div id="settingLicenseActiveCard" style="display: none; margin-top: 14px;">
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                                <div
+                                    style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block;">Gói bản
+                                        quyền:</span>
+                                    <strong style="color: #34d399; font-size: 13.5px;"
+                                        id="settingLicensePlan">—</strong>
+                                </div>
+                                <div
+                                    style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block;">Thời hạn sử
+                                        dụng:</span>
+                                    <strong style="color: #fff; font-size: 13.5px;"
+                                        id="settingLicenseExpires">—</strong>
+                                </div>
+                                <div
+                                    style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block;">Giới hạn
+                                        thiết bị:</span>
+                                    <strong style="color: #38bdf8; font-size: 13.5px;"
+                                        id="settingLicenseDevices">—</strong>
+                                </div>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div style="font-size: 12px; color: var(--text-muted);">
+                                    Mã key hiện tại: <code
+                                        style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;"
+                                        id="settingLicenseCurrentKey">SS-***</code>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="btn btn-xs btn-secondary"
+                                        onclick="window.LicenseManager.syncLicense(this)"
+                                        title="Đồng bộ trạng thái từ máy chủ">
+                                        <i class="fa-solid fa-arrows-rotate"></i> Đồng Bộ Trạng Thái
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-danger"
+                                        onclick="window.LicenseManager.openConfirmDeactivateModal()"
+                                        style="color: #f87171; border: 1px solid rgba(248,113,113,0.3); background: transparent; padding: 4px 10px; border-radius: 6px; cursor: pointer;">
+                                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Đổi Key Khác
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trạng thái 2: Chưa kích hoạt -->
+                        <div id="settingLicenseUnactiveCard" style="margin-top: 14px;">
+                            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px;">
+                                Nhập mã License Key nhận được sau khi thanh toán VietQR trên website (ví dụ: <code
+                                    style="color:#f43f5e;">SS-PRO-XXXX-XXXXXXXX</code>):
+                            </p>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <input type="text" id="settingLicenseKeyInput" class="input-field"
+                                    placeholder="Dán mã bản quyền SS-PRO-XXXX... vào đây"
+                                    style="flex: 1; min-width: 260px; font-family: monospace; font-size: 13.5px; text-transform: uppercase;">
+                                <button type="button" class="btn btn-primary"
+                                    onclick="window.LicenseManager.activate(this, 'settingLicenseKeyInput')">
+                                    <i class="fa-solid fa-key"></i> Kích Hoạt Bản Quyền
+                                </button>
+                            </div>
+                            <small
+                                style="display: block; margin-top: 8px; font-size: 11.5px; color: var(--text-muted);">
+                                💡 Chưa có key? Mua bản quyền tự động kích hoạt trong 3 giây tại cổng thanh toán
+                                website: <a href="http://localhost:3000" target="_blank"
+                                    style="color:#f43f5e; text-decoration: underline;">shortsstack.vercel.app</a>
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- KIỂM TRA BẢN CẬP NHẬT PHẦN MỀM -->
+                    <div class="settings-section mt-3"
+                        style="background: rgba(56, 189, 248, 0.03); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; padding: 16px 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fa-solid fa-cloud-arrow-down" style="color: #38bdf8; font-size: 20px;"></i>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #fff;">Cập Nhật
+                                        Phiên Bản (App Version & Updates)</h4>
+                                    <p class="panel-sub" style="margin: 2px 0 0 0;">Phiên bản hiện tại: <strong
+                                            style="color: #38bdf8;">v1.0.0</strong> — Luôn cập nhật để nhận các tính
+                                        năng lách bản quyền & bypass mới nhất.</p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-secondary" id="btnCheckAppUpdate"
+                                onclick="window.LicenseManager.checkForUpdates(true)">
+                                <i class="fa-solid fa-arrows-rotate"></i> Kiểm Tra Bản Cập Nhật
+                            </button>
+                        </div>
+
+                        <!-- Card hiển thị khi có bản mới -->
+                        <div id="appUpdateAvailableCard"
+                            style="display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 14px 16px; margin-top: 14px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div>
+                                    <div style="color: #34d399; font-weight: 700; font-size: 14px;">🎉 Đã có bản cập
+                                        nhật mới!</div>
+                                    <div style="color: #cbd5e1; font-size: 12.5px; margin-top: 2px;"
+                                        id="appUpdateInfoText">Đang tải chi tiết...</div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-success" id="btnDownloadNewRelease">
+                                    <i class="fa-solid fa-download"></i> Tải Bản Cập Nhật (.exe)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider">
 
                     <!-- YouTube API Keys -->
                     <div class="settings-section mt-3">
@@ -6506,7 +6658,9 @@
                                 <div>
                                     <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-crop"></i>
                                         Định dạng khung hình (Aspect Ratio):</label>
-                                    <select id="editCampaignAspectRatio" class="custom-select mt-1"
+                                    <select id="editCampaignAsp
+... [truncated for diff preview]
+                                    <select id=" editCampaignAspectRatio" class="custom-select mt-1"
                                         style="width:100%; height:40px;">
                                         <option value="9:16_blur" selected>9:16 Dọc Nền Mờ (Blur Canvas) - Chuẩn TikTok
                                         </option>
@@ -8077,7 +8231,7 @@
                 style="padding:12px 20px; border-top:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-size:11.5px; color:var(--text-muted);"><i
                         class="fa-solid fa-circle-info text-cyan"></i> Dữ liệu tự động cập nhật từ các bài đăng trên
-                    ShortsFarm</span>
+                    ShortsStack</span>
                 <button type="button" class="btn btn-secondary btn-sm"
                     onclick="closeVariantsReportModal()">Đóng</button>
             </div>
@@ -8151,6 +8305,184 @@
     </script>
 
     <script src="/static/js/elevenlabs_studio.js?v=20261103_01"></script>
+
+    <!-- Modal Kích Hoạt Bản Quyền (License Key) -->
+    <div class="modal" id="licenseActivationModal"
+        onclick="if(event.target === this) window.LicenseManager.closeLicenseModal()" style="display: none;">
+        <div class="modal-content glass-panel"
+            style="max-width: 520px; border-radius: var(--radius-lg); overflow: hidden; padding: 0; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); border: 1px solid rgba(244, 63, 94, 0.3);">
+            <div class="modal-header"
+                style="padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(244, 63, 94, 0.05);">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div
+                        style="width:40px; height:40px; border-radius:10px; background: linear-gradient(135deg, #f43f5e, #be123c); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow: 0 4px 12px rgba(244,63,94,0.3);">
+                        <i class="fa-solid fa-key" style="color: #fff; font-size: 18px;"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin:0; font-size:16px; font-weight:700; color:#fff;">Kích Hoạt Bản Quyền
+                            ShortsStack</h3>
+                        <p class="panel-sub" style="margin:2px 0 0 0; font-size:12px;">Mở khóa toàn bộ tính năng nuôi
+                            kênh & render video AI</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-corner-close" onclick="window.LicenseManager.closeLicenseModal()"
+                    style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 50; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(239,68,68,0.3)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.08)'" title="Đóng">
+                    <i class="fa-solid fa-xmark" style="font-size: 15px; pointer-events: none;"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 22px;">
+                <!-- HWID Box -->
+                <div
+                    style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span
+                            style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">MÃ
+                            MÁY TÍNH (HWID):</span>
+                        <button type="button" class="btn btn-xs btn-outline-info"
+                            onclick="window.LicenseManager.copyHwid()"
+                            style="padding: 2px 8px; font-size: 11px; cursor: pointer;">
+                            <i class="fa-regular fa-copy"></i> Sao Chép
+                        </button>
+                    </div>
+                    <div style="font-family: monospace; font-size: 13.5px; font-weight: 700; color: #38bdf8; word-break: break-all;"
+                        id="modalHwidText">Đang tải...</div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label style="font-weight:600; display:block; margin-bottom:6px; font-size: 13px;">Mã Bản Quyền
+                        (License Key):</label>
+                    <input type="text" id="modalLicenseKeyInput" class="input-field" placeholder="SS-PRO-XXXX-XXXXXXXX"
+                        style="font-family: monospace; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 14px;"
+                        onkeydown="if(event.key==='Enter') window.LicenseManager.activate(document.getElementById('btnModalActivateSubmit'), 'modalLicenseKeyInput')">
+                </div>
+
+                <p style="font-size: 11.5px; color: var(--text-muted); margin: 0 0 18px 0; line-height: 1.5;">
+                    Mỗi mã key được liên kết cố định với máy tính này (theo HWID). Khách hàng có thể đổi máy bằng cách
+                    liên hệ Admin để Reset HWID.
+                </p>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="window.LicenseManager.closeLicenseModal()"
+                        style="padding: 10px 18px; cursor: pointer;">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="btnModalActivateSubmit"
+                        onclick="window.LicenseManager.activate(this, 'modalLicenseKeyInput')"
+                        style="background: linear-gradient(135deg, #f43f5e, #e11d48); border: none; padding: 10px 22px; cursor: pointer; font-weight: 600;">
+                        <i class="fa-solid fa-check"></i> Kích Hoạt Ngay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xác Nhận Hủy Liên Kết Bản Quyền (Đổi Key Khác) -->
+    <div class="modal" id="confirmDeactivateModal"
+        onclick="if(event.target === this) window.LicenseManager.closeConfirmDeactivateModal()" style="display: none;">
+        <div class="modal-content glass-panel"
+            style="max-width: 460px; border-radius: var(--radius-lg); overflow: hidden; padding: 0; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); border: 1px solid rgba(244, 63, 94, 0.3);">
+            <div class="modal-header"
+                style="padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(244, 63, 94, 0.08);">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div
+                        style="width:38px; height:38px; border-radius:10px; background: rgba(244, 63, 94, 0.2); border: 1px solid rgba(244, 63, 94, 0.4); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <i class="fa-solid fa-arrow-right-from-bracket" style="color: #f43f5e; font-size: 16px;"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin:0; font-size:15px; font-weight:700; color:#fff;">Đổi Mã License Key Khác</h3>
+                        <p class="panel-sub" style="margin:2px 0 0 0; font-size:11.5px;">Xác nhận hủy liên kết bản quyền
+                            hiện tại</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-corner-close"
+                    onclick="window.LicenseManager.closeConfirmDeactivateModal()"
+                    style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 50; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(239,68,68,0.3)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.08)'" title="Đóng">
+                    <i class="fa-solid fa-xmark" style="font-size: 14px; pointer-events: none;"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 22px;">
+                <p style="font-size: 13.5px; color: #e2e8f0; margin: 0 0 14px 0; line-height: 1.6;">
+                    Bạn có chắc chắn muốn hủy liên kết bản quyền trên máy tính này không?
+                </p>
+                <div
+                    style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 20px;">
+                    <p style="font-size: 12px; color: #fbbf24; margin: 0; line-height: 1.5;">
+                        <i class="fa-solid fa-circle-info"></i> Sau khi hủy, phần mềm sẽ trở về trạng thái <strong>Chưa
+                            Kích Hoạt</strong>. Bạn có thể nhập mã License Key mới để kích hoạt lại bất kỳ lúc nào.
+                    </p>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="window.LicenseManager.closeConfirmDeactivateModal()"
+                        style="padding: 9px 18px; cursor: pointer;">
+                        Hủy Bỏ
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="window.LicenseManager.confirmDeactivateNow()"
+                        style="background: linear-gradient(135deg, #ef4444, #dc2626); border: none; padding: 9px 20px; cursor: pointer; font-weight: 600;">
+                        <i class="fa-solid fa-check"></i> Xác Nhận Đổi Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thông Báo Bản Cập Nhật Mới -->
+    <div class="modal" id="appUpdateModal" onclick="if(event.target === this) window.LicenseManager.closeUpdateModal()"
+        style="display: none;">
+        <div class="modal-content glass-panel"
+            style="max-width: 500px; border-radius: var(--radius-lg); overflow: hidden; padding: 0; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); border: 1px solid rgba(56, 189, 248, 0.3);">
+            <div class="modal-header"
+                style="padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(56, 189, 248, 0.05);">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div
+                        style="width:38px; height:38px; border-radius:10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <i class="fa-solid fa-cloud-arrow-down" style="color: #38bdf8; font-size: 16px;"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin:0; font-size:15px; font-weight:700; color:#fff;" id="updateModalVersionText">
+                            Cập Nhật Phiên Bản Mới</h3>
+                        <p class="panel-sub" style="margin:2px 0 0 0; font-size:11.5px;">ShortsStack Desktop Release</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-corner-close" onclick="window.LicenseManager.closeUpdateModal()"
+                    style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 50; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(239,68,68,0.3)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.08)'" title="Đóng">
+                    <i class="fa-solid fa-xmark" style="font-size: 14px; pointer-events: none;"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 22px;">
+                <div
+                    style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; margin-bottom: 18px;">
+                    <div
+                        style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">
+                        Nội dung cập nhật & ghi chú phát hành:</div>
+                    <div id="updateModalNotesText"
+                        style="font-size: 12.5px; color: #cbd5e1; line-height: 1.6; max-height: 180px; overflow-y: auto;">
+                        Đang tải ghi chú phát hành...
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="window.LicenseManager.closeUpdateModal()"
+                        style="padding: 9px 18px; cursor: pointer;">
+                        Để Sau
+                    </button>
+                    <button type="button" class="btn btn-success" id="updateModalDownloadBtn"
+                        style="background: linear-gradient(135deg, #10b981, #059669); border: none; padding: 9px 20px; cursor: pointer; font-weight: 600;">
+                        <i class="fa-solid fa-download"></i> Tải Bản Cập Nhật (.exe)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Quản Lý Bản Quyền & Auto-Update -->
+    <script src="/static/js/license_update.js"></script>
 </body>
 
 </html>

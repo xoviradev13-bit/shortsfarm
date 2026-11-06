@@ -21,8 +21,16 @@ if getattr(sys, "frozen", False):
     BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", BASE_DIR))
     _appdata = os.environ.get("APPDATA") or os.path.expanduser("~")
     _legacy_dir = Path(_appdata) / "TikTok Auto Farm"
-    _new_dir = Path(_appdata) / "ShortsFarm"
-    DATA_DIR = _legacy_dir if (_legacy_dir.exists() and not _new_dir.exists()) else _new_dir
+    _legacy_dir2 = Path(_appdata) / "ShortsFarm"
+    _new_dir = Path(_appdata) / "ShortsStack"
+    if _new_dir.exists():
+        DATA_DIR = _new_dir
+    elif _legacy_dir2.exists():
+        DATA_DIR = _legacy_dir2
+    elif _legacy_dir.exists():
+        DATA_DIR = _legacy_dir
+    else:
+        DATA_DIR = _new_dir
 else:
     BASE_DIR = Path(__file__).resolve().parent.parent
     BUNDLE_DIR = BASE_DIR
@@ -38,7 +46,7 @@ RENDERED_DIR = DATA_DIR / "rendered"
 LOGS_DIR = DATA_DIR / "logs"
 MUSIC_DIR = DATA_DIR / "music"
 LOG_FILE_PATH = LOGS_DIR / "app.log"
-DB_PATH = DATA_DIR / "tiktok_tool.db"
+DB_PATH = DATA_DIR / "shortsstack.db"
 
 # Tự động tạo thư mục nếu chưa tồn tại
 DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
@@ -107,6 +115,11 @@ SUBTITLE_FONT_SIZE = int(os.getenv("SUBTITLE_FONT_SIZE", 54))
 # Server config
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8088
+
+# Application Version & Licensing Portal
+APP_VERSION = "1.0.0"
+LICENSE_PORTAL_URL = os.getenv("LICENSE_PORTAL_URL", "http://localhost:3000").rstrip("/")
+FALLBACK_PORTAL_URL = "https://shortsstack.vercel.app"
 
 def save_env_config(updates: Dict[str, str]) -> bool:
     """Cập nhật các biến cấu hình vào file .env và cập nhật môi trường runtime"""

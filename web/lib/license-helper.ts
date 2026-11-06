@@ -11,23 +11,45 @@ export interface PlanConfig {
 }
 
 export const PLAN_CONFIGS: Record<string, PlanConfig> = {
-  monthly: {
-    code: 'monthly',
-    name: 'Gói Cá Nhân Pro (1 PC)',
+  pro_1pc: {
+    code: 'pro_1pc',
+    name: 'Gói Cá Nhân (1 PC - Vĩnh Viễn)',
     amount: 499000,
-    durationDays: 30,
+    durationDays: null,
+    maxDevices: 1,
+  },
+  studio_3pc: {
+    code: 'studio_3pc',
+    name: 'Gói Studio (3 PCs - Vĩnh Viễn)',
+    amount: 3990000,
+    durationDays: null,
+    maxDevices: 3,
+  },
+  agency_5pc: {
+    code: 'agency_5pc',
+    name: 'Gói Agency (5 PCs - Vĩnh Viễn)',
+    amount: 8500000,
+    durationDays: null,
+    maxDevices: 5,
+  },
+  // Tương thích ngược với các đơn hàng cũ
+  monthly: {
+    code: 'pro_1pc',
+    name: 'Gói Cá Nhân (1 PC - Vĩnh Viễn)',
+    amount: 499000,
+    durationDays: null,
     maxDevices: 1,
   },
   yearly: {
-    code: 'yearly',
-    name: 'Gói Studio Pro (2 PCs)',
+    code: 'studio_3pc',
+    name: 'Gói Studio (3 PCs - Vĩnh Viễn)',
     amount: 3990000,
-    durationDays: 365,
-    maxDevices: 2,
+    durationDays: null,
+    maxDevices: 3,
   },
   lifetime: {
-    code: 'lifetime',
-    name: 'Gói Agency Vĩnh Viễn (5 PCs)',
+    code: 'agency_5pc',
+    name: 'Gói Agency (5 PCs - Vĩnh Viễn)',
     amount: 8500000,
     durationDays: null,
     maxDevices: 5,
@@ -35,8 +57,11 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
 };
 
 export function generateLicenseKey(plan: string): string {
-  const prefix = 'SF';
-  const planTag = plan === 'lifetime' ? 'LIFE' : plan === 'yearly' ? 'YEAR' : 'PRO';
+  const prefix = 'SS';
+  let planTag = 'LIFE';
+  if (plan === 'pro_1pc' || plan === 'monthly') planTag = 'PRO1';
+  else if (plan === 'studio_3pc' || plan === 'yearly') planTag = 'STU3';
+  else if (plan === 'agency_5pc' || plan === 'lifetime') planTag = 'AGE5';
   const part1 = crypto.randomBytes(2).toString('hex').toUpperCase();
   const part2 = crypto.randomBytes(3).toString('hex').toUpperCase();
   const part3 = crypto.randomBytes(2).toString('hex').toUpperCase();

@@ -11,9 +11,12 @@ interface ReceiptEmailParams {
 }
 
 const PLAN_NAMES: Record<string, string> = {
-  monthly: 'Gói Cá Nhân Pro (1 PC - 30 Ngày)',
-  yearly: 'Gói Studio Pro (2 PCs - 1 Năm)',
-  lifetime: 'Gói Agency Vĩnh Viễn (5 PCs - Trọn Đời)',
+  pro_1pc: 'Gói Cá Nhân (1 PC - Vĩnh Viễn)',
+  studio_3pc: 'Gói Studio (3 PCs - Vĩnh Viễn)',
+  agency_5pc: 'Gói Agency (5 PCs - Vĩnh Viễn)',
+  monthly: 'Gói Cá Nhân (1 PC - Vĩnh Viễn)',
+  yearly: 'Gói Studio (3 PCs - Vĩnh Viễn)',
+  lifetime: 'Gói Agency (5 PCs - Vĩnh Viễn)',
 };
 
 let cachedTransporter: Transporter | null = null;
@@ -47,14 +50,14 @@ function getTransporter(): Transporter | null {
 
 export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<{ success: boolean; message?: string }> {
   const { to, customerName, licenseKey, plan, amount, expiresAt, maxDevices } = params;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsfarm.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.app';
   const planDisplay = PLAN_NAMES[plan] || plan;
   const expiresDisplay = expiresAt
     ? expiresAt.toLocaleDateString('vi-VN')
     : 'Vĩnh viễn (Trọn đời không giới hạn)';
   const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
-  const subject = `[ShortsFarm] Kích Hoạt Mã Bản Quyền Thành Công - ${planDisplay}`;
+  const subject = `[ShortsStack] Kích Hoạt Mã Bản Quyền Thành Công - ${planDisplay}`;
   const html = `
 <!DOCTYPE html>
 <html>
@@ -65,13 +68,13 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<{ su
 <body style="font-family: Arial, sans-serif; background-color: #070A13; color: #E2E8F0; padding: 24px;">
   <div style="max-width: 600px; margin: 0 auto; background-color: #0D121F; border: 1px solid #1E293B; border-radius: 16px; padding: 32px;">
     <div style="text-align: center; margin-bottom: 24px;">
-      <h1 style="color: #F43F5E; font-size: 26px; margin: 0;">ShortsFarm AI Studio</h1>
+      <h1 style="color: #F43F5E; font-size: 26px; margin: 0;">ShortsStack AI Studio</h1>
       <p style="color: #94A3B8; font-size: 14px; margin-top: 6px;">Hệ thống Nuôi Kênh & Tự Động Reup Video Đa Nền Tảng</p>
     </div>
 
     <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 24px;">
       <h2 style="color: #34D399; font-size: 18px; margin: 0;">🎉 Thanh Toán Thành Công!</h2>
-      <p style="color: #A7F3D0; font-size: 14px; margin: 6px 0 0 0;">Cảm ơn bạn đã lựa chọn phần mềm ShortsFarm.</p>
+      <p style="color: #A7F3D0; font-size: 14px; margin: 6px 0 0 0;">Cảm ơn bạn đã lựa chọn phần mềm ShortsStack.</p>
     </div>
 
     <div style="margin-bottom: 24px;">
@@ -110,7 +113,7 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<{ su
       <h3 style="color: #FFFFFF; font-size: 15px; margin: 0 0 8px 0;">🚀 Hướng dẫn kích hoạt:</h3>
       <ol style="margin: 0; padding-left: 18px; line-height: 1.6;">
         <li>Tải và cài đặt phần mềm nếu bạn chưa cài: <a href="${siteUrl}/api/download" style="color: #F43F5E; text-decoration: none; font-weight: bold;">Tải Bộ Cài (.exe)</a></li>
-        <li>Mở ứng dụng <strong>ShortsFarm</strong> trên máy tính của bạn.</li>
+        <li>Mở ứng dụng <strong>ShortsStack</strong> trên máy tính của bạn.</li>
         <li>Dán mã bản quyền ở trên vào hộp kích hoạt và bấm <strong>Kích hoạt</strong>.</li>
         <li>Phần mềm sẽ tự động đồng bộ và mở khóa toàn bộ tính năng!</li>
       </ol>
@@ -118,7 +121,7 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<{ su
 
     <div style="text-align: center; border-top: 1px solid #1E293B; padding-top: 16px; font-size: 12px; color: #64748B;">
       <p>Cần hỗ trợ đổi máy (Reset HWID) hoặc kỹ thuật? Liên hệ Admin qua Telegram hoặc Email.</p>
-      <p>© 2026 ShortsFarm Systems. All rights reserved.</p>
+      <p>© 2026 ShortsStack Systems. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -129,7 +132,7 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<{ su
   const transporter = getTransporter();
   if (transporter) {
     try {
-      const from = process.env.EMAIL_FROM || process.env.SMTP_USER || 'ShortsFarm <license@shortsfarm.com>';
+      const from = process.env.EMAIL_FROM || process.env.SMTP_USER || 'ShortsStack <license@shortsstack.com>';
       await transporter.sendMail({
         from,
         to,
@@ -154,7 +157,7 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<{ su
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: process.env.EMAIL_FROM || 'ShortsFarm <license@shortsfarm.com>',
+          from: process.env.EMAIL_FROM || 'ShortsStack <license@shortsstack.com>',
           to: [to],
           subject,
           html,

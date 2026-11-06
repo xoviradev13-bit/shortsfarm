@@ -42,7 +42,7 @@ from starlette.responses import Response
 
 logger = get_logger("api")
 
-app = FastAPI(title="ShortsFarm & AI Video Engine", version="1.0.0")
+app = FastAPI(title="ShortsStack & AI Video Engine", version="1.0.0")
 
 # --- Security Hardening (OWASP / NIST SP 800-218 / ISO 27034) ---
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -3653,7 +3653,7 @@ def test_specific_telegram_channel(channel_id: int, mode: Optional[str] = "conne
     types_str = "\n".join([f"• {t}" for t in types_active]) if types_active else "• (Chưa bật loại thông báo nào)"
 
     msg = (
-        "🔔 *[SHORTSFARM] KIỂM TRA KẾT NỐI KÊNH THÀNH CÔNG!*\n"
+        "🔔 *[SHORTSSTACK] KIỂM TRA KẾT NỐI KÊNH THÀNH CÔNG!*\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📢 *Tên Kênh:* `{row['name']}`\n"
         f"🆔 *Chat ID:* `{row['chat_id']}`\n"
@@ -3662,7 +3662,7 @@ def test_specific_telegram_channel(channel_id: int, mode: Optional[str] = "conne
         "📋 *Loại thông báo đang đăng ký nhận:*\n"
         f"{types_str}\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "✅ Kênh này đã sẵn sàng hoạt động cùng ShortsFarm Auto-Pilot!"
+        "✅ Kênh này đã sẵn sàng hoạt động cùng ShortsStack Auto-Pilot!"
     )
     ok, err_msg = notifier.send_message_to_chat(bot_token, row["chat_id"], msg)
     if ok:
@@ -4098,7 +4098,7 @@ def browse_folder():
         ps_cmd = (
             'Add-Type -AssemblyName System.Windows.Forms; '
             '$d = New-Object System.Windows.Forms.FolderBrowserDialog; '
-            '$d.Description = "Chọn thư mục lưu trữ video ShortsFarm"; '
+            '$d.Description = "Chọn thư mục lưu trữ video ShortsStack"; '
             '$d.ShowNewFolderButton = $true; '
             'if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $d.SelectedPath }'
         )
@@ -4115,6 +4115,55 @@ def browse_folder():
         return {"status": "cancelled", "path": ""}
     except Exception as e:
         return {"status": "error", "message": str(e), "path": ""}
+
+# --- Licensing & Update System ---
+from backend.modules.license_manager import (
+    get_license_info,
+    activate_license as do_activate_license,
+    verify_license as do_verify_license,
+    deactivate_license as do_deactivate_license,
+    check_app_update as do_check_update,
+    get_hwid,
+)
+
+class LicenseActivateRequest(BaseModel):
+    license_key: str
+
+@app.get("/api/license/status")
+@app.get("/api/v2/license/status")
+def api_get_license_status():
+    """Lấy thông tin trạng thái bản quyền và HWID của máy tính"""
+    return get_license_info()
+
+@app.post("/api/license/activate")
+@app.post("/api/v2/license/activate")
+def api_activate_license(req: LicenseActivateRequest):
+    """Kích hoạt bản quyền qua Web Portal"""
+    result = do_activate_license(req.license_key)
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=result.get("status_code", 400),
+            detail=result.get("message", "Kích hoạt không thành công")
+        )
+    return result
+
+@app.post("/api/license/verify")
+@app.post("/api/v2/license/verify")
+def api_verify_license():
+    """Xác thực bản quyền trực tiếp với Web Portal"""
+    return do_verify_license(force_remote=True)
+
+@app.post("/api/license/deactivate")
+@app.post("/api/v2/license/deactivate")
+def api_deactivate_license():
+    """Gỡ bản quyền trên máy tính này để nhập key khác"""
+    return do_deactivate_license()
+
+@app.get("/api/version/check")
+@app.get("/api/v2/version/check")
+def api_check_version():
+    """Kiểm tra bản cập nhật mới từ server"""
+    return do_check_update()
 
 # --- AI Usage & Cost Tracking APIs ---
 @app.get("/api/ai/usage")
@@ -4271,7 +4320,7 @@ def download_log_file():
         raise HTTPException(status_code=404, detail="File log chưa được tạo")
     return FileResponse(
         path=str(LOG_FILE_PATH),
-        filename="tiktok_farm_debug.log",
+        filename="shortsstack_debug.log",
         media_type="text/plain"
     )
 

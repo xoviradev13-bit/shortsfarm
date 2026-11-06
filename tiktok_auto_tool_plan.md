@@ -1,4 +1,4 @@
-# Kế hoạch triển khai: TikTok Auto Farm Tool (bản điều chỉnh)
+# Kế hoạch triển khai: ShortsStack Auto Tool (bản điều chỉnh)
 **Ngày cập nhật:** 22 Oct 2026 · @nguyen
 
 ---

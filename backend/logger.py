@@ -18,7 +18,7 @@ CONSOLE_LOG_FORMAT = "%(asctime)s [%(levelname)-7s] %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Configure root app logger
-_logger = logging.getLogger("tiktok_farm")
+_logger = logging.getLogger("shortsstack")
 _logger.setLevel(logging.DEBUG)
 
 # Ensure no duplicate handlers if re-imported

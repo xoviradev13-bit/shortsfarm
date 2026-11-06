@@ -15,13 +15,13 @@ VSVersionInfo(
       [
       StringTable(
         '040904B0',
-        [StringStruct('CompanyName', 'ShortsFarm Systems'),
-        StringStruct('FileDescription', 'ShortsFarm & AI Video Engine'),
+        [StringStruct('CompanyName', 'ShortsStack Systems'),
+        StringStruct('FileDescription', 'ShortsStack & AI Video Engine'),
         StringStruct('FileVersion', '1.0.0.0'),
-        StringStruct('InternalName', 'ShortsFarm'),
-        StringStruct('LegalCopyright', 'Copyright (C) 2026 ShortsFarm Systems. All rights reserved.'),
-        StringStruct('OriginalFilename', 'ShortsFarm.exe'),
-        StringStruct('ProductName', 'ShortsFarm & AI Video Engine'),
+        StringStruct('InternalName', 'ShortsStack'),
+        StringStruct('LegalCopyright', 'Copyright (C) 2026 ShortsStack Systems. All rights reserved.'),
+        StringStruct('OriginalFilename', 'ShortsStack.exe'),
+        StringStruct('ProductName', 'ShortsStack & AI Video Engine'),
         StringStruct('ProductVersion', '1.0.0.0')])
       ]), 
     VarFileInfo([VarStruct('Translation', [1033, 1200])])

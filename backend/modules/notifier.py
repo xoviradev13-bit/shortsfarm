@@ -705,7 +705,7 @@ class TelegramNotifier:
         msg += f"• Nick đã cán mốc 10.000 Follower: *{data.get('eligible_10k_count', 0)} nick* 🏆\n"
 
         msg += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        msg += "🤖 *ShortsFarm Automation System* | Chúc bạn một ngày nổ view triệu view!"
+        msg += "🤖 *ShortsStack Automation System* | Chúc bạn một ngày nổ view triệu view!"
         return msg
 
     def send_daily_report(self, report_date: Optional[str] = None, target_chat_id: Optional[str] = None) -> Dict[str, Any]:

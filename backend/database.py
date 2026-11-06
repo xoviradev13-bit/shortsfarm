@@ -557,6 +557,20 @@ def get_setting(key: str, default: str = "") -> str:
     except Exception:
         return default
 
+def set_setting(key: str, value: str):
+    """Lưu hoặc cập nhật giá trị cấu hình vào bảng settings an toàn"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, str(value) if value is not None else "")
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        pass
+
 def record_ai_usage(
     provider: str,
     model: str,

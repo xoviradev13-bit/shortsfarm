@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     // orderCode vừa vặn trong chuẩn 32-bit int Postgres: (timestamp % 1000000) * 1000 + randomSuffix
     const orderCode = ((timestamp % 1000000) * 1000) + randomSuffix;
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsfarm.vercel.app';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.app';
     const description = `SF${orderCode}`.slice(0, 25); // Nội dung chuyển khoản chuẩn VietQR
 
     let checkoutUrl = '';

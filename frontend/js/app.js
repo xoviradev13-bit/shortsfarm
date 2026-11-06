@@ -10202,7 +10202,7 @@ async function downloadLogFile() {
         }
 
         const dateStr = new Date().toISOString().split('T')[0];
-        const defaultFilename = `tiktok_farm_debug_${dateStr}.log`;
+        const defaultFilename = `shortsstack_debug_${dateStr}.log`;
 
         // 1. Mở cửa sổ "Save As" (chọn thư mục lưu) của Windows tương tự chức năng Xuất CSV (Excel)
         if (typeof window.showSaveFilePicker === 'function') {

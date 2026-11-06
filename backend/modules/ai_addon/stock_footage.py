@@ -60,7 +60,7 @@ class StockFootageManager:
             url = f"https://api.pexels.com/videos/search?query={encoded_q}&orientation=portrait&per_page={per_page}"
             headers = {
                 "Authorization": pexels_key,
-                "User-Agent": "ShortsFarm/2.0 StockFetcher"
+                "User-Agent": "ShortsStack/2.0 StockFetcher"
             }
             res = requests.get(url, headers=headers, timeout=15)
             if res.status_code == 200:
@@ -95,7 +95,7 @@ class StockFootageManager:
             url = f"https://api.pexels.com/v1/search?query={encoded_q}&orientation=portrait&per_page={per_page}"
             headers = {
                 "Authorization": pexels_key,
-                "User-Agent": "ShortsFarm/2.0 StockFetcher"
+                "User-Agent": "ShortsStack/2.0 StockFetcher"
             }
             res = requests.get(url, headers=headers, timeout=15)
             if res.status_code == 200:
@@ -193,7 +193,7 @@ class StockFootageManager:
     def download_file(self, url: str, output_path: str, timeout: int = 30) -> bool:
         """Tải file media từ URL về disk"""
         try:
-            headers = {"User-Agent": "ShortsFarm/2.0"}
+            headers = {"User-Agent": "ShortsStack/2.0"}
             r = requests.get(url, headers=headers, stream=True, timeout=timeout)
             if r.status_code == 200:
                 with open(output_path, "wb") as f:

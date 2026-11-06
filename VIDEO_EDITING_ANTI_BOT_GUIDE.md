@@ -1,11 +1,11 @@
-# TÀI LIỆU KỸ THUẬT: PHÂN TÍCH HỆ THỐNG RENDER VIDEO & ANTI-DETECTION (TIKTOK FARM)
+# TÀI LIỆU KỸ THUẬT: PHÂN TÍCH HỆ THỐNG RENDER VIDEO & ANTI-DETECTION (SHORTSSTACK)
 *Đánh giá kỹ thuật thực tế, cơ chế toán học, giới hạn thuật toán và lộ trình nâng cấp lên chuẩn Adversarial Evasion.*
 
 ---
 
 ## 1. TỔNG QUAN KIẾN TRÚC & ĐÁNH GIÁ THỰC TẾ (REALITY CHECK)
 
-Hệ thống render của **TikTok Farm** được thiết kế gồm 2 phân hệ riêng biệt với mức độ hiệu quả khác nhau:
+Hệ thống render của **ShortsStack** được thiết kế gồm 2 phân hệ riêng biệt với mức độ hiệu quả khác nhau:
 
 | Phân hệ | Thành phần | Đánh giá kỹ thuật | Mức độ hiệu quả thực tế |
 | :--- | :--- | :--- | :--- |
@@ -168,7 +168,7 @@ Nếu muốn nâng cấp pipeline từ **Mid-tier (4.5/10)** lên chuẩn **Chuy
 
 ## 6. BẢNG TỔNG KẾT SO SÁNH GIỮA HIỆN TẠI VÀ CHUẨN CAO CẤP
 
-| Tiêu chí | Hệ thống hiện tại (TikTok Farm) | Hệ sinh thái Evasion chuẩn Gold Standard |
+| Tiêu chí | Hệ thống hiện tại (ShortsStack) | Hệ sinh thái Evasion chuẩn Gold Standard |
 | :--- | :--- | :--- |
 | **Định dạng & Canvas** | 9:16 Nền mờ + Punch-in Crop 5% | 9:16 Nền mờ + Dynamic Subtle Zoom Ramping |
 | **Nhiễu hình ảnh** | Micro uniform noise (`noise=alls=2`) | Gradient-optimized Adversarial Perturbation ($L_\infty$ bound) |

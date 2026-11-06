@@ -28,7 +28,7 @@ import {
   Terminal,
 } from 'lucide-react';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsfarm.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.app';
 
 const JSON_LD_DATA = {
   '@context': 'https://schema.org',
@@ -36,7 +36,7 @@ const JSON_LD_DATA = {
     {
       '@type': 'SoftwareApplication',
       '@id': `${SITE_URL}/#software`,
-      name: 'ShortsFarm',
+      name: 'ShortsStack',
       operatingSystem: 'Windows 10, Windows 11 (64-bit)',
       applicationCategory: 'MultimediaApplication',
       description:
@@ -63,7 +63,7 @@ const JSON_LD_DATA = {
     {
       '@type': 'Organization',
       '@id': `${SITE_URL}/#organization`,
-      name: 'ShortsFarm Systems',
+      name: 'ShortsStack Systems',
       url: SITE_URL,
       logo: `${SITE_URL}/apple-touch-icon.png`,
     },
@@ -76,7 +76,7 @@ const JSON_LD_DATA = {
           name: 'Phần mềm có làm khoá tài khoản TikTok/YouTube/Facebook không?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Không. Khác với các tool dùng API bên thứ ba dễ bị nền tảng phát hiện, ShortsFarm điều khiển trực tiếp các trình duyệt Antidetect (GPMLogin, GenLogin) với đầy đủ cookies, canvas fingerprint thật, giống hệt người dùng lướt web thủ công.',
+            text: 'Không. Khác với các tool dùng API bên thứ ba dễ bị nền tảng phát hiện, ShortsStack điều khiển trực tiếp các trình duyệt Antidetect (GPMLogin, GenLogin) với đầy đủ cookies, canvas fingerprint thật, giống hệt người dùng lướt web thủ công.',
           },
         },
         {
@@ -108,7 +108,7 @@ export default function LandingPage() {
   // VietQR Checkout States
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{
-    code: 'monthly' | 'yearly' | 'lifetime';
+    code: string;
     name: string;
     amount: number;
     description: string;
@@ -150,7 +150,7 @@ export default function LandingPage() {
   };
 
   const openCheckoutModal = (
-    code: 'monthly' | 'yearly' | 'lifetime',
+    code: string,
     name: string,
     amount: number,
     description: string
@@ -259,7 +259,7 @@ export default function LandingPage() {
             </div>
             <div>
               <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-                ShortsFarm
+                ShortsStack
               </span>
               <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20 font-medium">
                 AI Studio 2.1
@@ -299,7 +299,7 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight sm:leading-[1.15]">
-            ShortsFarm - Nuôi Kênh & Tự Động Reup Video AI{' '}
+            ShortsStack - Nuôi Kênh & Tự Động Reup Video AI{' '}
             <span className="bg-gradient-to-r from-pink-400 via-rose-400 to-amber-300 bg-clip-text text-transparent">
               Đa Nền Tảng
             </span>
@@ -362,7 +362,7 @@ export default function LandingPage() {
                 <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block" />
                 <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
                 <span className="ml-3 font-mono text-xs text-gray-300 font-semibold">
-                  ShortsFarm Desktop Engine v2.1.0 - [Auto-Pilot Pipeline: ĐANG CHẠY]
+                  ShortsStack Desktop Engine v2.1.0 - [Auto-Pilot Pipeline: ĐANG CHẠY]
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -382,10 +382,10 @@ export default function LandingPage() {
               <div className="hidden lg:block lg:col-span-3 border-r border-gray-800/80 bg-[#0B0F1D]/80 p-4 text-xs space-y-4">
                 <div className="flex items-center gap-2.5 pb-3 border-b border-gray-800">
                   <div className="w-7 h-7 rounded-lg bg-pink-600 flex items-center justify-center font-bold text-white text-xs">
-                    SF
+                    SS
                   </div>
                   <div>
-                    <span className="font-bold text-white block">SHORTSFARM</span>
+                    <span className="font-bold text-white block">SHORTSSTACK</span>
                     <span className="text-[10px] text-gray-400">AI Engine & Auto Upload</span>
                   </div>
                 </div>
@@ -719,41 +719,43 @@ export default function LandingPage() {
       <section id="pricing" className="py-24 bg-gradient-to-b from-[#070A13] via-[#0a0f1c] to-[#070A13] border-t border-gray-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs uppercase tracking-widest text-pink-400 font-semibold mb-2">BẢNG GIÁ BẢN QUYỀN</h2>
-            <p className="text-3xl font-extrabold text-white">Chọn Gói Phù Hợp Cho Quy Mô Của Bạn</p>
-            <p className="mt-3 text-gray-400 text-sm">Mỗi license gắn liền với máy tính của bạn và có thể yêu cầu reset máy khi đổi thiết bị.</p>
+            <h2 className="text-xs uppercase tracking-widest text-pink-400 font-semibold mb-2">BẢNG GIÁ BẢN QUYỀN TRỌN ĐỜI</h2>
+            <p className="text-3xl font-extrabold text-white">Mua 1 Lần — Sử Dụng Vĩnh Viễn Không Phí Gia Hạn</p>
+            <p className="mt-3 text-gray-400 text-sm">Toàn bộ các gói bản quyền 1 PC, 3 PCs, 5 PCs đều là giấy phép sử dụng trọn đời (Lifetime), miễn phí cập nhật phiên bản mới mãi mãi.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Starter */}
+            {/* Starter: 1 PC Lifetime */}
             <div className="p-8 rounded-2xl bg-[#0d121f] border border-gray-800 flex flex-col justify-between hover:border-pink-500/30 transition">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded bg-gray-800 text-gray-300">GÓI THÁNG</span>
-                  <span className="text-[11px] text-pink-400 font-medium">1 lần mua</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded bg-gray-800 text-gray-300">TRỌN ĐỜI (1 PC)</span>
+                  <span className="text-[11px] text-pink-400 font-medium">Mua 1 lần vĩnh viễn</span>
                 </div>
-                <h3 className="text-2xl font-bold text-white mt-4">Cá Nhân (Pro 1 PC)</h3>
+                <h3 className="text-2xl font-bold text-white mt-4">Cá Nhân (1 PC)</h3>
                 <div className="mt-4 flex items-baseline">
                   <span className="text-4xl font-extrabold text-white">499.000₫</span>
-                  <span className="ml-2 text-sm text-gray-400">/ 30 ngày</span>
+                  <span className="ml-2 text-sm text-gray-400">/ trọn đời</span>
                 </div>
-                <p className="mt-3 text-xs text-gray-400">Thanh toán 1 lần duy nhất, dùng trọn vẹn 30 ngày (không trừ tiền định kỳ).</p>
+                <p className="mt-3 text-xs text-gray-400">Thanh toán 1 lần duy nhất, dùng vĩnh viễn trên 1 máy tính (không trừ tiền định kỳ).</p>
 
                 <ul className="mt-6 space-y-3 text-sm text-gray-300">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Kích hoạt 1 máy tính (HWID)</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Kích hoạt vĩnh viễn 1 máy tính (HWID)</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Hỗ trợ GPMLogin & GenLogin</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Tải Douyin, Xiaohongshu, YT</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Tải Douyin, Xiaohongshu, YT Shorts</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Render lách bản quyền tự động</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Tự do đổi máy (Hỗ trợ reset HWID)</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Cập nhật tính năng mới trọn đời</li>
                 </ul>
               </div>
 
               <div className="mt-8 space-y-2">
                 <button
-                  onClick={() => openCheckoutModal('monthly', 'Cá Nhân Pro (1 PC)', 499000, 'Kích hoạt 1 máy tính - Hạn 30 ngày')}
+                  onClick={() => openCheckoutModal('pro_1pc', 'Cá Nhân (1 PC - Vĩnh Viễn)', 499000, 'Kích hoạt 1 máy tính - Bản quyền trọn đời')}
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-bold text-sm shadow-lg shadow-pink-600/20 active:scale-95 transition flex items-center justify-center gap-2"
                 >
                   <QrCode className="w-4 h-4" />
-                  <span>Mua Bản Quyền (VietQR)</span>
+                  <span>Mua Bản Quyền Trọn Đời (1 PC)</span>
                 </button>
                 <button
                   onClick={handleDownload}
@@ -764,7 +766,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Pro / Popular */}
+            {/* Studio: 3 PCs Lifetime (Popular) */}
             <div className="p-8 rounded-2xl bg-gradient-to-b from-[#161c2e] to-[#0d121f] border-2 border-pink-500/80 shadow-2xl shadow-pink-500/10 flex flex-col justify-between relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-[11px] font-bold text-white tracking-wide uppercase">
                 PHỔ BIẾN NHẤT
@@ -772,32 +774,33 @@ export default function LandingPage() {
 
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded bg-pink-500/20 text-pink-300">GÓI NĂM</span>
-                  <span className="text-[11px] text-emerald-400 font-medium">Tiết kiệm 35%</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded bg-pink-500/20 text-pink-300">TRỌN ĐỜI (3 PCs)</span>
+                  <span className="text-[11px] text-emerald-400 font-medium">Tiết kiệm 45%</span>
                 </div>
-                <h3 className="text-2xl font-bold text-white mt-4">Studio (2 PCs)</h3>
+                <h3 className="text-2xl font-bold text-white mt-4">Studio (3 PCs)</h3>
                 <div className="mt-4 flex items-baseline">
                   <span className="text-4xl font-extrabold text-white">3.990.000₫</span>
-                  <span className="ml-2 text-sm text-gray-400">/ 1 năm</span>
+                  <span className="ml-2 text-sm text-gray-400">/ trọn đời</span>
                 </div>
-                <p className="mt-3 text-xs text-pink-300">Thanh toán 1 lần duy nhất, kích hoạt cùng lúc 2 máy trong 365 ngày.</p>
+                <p className="mt-3 text-xs text-pink-300">Thanh toán 1 lần duy nhất, kích hoạt cùng lúc 3 máy tính vĩnh viễn.</p>
 
                 <ul className="mt-6 space-y-3 text-sm text-gray-300">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Kích hoạt cùng lúc 2 máy tính</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Kích hoạt cùng lúc 3 máy tính (HWID)</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Tự động hóa GPMLogin & GenLogin</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Đăng cả TikTok, YT Shorts, FB Reels</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Tự do đổi máy (Reset HWID 3 lần/năm)</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Tự do đổi máy (Reset HWID khi cần)</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Không giới hạn số lượng profile & video</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Hỗ trợ kỹ thuật ưu tiên 24/7</li>
                 </ul>
               </div>
 
               <div className="mt-8 space-y-2">
                 <button
-                  onClick={() => openCheckoutModal('yearly', 'Studio Pro (2 PCs)', 3990000, 'Kích hoạt 2 máy tính - Hạn 365 ngày')}
+                  onClick={() => openCheckoutModal('studio_3pc', 'Studio (3 PCs - Vĩnh Viễn)', 3990000, 'Kích hoạt 3 máy tính - Bản quyền trọn đời')}
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-600 via-rose-600 to-amber-500 hover:from-pink-500 hover:to-amber-400 text-white font-bold text-sm shadow-xl shadow-pink-600/30 active:scale-95 transition flex items-center justify-center gap-2"
                 >
                   <QrCode className="w-4 h-4" />
-                  <span>Mua Bản Quyền (VietQR)</span>
+                  <span>Mua Bản Quyền Trọn Đời (3 PCs)</span>
                 </button>
                 <button
                   onClick={handleDownload}
@@ -808,35 +811,36 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Lifetime Agency */}
+            {/* Lifetime Agency: 5 PCs */}
             <div className="p-8 rounded-2xl bg-[#0d121f] border border-gray-800 flex flex-col justify-between hover:border-amber-500/30 transition">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded bg-amber-500/20 text-amber-300">TRỌN ĐỜI</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded bg-amber-500/20 text-amber-300">TRỌN ĐỜI (5 PCs)</span>
                   <span className="text-[11px] text-amber-400 font-medium">Mua 1 lần vĩnh viễn</span>
                 </div>
-                <h3 className="text-2xl font-bold text-white mt-4">Agency Vĩnh Viễn</h3>
+                <h3 className="text-2xl font-bold text-white mt-4">Agency (5 PCs)</h3>
                 <div className="mt-4 flex items-baseline">
                   <span className="text-4xl font-extrabold text-white">8.500.000₫</span>
                   <span className="ml-2 text-sm text-gray-400">/ trọn đời</span>
                 </div>
-                <p className="mt-3 text-xs text-gray-400">Thanh toán 1 lần duy nhất, update miễn phí mãi mãi, không phát sinh chi phí.</p>
+                <p className="mt-3 text-xs text-gray-400">Thanh toán 1 lần duy nhất, kích hoạt tối đa 5 máy tính cho team/agency, update miễn phí mãi mãi.</p>
 
                 <ul className="mt-6 space-y-3 text-sm text-gray-300">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Kích hoạt tối đa 5 máy tính</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Kích hoạt tối đa 5 máy tính cùng lúc</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Không giới hạn số lượng profile & video</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Reset HWID không giới hạn số lần</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Quyền truy cập tính năng mới sớm nhất</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-pink-400" /> Hotline hỗ trợ riêng 1-on-1 cho Agency</li>
                 </ul>
               </div>
 
               <div className="mt-8 space-y-2">
                 <button
-                  onClick={() => openCheckoutModal('lifetime', 'Agency Vĩnh Viễn (5 PCs)', 8500000, 'Kích hoạt 5 máy tính - Trọn đời vĩnh viễn')}
+                  onClick={() => openCheckoutModal('agency_5pc', 'Agency (5 PCs - Vĩnh Viễn)', 8500000, 'Kích hoạt 5 máy tính - Bản quyền trọn đời')}
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-bold text-sm shadow-lg shadow-amber-600/20 active:scale-95 transition flex items-center justify-center gap-2"
                 >
                   <QrCode className="w-4 h-4" />
-                  <span>Mua Bản Quyền Trọn Đời</span>
+                  <span>Mua Bản Quyền Trọn Đời (5 PCs)</span>
                 </button>
                 <button
                   onClick={handleDownload}
@@ -857,7 +861,7 @@ export default function LandingPage() {
           <div className="p-5 rounded-xl bg-gray-900/50 border border-gray-800">
             <h4 className="font-semibold text-white">Phần mềm có làm khoá tài khoản TikTok/YouTube/Facebook không?</h4>
             <p className="mt-2 text-sm text-gray-400">
-              Không. Khác với các tool dùng API bên thứ ba dễ bị nền tảng phát hiện, ShortsFarm điều khiển trực tiếp các trình duyệt Antidetect (GPMLogin, GenLogin) với đầy đủ cookies, canvas fingerprint thật, giống hệt người dùng lướt web thủ công.
+              Không. Khác với các tool dùng API bên thứ ba dễ bị nền tảng phát hiện, ShortsStack điều khiển trực tiếp các trình duyệt Antidetect (GPMLogin, GenLogin) với đầy đủ cookies, canvas fingerprint thật, giống hệt người dùng lướt web thủ công.
             </p>
           </div>
           <div className="p-5 rounded-xl bg-gray-900/50 border border-gray-800">
@@ -878,7 +882,7 @@ export default function LandingPage() {
       {/* 7. Footer */}
       <footer className="mt-auto py-8 border-t border-gray-800 text-center text-xs text-gray-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 ShortsFarm Studio. Toàn bộ quyền được bảo lưu.</p>
+          <p>© 2026 ShortsStack Studio. Toàn bộ quyền được bảo lưu.</p>
           <div className="flex items-center gap-6">
             <a href="#features" className="hover:text-gray-300">Tính năng</a>
             <a href="#pricing" className="hover:text-gray-300">Bảng giá</a>
@@ -897,11 +901,11 @@ export default function LandingPage() {
             <div className="px-6 py-4 border-b border-gray-800/80 flex items-center justify-between bg-gray-900/40">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold text-sm">
-                  SF
+                  SS
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-base leading-none">
-                    {checkoutStep === 'input' && 'Nhận Bản Quyền ShortsFarm'}
+                    {checkoutStep === 'input' && 'Nhận Bản Quyền ShortsStack'}
                     {checkoutStep === 'payment' && 'Quét Mã VietQR Kích Hoạt'}
                     {checkoutStep === 'success' && 'Bản Quyền Đã Kích Hoạt!'}
                   </h3>
@@ -1171,7 +1175,7 @@ export default function LandingPage() {
                   <div className="bg-gray-900/60 rounded-xl border border-gray-800 p-4 text-left text-xs space-y-2 text-gray-300">
                     <span className="font-bold text-white block text-sm">Hướng dẫn kích hoạt trong 30 giây:</span>
                     <ol className="list-decimal pl-4 space-y-1 text-gray-400">
-                      <li>Mở ứng dụng <strong>ShortsFarm Desktop</strong> trên máy tính.</li>
+                      <li>Mở ứng dụng <strong>ShortsStack Desktop</strong> trên máy tính.</li>
                       <li>Dán mã key vừa sao chép ở trên vào ô kích hoạt.</li>
                       <li>Bấm <strong>Kích hoạt</strong> để bắt đầu khai thác kênh tự động!</li>
                     </ol>
@@ -1215,7 +1219,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-base leading-none">
-                    Video Hướng Dẫn &amp; Demo Thực Tế ShortsFarm
+                    Video Hướng Dẫn &amp; Demo Thực Tế ShortsStack
                   </h3>
                   <p className="text-xs text-gray-400 mt-1">
                     Trải nghiệm trực quan quy trình tải Douyin, AI lách bản quyền và đăng tự động
@@ -1242,7 +1246,7 @@ export default function LandingPage() {
                       ? youtubeDemoUrl.replace('watch?v=', 'embed/')
                       : youtubeDemoUrl
                   }
-                  title="ShortsFarm Desktop Engine Demo"
+                  title="ShortsStack Desktop Engine Demo"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
@@ -1251,7 +1255,7 @@ export default function LandingPage() {
               <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 text-gray-400">
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span>Kênh chính thức ShortsFarm Studio trên YouTube</span>
+                  <span>Kênh chính thức ShortsStack Studio trên YouTube</span>
                 </div>
 
                 <div className="flex items-center gap-2">

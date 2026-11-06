@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Cổng Quản Trị Hệ Thống | ShortsFarm',
-  description: 'Bảng điều khiển quản trị license, lượt tải và phiên bản phần mềm ShortsFarm.',
+  title: 'Cổng Quản Trị Hệ Thống | ShortsStack',
+  description: 'Bảng điều khiển quản trị license, lượt tải và phiên bản phần mềm ShortsStack.',
   robots: {
     index: false,
     follow: false,

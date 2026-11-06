@@ -1,12 +1,12 @@
-; Inno Setup Script for ShortsFarm & AI Video Engine
+; Inno Setup Script for ShortsStack & AI Video Engine
 ; Modern, clean, and antivirus-safe installer specification
 
-#define MyAppName "ShortsFarm & AI Video Engine"
+#define MyAppName "ShortsStack & AI Video Engine"
 #define MyAppVersion "1.0.0"
-#define MyAppPublisher "ShortsFarm Systems"
-#define MyAppExeName "ShortsFarm.exe"
+#define MyAppPublisher "ShortsStack Systems"
+#define MyAppExeName "ShortsStack.exe"
 #define MyAppAssocName MyAppName + " File"
-#define MyAppAssocExt ".shortsfarm"
+#define MyAppAssocExt ".shortsstack"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
 
 [Setup]
@@ -16,11 +16,11 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} v{#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\ShortsFarm
+DefaultDirName={autopf}\ShortsStack
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=dist_installer
-OutputBaseFilename=ShortsFarm_Setup_v1.0.0
+OutputBaseFilename=ShortsStack_Setup_v1.0.0
 SetupIconFile=logo\app-logo.ico
 Compression=lzma2/normal
 SolidCompression=yes
@@ -45,17 +45,17 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "dist\ShortsFarm\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\ShortsStack\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "logo\*"; DestDir: "{app}\logo"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 
 [Dirs]
 ; Tạo thư mục dữ liệu trong %APPDATA% (không bị xóa khi gỡ cài đặt)
-Name: "{userappdata}\ShortsFarm"
-Name: "{userappdata}\ShortsFarm\downloads"
-Name: "{userappdata}\ShortsFarm\rendered"
-Name: "{userappdata}\ShortsFarm\logs"
-Name: "{userappdata}\ShortsFarm\music"
+Name: "{userappdata}\ShortsStack"
+Name: "{userappdata}\ShortsStack\downloads"
+Name: "{userappdata}\ShortsStack\rendered"
+Name: "{userappdata}\ShortsStack\logs"
+Name: "{userappdata}\ShortsStack\music"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\logo\app-logo.ico"

@@ -21,28 +21,44 @@ import {
   AlertCircle,
   LogOut,
   UploadCloud,
+  DollarSign,
+  CreditCard,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [adminKey, setAdminKey] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<'licenses' | 'downloads' | 'releases'>('licenses');
+  const [activeTab, setActiveTab] = useState<'licenses' | 'orders' | 'downloads' | 'releases'>('licenses');
 
   // Dữ liệu
   const [stats, setStats] = useState<any>(null);
   const [licenses, setLicenses] = useState<any[]>([]);
   const [downloads, setDownloads] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Phân trang danh sách keys
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Phân trang đơn hàng & lượt tải
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPageSize, setOrdersPageSize] = useState(10);
+  const [downloadsPage, setDownloadsPage] = useState(1);
+  const [downloadsPageSize, setDownloadsPageSize] = useState(10);
 
   // Modal tạo key
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newKeyForm, setNewKeyForm] = useState({
     customer_name: '',
     customer_email: '',
-    plan: 'monthly',
-    duration_days: 30,
+    plan: 'pro_1pc',
+    duration_days: 0,
     max_devices: 1,
     custom_key: '',
     count: 1,
@@ -84,6 +100,7 @@ export default function AdminDashboard() {
       const dataStats = await resStats.json();
       setStats(dataStats.stats);
       setDownloads(dataStats.recent_downloads || []);
+      setOrders(dataStats.recent_orders || []);
       if (dataStats.latest_release) {
         setReleaseForm({
           version: dataStats.latest_release.version,
@@ -97,6 +114,7 @@ export default function AdminDashboard() {
       // Lấy danh sách keys
       const resKeys = await fetch(`/api/admin/keys?q=${encodeURIComponent(searchQuery)}`, {
         headers: { 'x-admin-key': key },
+        cache: 'no-store',
       });
       const dataKeys = await resKeys.json();
       setLicenses(dataKeys.licenses || []);
@@ -128,19 +146,21 @@ export default function AdminDashboard() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Thao tác với License
+  // Thao tác với License (Khóa/Mở Khóa, Gỡ HWID, Gia Hạn, Xóa)
   const handleKeyAction = async (action: string, id: string, extraDays = 30) => {
     if (action === 'reset_hwid' && !confirm('Bạn có chắc muốn gỡ liên kết máy tính cũ cho key này?')) return;
     if (action === 'delete' && !confirm('Bạn có chắc chắn muốn xóa vĩnh viễn key này?')) return;
+    if (action === 'revoke' && !confirm('Bạn có chắc chắn muốn khóa key này? Máy đang dùng sẽ bị chặn.')) return;
 
     try {
+      let res: Response;
       if (action === 'delete') {
-        await fetch(`/api/admin/keys?id=${id}`, {
+        res = await fetch(`/api/admin/keys?id=${id}`, {
           method: 'DELETE',
           headers: { 'x-admin-key': adminKey },
         });
       } else {
-        await fetch('/api/admin/keys', {
+        res = await fetch('/api/admin/keys', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -149,7 +169,13 @@ export default function AdminDashboard() {
           body: JSON.stringify({ action, id, extra_days: extraDays }),
         });
       }
-      verifyAndFetch(adminKey);
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        alert('Lỗi: ' + (data.error || 'Thao tác không thành công'));
+        return;
+      }
+      await verifyAndFetch(adminKey);
     } catch (e: any) {
       alert('Thao tác thất bại: ' + e.message);
     }
@@ -173,8 +199,8 @@ export default function AdminDashboard() {
         setNewKeyForm({
           customer_name: '',
           customer_email: '',
-          plan: 'monthly',
-          duration_days: 30,
+          plan: 'pro_1pc',
+          duration_days: 0,
           max_devices: 1,
           custom_key: '',
           count: 1,
@@ -256,6 +282,34 @@ export default function AdminDashboard() {
     );
   }
 
+  const filteredLicenses = licenses.filter((lic) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      lic.licenseKey?.toLowerCase().includes(q) ||
+      lic.customerName?.toLowerCase().includes(q) ||
+      lic.customerEmail?.toLowerCase().includes(q) ||
+      lic.notes?.toLowerCase().includes(q)
+    );
+  });
+
+  const totalPages = Math.ceil(filteredLicenses.length / pageSize) || 1;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredLicenses.length);
+  const paginatedLicenses = filteredLicenses.slice(startIndex, endIndex);
+
+  // Phân trang đơn hàng
+  const totalOrdersPages = Math.ceil(orders.length / ordersPageSize) || 1;
+  const startOrderIndex = (ordersPage - 1) * ordersPageSize;
+  const endOrderIndex = Math.min(startOrderIndex + ordersPageSize, orders.length);
+  const paginatedOrders = orders.slice(startOrderIndex, endOrderIndex);
+
+  // Phân trang lượt tải
+  const totalDownloadsPages = Math.ceil(downloads.length / downloadsPageSize) || 1;
+  const startDownloadIndex = (downloadsPage - 1) * downloadsPageSize;
+  const endDownloadIndex = Math.min(startDownloadIndex + downloadsPageSize, downloads.length);
+  const paginatedDownloads = downloads.slice(startDownloadIndex, endDownloadIndex);
+
   return (
     <div className="min-h-screen bg-[#070A13] text-gray-100 flex flex-col">
       {/* Top Navbar */}
@@ -264,38 +318,44 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-4">
             <Link href="/" className="font-extrabold text-lg text-white flex items-center gap-2">
               <span className="w-8 h-8 rounded-lg bg-pink-600 flex items-center justify-center text-white font-bold text-sm">
-                TF
+                SS
               </span>
-              <span>TikTokFarm Admin</span>
+              <span>ShortsStack Admin</span>
             </Link>
             <div className="hidden sm:flex items-center gap-1 ml-6 border-l border-gray-800 pl-6">
               <button
                 onClick={() => setActiveTab('licenses')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  activeTab === 'licenses'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === 'licenses'
                     ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
                     : 'text-gray-400 hover:text-white'
-                }`}
+                  }`}
               >
                 Quản Lý Bản Quyền
               </button>
               <button
-                onClick={() => setActiveTab('downloads')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  activeTab === 'downloads'
+                onClick={() => setActiveTab('orders')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === 'orders'
                     ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
                     : 'text-gray-400 hover:text-white'
-                }`}
+                  }`}
+              >
+                Đơn Hàng & Doanh Thu {stats?.paid_orders_count ? `(${stats.paid_orders_count})` : ''}
+              </button>
+              <button
+                onClick={() => setActiveTab('downloads')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === 'downloads'
+                    ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
+                    : 'text-gray-400 hover:text-white'
+                  }`}
               >
                 Nhật Ký Tải Về
               </button>
               <button
                 onClick={() => setActiveTab('releases')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  activeTab === 'releases'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === 'releases'
                     ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
                     : 'text-gray-400 hover:text-white'
-                }`}
+                  }`}
               >
                 Link Tải & Auto-Update
               </button>
@@ -324,7 +384,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8 w-full flex-1">
         {/* Metric Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
             <div className="flex items-center justify-between text-gray-400 mb-2">
               <span className="text-xs font-medium">Tổng Lượt Tải</span>
@@ -350,6 +410,19 @@ export default function AdminDashboard() {
             </div>
             <div className="text-2xl font-extrabold text-white">{stats?.total_activations || 0}</div>
             <p className="text-[11px] text-gray-500 mt-1">Thiết bị đang hoạt động</p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-[#0d121f] border border-gray-800 border-emerald-500/20 bg-emerald-500/5">
+            <div className="flex items-center justify-between text-gray-400 mb-2">
+              <span className="text-xs font-semibold text-emerald-400">Tổng Doanh Thu</span>
+              <DollarSign className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="text-2xl font-black text-emerald-400">
+              {(stats?.total_revenue || 0).toLocaleString('vi-VN')}₫
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1">
+              {stats?.paid_orders_count || 0} đơn thanh toán VietQR
+            </p>
           </div>
 
           <div className="p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
@@ -402,14 +475,14 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800/60">
-                  {licenses.length === 0 ? (
+                  {filteredLicenses.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-gray-500">
-                        Chưa có license key nào. Bấm &quot;Tạo Key Bản Quyền&quot; để sinh key mới.
+                        {searchQuery ? 'Không tìm thấy key nào khớp với từ khóa tìm kiếm.' : 'Chưa có license key nào. Bấm "Tạo Key Bản Quyền" để sinh key mới.'}
                       </td>
                     </tr>
                   ) : (
-                    licenses.map((lic) => {
+                    paginatedLicenses.map((lic) => {
                       const isExpired = lic.expiresAt && new Date(lic.expiresAt) < new Date();
                       const boundCount = lic.hwidList?.length || 0;
 
@@ -440,24 +513,28 @@ export default function AdminDashboard() {
 
                           <td className="p-4 uppercase font-bold">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] ${
-                                lic.plan === 'lifetime'
-                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                  : lic.plan === 'yearly'
-                                  ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                                  : 'bg-pink-500/10 text-pink-400 border border-pink-500/20'
-                              }`}
+                              className={`px-2 py-0.5 rounded text-[10px] font-semibold ${lic.plan === 'agency_5pc' || lic.plan === 'lifetime'
+                                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                  : lic.plan === 'studio_3pc' || lic.plan === 'yearly'
+                                    ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
+                                    : 'bg-pink-500/15 text-pink-400 border border-pink-500/30'
+                                }`}
                             >
-                              {lic.plan}
+                              {lic.plan === 'pro_1pc' || lic.plan === 'monthly'
+                                ? '1 PC (Vĩnh Viễn)'
+                                : lic.plan === 'studio_3pc' || lic.plan === 'yearly'
+                                  ? 'Studio (3 PCs)'
+                                  : lic.plan === 'agency_5pc' || lic.plan === 'lifetime'
+                                    ? 'Agency (5 PCs)'
+                                    : lic.plan}
                             </span>
                           </td>
 
                           <td className="p-4">
                             <div className="flex items-center gap-1.5">
                               <span
-                                className={`font-semibold ${
-                                  boundCount >= lic.maxDevices ? 'text-amber-400' : 'text-gray-300'
-                                }`}
+                                className={`font-semibold ${boundCount >= lic.maxDevices ? 'text-amber-400' : 'text-gray-300'
+                                  }`}
                               >
                                 {boundCount} / {lic.maxDevices} Máy
                               </span>
@@ -511,18 +588,18 @@ export default function AdminDashboard() {
                               {lic.status === 'suspended' ? (
                                 <button
                                   onClick={() => handleKeyAction('activate', lic.id)}
-                                  className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400"
-                                  title="Mở khóa key"
+                                  className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-emerald-500/20 text-rose-400 hover:text-emerald-400 border border-rose-500/30 transition"
+                                  title="Key đang BỊ KHÓA - Nhấp để Mở Khóa key này"
                                 >
-                                  <Unlock className="w-3.5 h-3.5" />
+                                  <Lock className="w-3.5 h-3.5" />
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => handleKeyAction('revoke', lic.id)}
-                                  className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400"
-                                  title="Tạm khóa key"
+                                  className="p-1.5 rounded-lg bg-gray-800 hover:bg-amber-500/20 text-emerald-400 hover:text-amber-400 border border-gray-700/60 transition"
+                                  title="Key đang HOẠT ĐỘNG - Nhấp để Tạm Khóa key này"
                                 >
-                                  <Lock className="w-3.5 h-3.5" />
+                                  <Unlock className="w-3.5 h-3.5" />
                                 </button>
                               )}
                               <button
@@ -540,6 +617,229 @@ export default function AdminDashboard() {
                   )}
                 </tbody>
               </table>
+
+              {/* Phân Trang (Pagination) */}
+              <div className="p-4 border-t border-gray-800 bg-gray-900/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+                <div className="flex items-center gap-2">
+                  <span>Hiển thị</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 rounded-lg bg-gray-900 border border-gray-800 text-white font-medium focus:outline-none"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span>
+                    bản quyền | <strong>{filteredLicenses.length === 0 ? 0 : startIndex + 1}</strong> - <strong>{endIndex}</strong> trên tổng <strong>{filteredLicenses.length}</strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 flex items-center gap-1 font-medium transition"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Trước</span>
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                    .map((p, idx, arr) => {
+                      const prev = arr[idx - 1];
+                      return (
+                        <React.Fragment key={p}>
+                          {prev && p - prev > 1 && <span className="px-1 text-gray-600">...</span>}
+                          <button
+                            onClick={() => setCurrentPage(p)}
+                            className={`w-8 h-8 rounded-lg font-bold text-xs transition ${
+                              currentPage === p
+                                ? 'bg-pink-600 text-white shadow-md shadow-pink-600/30'
+                                : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 flex items-center gap-1 font-medium transition"
+                  >
+                    <span>Sau</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: ORDERS & REVENUE */}
+        {activeTab === 'orders' && (
+          <div className="rounded-2xl border border-gray-800 bg-[#0d121f] overflow-x-auto">
+            <div className="p-4 border-b border-gray-800 flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-emerald-400" />
+                  <span>Danh Sách Đơn Hàng & Doanh Thu VietQR</span>
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">Tự động đối soát từ Webhook PayOS & VietQR</p>
+              </div>
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-right">
+                <span className="text-xs text-gray-400">Tổng doanh thu thực tế: </span>
+                <span className="font-black text-emerald-400 text-base ml-1">
+                  {(stats?.total_revenue || 0).toLocaleString('vi-VN')}₫
+                </span>
+              </div>
+            </div>
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-900/60 border-b border-gray-800 text-gray-400 uppercase text-[10px] tracking-wider font-semibold">
+                <tr>
+                  <th className="p-4">Mã Đơn Hàng</th>
+                  <th className="p-4">Khách Hàng</th>
+                  <th className="p-4">Gói Bản Quyền</th>
+                  <th className="p-4">Số Tiền</th>
+                  <th className="p-4">License Key Đã Cấp</th>
+                  <th className="p-4">Thời Gian</th>
+                  <th className="p-4 text-right">Trạng Thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800/60">
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-gray-500">
+                      Chưa ghi nhận đơn hàng thanh toán thành công nào trên hệ thống.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedOrders.map((ord) => (
+                    <tr key={ord.id} className="hover:bg-gray-900/30">
+                      <td className="p-4 font-mono font-bold text-white">#{ord.orderCode}</td>
+                      <td className="p-4">
+                        <div className="font-semibold text-white">{ord.customerName || 'Khách VietQR'}</div>
+                        <div className="text-[11px] text-gray-400">{ord.customerEmail}</div>
+                      </td>
+                      <td className="p-4">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-pink-500/15 text-pink-400 border border-pink-500/30">
+                          {ord.plan === 'pro_1pc' || ord.plan === 'monthly'
+                            ? '1 PC (Vĩnh Viễn)'
+                            : ord.plan === 'studio_3pc' || ord.plan === 'yearly'
+                            ? 'Studio (3 PCs)'
+                            : ord.plan === 'agency_5pc' || ord.plan === 'lifetime'
+                            ? 'Agency (5 PCs)'
+                            : ord.plan}
+                        </span>
+                      </td>
+                      <td className="p-4 font-bold text-emerald-400">
+                        {(ord.amount || 0).toLocaleString('vi-VN')}₫
+                      </td>
+                      <td className="p-4 font-mono text-gray-300">
+                        {ord.licenseKey ? (
+                          <div className="flex items-center gap-1.5">
+                            <span>{ord.licenseKey}</span>
+                            <button
+                              onClick={() => copyToClipboard(ord.licenseKey)}
+                              className="text-gray-500 hover:text-pink-400"
+                              title="Sao chép key"
+                            >
+                              {copiedKey === ord.licenseKey ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="p-4 text-gray-400">
+                        {new Date(ord.createdAt).toLocaleString('vi-VN')}
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          Đã Thanh Toán
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            {/* Phân Trang Đơn Hàng */}
+            <div className="p-4 border-t border-gray-800 bg-gray-900/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+              <div className="flex items-center gap-2">
+                <span>Hiển thị</span>
+                <select
+                  value={ordersPageSize}
+                  onChange={(e) => {
+                    setOrdersPageSize(Number(e.target.value));
+                    setOrdersPage(1);
+                  }}
+                  className="px-2 py-1 rounded-lg bg-gray-900 border border-gray-800 text-white font-medium focus:outline-none"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>
+                  đơn hàng | <strong>{orders.length === 0 ? 0 : startOrderIndex + 1}</strong> - <strong>{endOrderIndex}</strong> trên tổng <strong>{orders.length}</strong>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setOrdersPage((p) => Math.max(1, p - 1))}
+                  disabled={ordersPage === 1}
+                  className="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 flex items-center gap-1 font-medium transition"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Trước</span>
+                </button>
+
+                {Array.from({ length: totalOrdersPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalOrdersPages || Math.abs(p - ordersPage) <= 2)
+                  .map((p, idx, arr) => {
+                    const prev = arr[idx - 1];
+                    return (
+                      <React.Fragment key={p}>
+                        {prev && p - prev > 1 && <span className="px-1 text-gray-600">...</span>}
+                        <button
+                          onClick={() => setOrdersPage(p)}
+                          className={`w-8 h-8 rounded-lg font-bold text-xs transition ${
+                            ordersPage === p
+                              ? 'bg-pink-600 text-white shadow-md shadow-pink-600/30'
+                              : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+
+                <button
+                  onClick={() => setOrdersPage((p) => Math.min(totalOrdersPages, p + 1))}
+                  disabled={ordersPage === totalOrdersPages}
+                  className="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 flex items-center gap-1 font-medium transition"
+                >
+                  <span>Sau</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -549,7 +849,7 @@ export default function AdminDashboard() {
           <div className="rounded-2xl border border-gray-800 bg-[#0d121f] overflow-x-auto">
             <div className="p-4 border-b border-gray-800 flex items-center justify-between">
               <h3 className="font-bold text-white text-sm">Lịch Sử Lượt Tải Gần Đây</h3>
-              <span className="text-xs text-gray-400">Hiển thị tối đa 15 lượt mới nhất</span>
+              <span className="text-xs text-gray-400">Hiển thị các lượt tải mới nhất từ Landing Page</span>
             </div>
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-900/60 border-b border-gray-800 text-gray-400 uppercase text-[10px]">
@@ -569,7 +869,7 @@ export default function AdminDashboard() {
                     </td>
                   </tr>
                 ) : (
-                  downloads.map((d) => (
+                  paginatedDownloads.map((d) => (
                     <tr key={d.id} className="hover:bg-gray-900/30">
                       <td className="p-4 text-gray-300">
                         {new Date(d.createdAt).toLocaleString('vi-VN')}
@@ -583,6 +883,70 @@ export default function AdminDashboard() {
                 )}
               </tbody>
             </table>
+
+            {/* Phân Trang Lượt Tải */}
+            <div className="p-4 border-t border-gray-800 bg-gray-900/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+              <div className="flex items-center gap-2">
+                <span>Hiển thị</span>
+                <select
+                  value={downloadsPageSize}
+                  onChange={(e) => {
+                    setDownloadsPageSize(Number(e.target.value));
+                    setDownloadsPage(1);
+                  }}
+                  className="px-2 py-1 rounded-lg bg-gray-900 border border-gray-800 text-white font-medium focus:outline-none"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>
+                  lượt tải | <strong>{downloads.length === 0 ? 0 : startDownloadIndex + 1}</strong> - <strong>{endDownloadIndex}</strong> trên tổng <strong>{downloads.length}</strong>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setDownloadsPage((p) => Math.max(1, p - 1))}
+                  disabled={downloadsPage === 1}
+                  className="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 flex items-center gap-1 font-medium transition"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Trước</span>
+                </button>
+
+                {Array.from({ length: totalDownloadsPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalDownloadsPages || Math.abs(p - downloadsPage) <= 2)
+                  .map((p, idx, arr) => {
+                    const prev = arr[idx - 1];
+                    return (
+                      <React.Fragment key={p}>
+                        {prev && p - prev > 1 && <span className="px-1 text-gray-600">...</span>}
+                        <button
+                          onClick={() => setDownloadsPage(p)}
+                          className={`w-8 h-8 rounded-lg font-bold text-xs transition ${
+                            downloadsPage === p
+                              ? 'bg-pink-600 text-white shadow-md shadow-pink-600/30'
+                              : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+
+                <button
+                  onClick={() => setDownloadsPage((p) => Math.min(totalDownloadsPages, p + 1))}
+                  disabled={downloadsPage === totalDownloadsPages}
+                  className="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 flex items-center gap-1 font-medium transition"
+                >
+                  <span>Sau</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -628,7 +992,7 @@ export default function AdminDashboard() {
                   type="url"
                   value={releaseForm.download_url}
                   onChange={(e) => setReleaseForm({ ...releaseForm, download_url: e.target.value })}
-                  placeholder="https://github.com/.../TikTokFarm_Setup_v2.1.exe"
+                  placeholder="https://github.com/.../ShortsStack_Setup_v2.1.exe"
                   className="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-800 text-white font-mono"
                   required
                 />
@@ -716,35 +1080,53 @@ export default function AdminDashboard() {
                   <label className="block text-gray-300 font-medium mb-1">Gói cước</label>
                   <select
                     value={newKeyForm.plan}
-                    onChange={(e) => setNewKeyForm({ ...newKeyForm, plan: e.target.value })}
+                    onChange={(e) => {
+                      const p = e.target.value;
+                      let devices = 1;
+                      let days = 0;
+                      if (p === 'studio_3pc') {
+                        devices = 3;
+                      } else if (p === 'agency_5pc' || p === 'lifetime') {
+                        devices = 5;
+                      } else if (p === 'trial') {
+                        devices = 1;
+                        days = 3;
+                      }
+                      setNewKeyForm({
+                        ...newKeyForm,
+                        plan: p,
+                        max_devices: devices,
+                        duration_days: days,
+                      });
+                    }}
                     className="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-800 text-white"
                   >
-                    <option value="trial">Dùng Thử</option>
-                    <option value="monthly">Gói Tháng</option>
-                    <option value="yearly">Gói Năm</option>
-                    <option value="lifetime">Trọn Đời</option>
+                    <option value="pro_1pc">Cá Nhân (1 PC - Vĩnh Viễn)</option>
+                    <option value="studio_3pc">Studio (3 PCs - Vĩnh Viễn)</option>
+                    <option value="agency_5pc">Agency (5 PCs - Vĩnh Viễn)</option>
+                    <option value="trial">Dùng Thử (3 Ngày)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 font-medium mb-1">Số ngày dùng</label>
+                  <label className="block text-gray-300 font-medium mb-1">Số ngày dùng (0 = Vĩnh viễn)</label>
                   <input
                     type="number"
                     value={newKeyForm.duration_days}
-                    onChange={(e) => setNewKeyForm({ ...newKeyForm, duration_days: parseInt(e.target.value) })}
-                    disabled={newKeyForm.plan === 'lifetime'}
+                    onChange={(e) => setNewKeyForm({ ...newKeyForm, duration_days: parseInt(e.target.value) || 0 })}
+                    disabled={newKeyForm.plan !== 'trial'}
                     className="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-800 text-white disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 font-medium mb-1">Số máy (PC)</label>
+                  <label className="block text-gray-300 font-medium mb-1">Số máy tối đa (PC)</label>
                   <input
                     type="number"
                     min={1}
                     max={20}
                     value={newKeyForm.max_devices}
-                    onChange={(e) => setNewKeyForm({ ...newKeyForm, max_devices: parseInt(e.target.value) })}
+                    onChange={(e) => setNewKeyForm({ ...newKeyForm, max_devices: parseInt(e.target.value) || 1 })}
                     className="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-800 text-white"
                   />
                 </div>
@@ -758,7 +1140,7 @@ export default function AdminDashboard() {
                   type="text"
                   value={newKeyForm.custom_key}
                   onChange={(e) => setNewKeyForm({ ...newKeyForm, custom_key: e.target.value })}
-                  placeholder="ví dụ: TKFARM-VIP-2026"
+                  placeholder="ví dụ: SS-VIP-2026"
                   className="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-800 text-white font-mono uppercase"
                 />
               </div>

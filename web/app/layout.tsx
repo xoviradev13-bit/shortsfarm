@@ -5,10 +5,10 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#070A13' },
-    { media: '(prefers-color-scheme: light)', color: '#070A13' },
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+    { media: '(prefers-color-scheme: dark)', color: '#FFFFFF' },
   ],
-  colorScheme: 'dark',
+  colorScheme: 'light',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -113,11 +113,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" className="dark scroll-smooth">
+    <html lang="vi" className="scroll-smooth">
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className="bg-[#070A13] text-gray-100 antialiased selection:bg-pink-600 selection:text-white">
+      <body className="bg-[#FAFCFE] text-slate-800 antialiased selection:bg-rose-500 selection:text-white">
         {children}
       </body>
     </html>

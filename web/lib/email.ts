@@ -177,3 +177,102 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<{ su
   console.log(`[EMAIL DISPATCH] Đơn hàng cho ${to} | Key: ${licenseKey} | Plan: ${plan}`);
   return { success: true, message: 'Logged to console' };
 }
+
+export interface ContactEmailParams {
+  name: string;
+  email: string;
+  phone?: string;
+  topic?: string;
+  message: string;
+}
+
+export async function sendContactEmail(params: ContactEmailParams): Promise<{ success: boolean; message?: string }> {
+  const { name, email, phone, topic, message } = params;
+  const to = 'thenguyenfiner@gmail.com';
+  const subject = `[ShortsStack Liên Hệ Mới] từ ${name} - ${topic || 'Tư Vấn Phần Mềm'}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+      <h2 style="color: #e11d48; margin-top: 0;">Yêu Cầu Liên Hệ Mới từ ShortsStack Portal</h2>
+      <p style="color: #475569; font-size: 14px;">Bạn vừa nhận được một yêu cầu liên hệ hoặc đăng ký tư vấn từ khách hàng:</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold; width: 35%;">Họ và tên:</td>
+          <td style="padding: 10px; border: 1px solid #e2e8f0;">${name}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">Email khách hàng:</td>
+          <td style="padding: 10px; border: 1px solid #e2e8f0;"><a href="mailto:${email}">${email}</a></td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">Số điện thoại / Zalo:</td>
+          <td style="padding: 10px; border: 1px solid #e2e8f0;">${phone || 'Chưa cung cấp'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">Chủ đề quan tâm:</td>
+          <td style="padding: 10px; border: 1px solid #e2e8f0; color: #e11d48; font-weight: bold;">${topic || 'Tư vấn phần mềm'}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold; vertical-align: top;">Nội dung lời nhắn:</td>
+          <td style="padding: 10px; border: 1px solid #e2e8f0; white-space: pre-wrap;">${message}</td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 20px; padding: 12px; background-color: #f1f5f9; border-radius: 8px; font-size: 12px; color: #64748b;">
+        Email này được gửi tự động từ biểu mẫu liên hệ trên website ShortsStack.
+      </div>
+    </div>
+  `;
+
+  // 1. Gửi qua SMTP
+  const transporter = getTransporter();
+  if (transporter) {
+    try {
+      const from = process.env.EMAIL_FROM || process.env.SMTP_USER || 'ShortsStack Support <thenguyenfiner@gmail.com>';
+      await transporter.sendMail({
+        from,
+        to,
+        replyTo: email,
+        subject,
+        html,
+      });
+      console.log(`[CONTACT EMAIL] Đã gửi thông tin liên hệ từ ${email} tới ${to} qua SMTP`);
+      return { success: true };
+    } catch (err: any) {
+      console.warn(`[CONTACT EMAIL] Lỗi gửi qua SMTP: ${err.message}`);
+    }
+  }
+
+  // 2. Gửi qua Resend
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM || 'ShortsStack <contact@shortsstack.com>',
+          to: [to],
+          reply_to: email,
+          subject,
+          html,
+        }),
+      });
+
+      if (res.ok) {
+        console.log(`[CONTACT EMAIL] Đã gửi thông tin liên hệ tới ${to} qua Resend`);
+        return { success: true };
+      }
+    } catch (err: any) {
+      console.warn(`[CONTACT EMAIL] Lỗi gửi qua Resend: ${err.message}`);
+    }
+  }
+
+  // 3. Fallback
+  console.log(`[CONTACT FORM DISPATCH] Form từ: ${name} (${email}) | SĐT: ${phone} | Topic: ${topic} | Lời nhắn: ${message}`);
+  return { success: true, message: 'Received and logged' };
+}

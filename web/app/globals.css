@@ -3,35 +3,187 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 11, 15, 25;
-  --background-end-rgb: 7, 10, 19;
+  --foreground-rgb: 15, 23, 42;
+  --background-start-rgb: 250, 251, 253;
+  --background-end-rgb: 243, 246, 250;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background-color: #FAFCFE;
   min-height: 100vh;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar for refined light theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b0f19;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
-  border-radius: 4px;
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #94a3b8;
+}
+
+/* Subtle architectural dot grid */
+.bg-grid-slate-light {
+  background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+
+/* Linear fine grid */
+.bg-lines-light {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.4) 1px, transparent 1px);
+}
+
+/* Sleek subtle keyframe animations */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(0.5deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes tickerMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: floatGentle 8s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 5s ease-in-out infinite;
+}
+
+.animate-ticker-marquee {
+  display: flex;
+  width: max-content;
+  animation: tickerMarquee 35s linear infinite;
+}
+
+.animate-ticker-marquee:hover {
+  animation-play-state: paused;
+}
+
+.shimmer-badge {
+  background: linear-gradient(90deg, rgba(244,63,94,0.08) 0%, rgba(244,63,94,0.2) 50%, rgba(244,63,94,0.08) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* ===================================================================== */
+/* Remotion-like Studio & Video Engine Keyframes */
+/* ===================================================================== */
+
+/* Audio Waveform Equalizer animation */
+@keyframes remotionWave1 {
+  0%, 100% { height: 25%; }
+  50% { height: 95%; }
+}
+@keyframes remotionWave2 {
+  0%, 100% { height: 75%; }
+  50% { height: 30%; }
+}
+@keyframes remotionWave3 {
+  0%, 100% { height: 40%; }
+  50% { height: 100%; }
+}
+@keyframes remotionWave4 {
+  0%, 100% { height: 90%; }
+  50% { height: 45%; }
+}
+
+.animate-wave-1 { animation: remotionWave1 0.8s ease-in-out infinite; }
+.animate-wave-2 { animation: remotionWave2 0.7s ease-in-out infinite 0.15s; }
+.animate-wave-3 { animation: remotionWave3 0.9s ease-in-out infinite 0.3s; }
+.animate-wave-4 { animation: remotionWave4 0.75s ease-in-out infinite 0.45s; }
+
+/* Ken Burns subtle video zoom & pan */
+@keyframes remotionKenBurns {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.08) translate(-2%, -2%); }
+  100% { transform: scale(1) translate(0, 0); }
+}
+.animate-remotion-video {
+  animation: remotionKenBurns 12s ease-in-out infinite alternate;
+}
+
+/* Timeline scrubber playhead loop */
+@keyframes remotionScrubber {
+  0% { left: 0%; }
+  100% { left: 100%; }
+}
+.animate-remotion-scrubber {
+  animation: remotionScrubber 6s linear infinite;
+}
+
+/* Live Progress Bar Shimmer */
+@keyframes progressShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-progress-shimmer {
+  background: linear-gradient(90deg, #f43f5e 0%, #fb7185 30%, #f43f5e 60%, #e11d48 100%);
+  background-size: 200% 100%;
+  animation: progressShimmer 2.5s linear infinite;
+}
+
+/* Subtle glowing pulse */
+@keyframes pulseGlowCyan {
+  0%, 100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.5); }
+}
+.animate-glow-cyan {
+  animation: pulseGlowCyan 3s ease-in-out infinite;
 }
 

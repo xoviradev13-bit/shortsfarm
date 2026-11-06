@@ -50,7 +50,7 @@ function getTransporter(): Transporter | null {
 
 export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<{ success: boolean; message?: string }> {
   const { to, customerName, licenseKey, plan, amount, expiresAt, maxDevices } = params;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.com';
   const planDisplay = PLAN_NAMES[plan] || plan;
   const expiresDisplay = expiresAt
     ? expiresAt.toLocaleDateString('vi-VN')

@@ -54,7 +54,7 @@ import {
 } from 'lucide-react';
 import { TRANSLATIONS, Language } from '@/lib/translations';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.com';
 
 function Divider({ className = 'my-6 sm:my-10' }: { className?: string }) {
   return (

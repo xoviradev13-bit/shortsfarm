@@ -8,7 +8,7 @@ const inter = Inter({
   display: 'swap',
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.app';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.com';
 
 export const viewport: Viewport = {
   themeColor: [

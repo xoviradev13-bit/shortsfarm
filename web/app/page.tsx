@@ -24,6 +24,7 @@ import {
   Sliders,
   DollarSign,
   X,
+  Menu,
   Play,
   Youtube,
   Radio,
@@ -49,10 +50,19 @@ import {
   MessageSquare,
   Send,
   QrCode,
+  Tag,
 } from 'lucide-react';
 import { TRANSLATIONS, Language } from '@/lib/translations';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.app';
+
+function Divider({ className = 'my-6 sm:my-10' }: { className?: string }) {
+  return (
+    <div data-reveal="line" className={`relative max-w-7xl mx-auto px-4 pointer-events-none ${className}`}>
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-rose-500/35 to-transparent" />
+    </div>
+  );
+}
 
 export default function LandingPage() {
   // Language Selection (vi, en, zh) - default to 'vi'
@@ -76,6 +86,9 @@ export default function LandingPage() {
       localStorage.setItem('shortsstack_lang', newLang);
     } catch (e) { }
   };
+
+  // Mobile Navigation Menu State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Language Dropdown State
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
@@ -381,8 +394,90 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, [checkoutStep, orderData?.orderCode, lang]);
 
+  // Scroll to top visibility listener
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 220);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Scroll progress bar ref
+  const progressRef = React.useRef<HTMLDivElement>(null);
+
+  // Scroll-triggered reveal (data-reveal / data-stagger) + parallax + progress bar
+  useEffect(() => {
+    // Assign stagger indexes
+    document.querySelectorAll<HTMLElement>('[data-stagger]').forEach((parent) => {
+      Array.from(parent.children).forEach((child, i) =>
+        (child as HTMLElement).style.setProperty('--i', String(i))
+      );
+    });
+
+    const targets = document.querySelectorAll<HTMLElement>('[data-reveal], [data-stagger]');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduce) {
+      targets.forEach((el) => el.classList.add('in'));
+      return;
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -60px 0px' }
+    );
+    targets.forEach((el) => io.observe(el));
+
+    // Scroll progress bar + parallax (rAF-throttled)
+    const parallaxEls = document.querySelectorAll<HTMLElement>('[data-parallax]');
+    let ticking = false;
+    const update = () => {
+      const y = window.scrollY;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (progressRef.current) {
+        progressRef.current.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+      }
+      parallaxEls.forEach((el) => {
+        const speed = parseFloat(el.dataset.parallax || '0.1');
+        el.style.transform = `translate3d(0, ${y * speed}px, 0)`;
+      });
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(update);
+        ticking = true;
+      }
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#FAFCFE] text-slate-800 flex flex-col font-sans relative overflow-x-hidden">
+      {/* Scroll Progress Bar */}
+      <div ref={progressRef} className="scroll-progress" />
+
       {/* Subtle Background Glows (Refined light theme ambient aura) */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] pointer-events-none -z-10 overflow-hidden">
         <div className="absolute -top-32 left-1/4 w-[520px] h-[520px] bg-rose-200/40 rounded-full blur-[120px] animate-pulse-glow" />
@@ -390,17 +485,14 @@ export default function LandingPage() {
         <div className="absolute top-64 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-amber-100/40 rounded-full blur-[100px]" />
       </div>
 
-      {/* Subtle Architectural Dot Grid Pattern */}
-      <div className="absolute inset-0 bg-grid-slate-light opacity-60 pointer-events-none -z-10" />
-
       {/* ===================================================================== */}
       {/* 1. HEADER / NAVBAR (Crisp Translucent Glass) */}
       {/* ===================================================================== */}
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-white/90 border-b border-slate-200/80 transition-all shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 backdrop-blur-md bg-white/95 border-b border-slate-200/80 transition-all shadow-xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
           {/* Logo & Brand Name */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform duration-200 border border-slate-200/80">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 group shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform duration-200 border border-slate-200/80 shrink-0">
               <img
                 src="/apple-touch-icon.png"
                 alt="ShortsStack"
@@ -408,15 +500,15 @@ export default function LandingPage() {
               />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-xl tracking-tight text-slate-900">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-slate-900 leading-none">
                   Shorts<span className="text-rose-600">Stack</span>
                 </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/60 shadow-xs">
-                  v2.1
+                <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/60 shadow-xs">
+                  v1.0.1
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">AI Video Engine & Auto Uploader</p>
+              <p className="text-[11px] text-slate-500 font-medium hidden md:block">AI Video Engine & Auto Uploader</p>
             </div>
           </Link>
 
@@ -433,24 +525,24 @@ export default function LandingPage() {
             <a href="#contact" className="hover:text-rose-600 transition-colors">{t.nav.contact}</a>
           </nav>
 
-          {/* Right Action Bar: Language Dropdown + Download CTA */}
-          <div className="flex items-center gap-3">
-            {/* Language Dropdown */}
+          {/* Right Action Bar: Language Dropdown + Download CTA + Mobile Hamburger */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            {/* Language Dropdown (Clean icon + short code to prevent Windows duplicate flag text) */}
             <div className="relative" ref={langDropdownRef}>
               <button
                 type="button"
                 onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/90 hover:bg-slate-200/70 border border-slate-200 text-xs font-semibold text-slate-700 transition shadow-2xs"
+                className="h-8 sm:h-10 flex items-center gap-1.5 px-2 sm:px-3 rounded-xl bg-slate-100/90 hover:bg-slate-200/70 border border-slate-200 text-xs font-semibold text-slate-700 transition shadow-2xs shrink-0"
                 aria-expanded={langDropdownOpen}
                 aria-haspopup="true"
               >
-                <span className="text-base leading-none">{currentLang.flag}</span>
-                <span className="font-bold">{currentLang.short}</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${langDropdownOpen ? 'rotate-180 text-rose-600' : ''}`} />
+                <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <span className="font-bold text-[11px] sm:text-xs">{currentLang.short}</span>
+                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${langDropdownOpen ? 'rotate-180 text-rose-600' : ''}`} />
               </button>
 
               {langDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 rounded-xl bg-white border border-slate-200 shadow-xl shadow-slate-900/10 py-1.5 z-50">
+                <div className="absolute right-0 mt-2 w-36 rounded-xl bg-white border border-slate-200 shadow-xl shadow-slate-900/10 py-1.5 z-50">
                   {languages.map((item) => (
                     <button
                       key={item.code}
@@ -459,15 +551,12 @@ export default function LandingPage() {
                         changeLanguage(item.code);
                         setLangDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-3.5 py-2 text-xs font-semibold transition ${lang === item.code
+                      className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold transition ${lang === item.code
                         ? 'bg-rose-50 text-rose-600 font-bold'
                         : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                         }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-base">{item.flag}</span>
-                        <span>{item.label}</span>
-                      </div>
+                      <span>{item.label}</span>
                       {lang === item.code && <Check className="w-3.5 h-3.5 text-rose-600" />}
                     </button>
                   ))}
@@ -475,36 +564,308 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* Primary Download Button */}
+            {/* Primary Download Button (Icon-only with tooltip on mobile, full text on sm+) */}
+            <div className="relative group shrink-0">
+              <button
+                type="button"
+                onClick={handleDownload}
+                title={t.nav.download}
+                aria-label={t.nav.download}
+                className="h-8 sm:h-10 w-8 sm:w-auto px-0 sm:px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 hover:from-rose-600 hover:to-pink-700 transition shadow-md shadow-rose-500/25 active:scale-95 flex items-center justify-center gap-1.5 shrink-0 overflow-hidden"
+              >
+                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:-translate-y-0.5 shrink-0" />
+                <span className="hidden sm:inline whitespace-nowrap">{downloading ? '...' : t.nav.download}</span>
+              </button>
+              {/* Tooltip on hover for mobile */}
+              <span className="sm:hidden pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 z-50">
+                {t.nav.download}
+              </span>
+            </div>
+
+            {/* Mobile Hamburger Toggle Button (Exact same height as language & download buttons) */}
             <button
               type="button"
-              onClick={handleDownload}
-              className="relative group overflow-hidden px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 hover:from-rose-600 hover:to-pink-700 transition shadow-md shadow-rose-500/25 active:scale-95 flex items-center gap-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden h-8 w-8 sm:h-10 sm:w-10 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100/90 border border-slate-200 transition flex items-center justify-center shrink-0"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
             >
-              <Download className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
-              <span>{downloading ? '...' : t.nav.download}</span>
+              {mobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer / Dropdown */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-200/80 bg-white/98 backdrop-blur-lg px-4 py-4 shadow-xl transition animate-in fade-in slide-in-from-top-2 duration-200">
+            <nav className="flex flex-col space-y-1 text-sm font-semibold text-slate-700">
+              <a
+                href="#features"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between"
+              >
+                <span>{t.nav.features}</span>
+                <span className="text-xs text-slate-400">⚡</span>
+              </a>
+              <a
+                href="#browsers"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between"
+              >
+                <span>{t.nav.browsers}</span>
+                <span className="text-xs text-slate-400">🛡️</span>
+              </a>
+              <a
+                href="#calculator"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between"
+              >
+                <span>{t.nav.calculator}</span>
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              </a>
+              <a
+                href="#pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between"
+              >
+                <span>{t.nav.pricing}</span>
+                <span className="text-xs text-slate-400">🏷️</span>
+              </a>
+              <a
+                href="#faq"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between"
+              >
+                <span>{t.nav.faq}</span>
+                <span className="text-xs text-slate-400">❓</span>
+              </a>
+              <a
+                href="#contact"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition flex items-center justify-between"
+              >
+                <span>{t.nav.contact}</span>
+                <span className="text-xs text-slate-400">💬</span>
+              </a>
+            </nav>
+            <div className="pt-3 mt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span className="font-medium">ShortsStack v1.0.1</span>
+              <a
+                href="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-rose-600 font-bold hover:underline"
+              >
+                Cổng Quản Trị →
+              </a>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ===================================================================== */}
       {/* 2. HERO SECTION (Editorial, High-Conversion SaaS Layout) */}
       {/* ===================================================================== */}
-      <section className="relative pt-12 pb-16 sm:pt-20 sm:pb-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Shimmer Announcement Badge */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white border border-rose-200/80 shadow-xs text-xs font-semibold text-rose-700 mb-8 hover:border-rose-300 transition cursor-default animate-float-gentle">
+      <section className="relative pt-12 pb-16 sm:pt-20 sm:pb-24 overflow-hidden isolate">
+        {/* ------------------------------------------------------------- */}
+        {/* AESTHETIC HERO UNDERLAY (Kinetic Film Strips, Audio Waveforms, Film Grain & Dot Grid) */}
+        {/* ------------------------------------------------------------- */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
+          {/* 1. Tactile 35mm Film Grain Noise Texture */}
+          <div className="absolute inset-0 film-grain-overlay opacity-40 mix-blend-multiply" />
+
+          {/* 2. Architectural Dot Grid with Radial Spotlight Fade */}
+          <div className="absolute inset-0 bg-grid-slate-light opacity-80 [mask-image:radial-gradient(ellipse_at_center,black_60%,transparent_85%)]" />
+
+          {/* 3. Volumetric Multi-Chromatic Studio Ambient Glows */}
+          <div data-parallax="0.18" className="absolute -top-24 left-1/2 w-full pointer-events-none" style={{ transform: 'translateX(-50%)' }}>
+            <div className="w-[850px] h-[480px] bg-gradient-to-b from-rose-200/60 via-pink-100/40 to-transparent rounded-full blur-3xl opacity-90 mx-auto" />
+          </div>
+          <div data-parallax="0.30" className="absolute top-28 left-4 sm:left-12 pointer-events-none">
+            <div className="w-72 h-72 bg-gradient-to-tr from-rose-300/30 to-amber-200/30 rounded-full blur-3xl opacity-70" />
+          </div>
+          <div data-parallax="0.12" className="absolute top-28 right-4 sm:right-12 pointer-events-none">
+            <div className="w-72 h-72 bg-gradient-to-tl from-indigo-300/30 to-pink-200/30 rounded-full blur-3xl opacity-70" />
+          </div>
+
+          {/* 4. Cinematic Viewfinder Corner Brackets & HUD Metadata */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full relative">
+            {/* Viewfinder 4 Corners Brackets */}
+            <div className="absolute top-2 left-2 sm:left-6 w-5 h-5 border-t-2 border-l-2 border-slate-400/60 rounded-tl" />
+            <div className="absolute top-2 right-2 sm:right-6 w-5 h-5 border-t-2 border-r-2 border-slate-400/60 rounded-tr" />
+            <div className="absolute bottom-6 left-2 sm:left-6 w-5 h-5 border-b-2 border-l-2 border-slate-400/60 rounded-bl" />
+            <div className="absolute bottom-6 right-2 sm:right-6 w-5 h-5 border-b-2 border-r-2 border-slate-400/60 rounded-br" />
+
+            {/* Top-Left Viewfinder HUD (Visible on all screens) */}
+            <div className="absolute top-3 left-8 sm:left-14 flex items-center gap-2 font-mono text-[9px] sm:text-[10px] text-slate-500 font-semibold tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              <span className="text-rose-600 font-bold">REC ● 4K 60FPS</span>
+              <span className="text-slate-300 hidden sm:inline">|</span>
+              <span className="hidden sm:inline">1080×1920 (9:16)</span>
+              <span className="text-slate-300 hidden md:inline">|</span>
+              <span className="hidden md:inline">ISO 400</span>
+            </div>
+
+            {/* Top-Right Viewfinder HUD (Visible on all screens) */}
+            <div className="absolute top-3 right-8 sm:right-14 flex items-center gap-2 font-mono text-[9px] sm:text-[10px] text-slate-500 font-semibold tracking-wider">
+              <span className="text-indigo-600 font-bold hidden sm:inline">AI AUDIO 48kHz</span>
+              <span className="text-slate-300 hidden sm:inline">|</span>
+              <span className="hidden md:inline">NVENC GPU</span>
+              <span className="text-slate-300 hidden md:inline">|</span>
+              <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[9px] font-bold border border-emerald-300/60">
+                ACTIVE
+              </span>
+            </div>
+
+            {/* Subtle Crosshair Reticle Markers */}
+            <div className="absolute top-1/3 left-10 hidden lg:block text-slate-400/60 font-mono text-sm select-none">
+              +
+            </div>
+            <div className="absolute top-1/3 right-10 hidden lg:block text-slate-400/60 font-mono text-sm select-none">
+              +
+            </div>
+          </div>
+
+          {/* 5. Flanking Kinetic 35mm Film Strips (Visible on tablet & desktop >= 1024px or >= 768px with subtle opacity) */}
+          {/* Left Film Strip (Scrolls Downward) */}
+          <div className="absolute -top-10 left-1 sm:left-3 lg:left-6 2xl:left-12 hidden md:block w-20 lg:w-24 h-[920px] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] opacity-60 hover:opacity-90 transition-opacity">
+            <div className="animate-film-scroll flex flex-col gap-3.5">
+              {[...Array(2)].map((_, loopIdx) => (
+                <div key={loopIdx} className="flex flex-col gap-3.5">
+                  {[
+                    { frame: '00:14:26:08', tag: 'DOUYIN RAW', res: '1080p', color: 'text-rose-600 bg-rose-50 border-rose-200' },
+                    { frame: '00:14:27:12', tag: 'KEN BURNS', res: '60fps', color: 'text-amber-600 bg-amber-50 border-amber-200' },
+                    { frame: '00:14:28:16', tag: 'COLOR JITTER', res: 'Rec.709', color: 'text-purple-600 bg-purple-50 border-purple-200' },
+                    { frame: '00:14:29:20', tag: 'AUDIO PITCH', res: '48kHz', color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
+                    { frame: '00:14:30:24', tag: 'SHORTS EXPORT', res: '9:16', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+                  ].map((item, itemIdx) => (
+                    <div
+                      key={itemIdx}
+                      className="w-20 lg:w-24 rounded-xl border border-slate-300 bg-white/90 shadow-sm p-1.5 flex flex-col gap-1 text-[8px] font-mono"
+                    >
+                      {/* Top sprocket perforations */}
+                      <div className="flex justify-between px-1">
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                      </div>
+                      {/* Inner miniature preview frame */}
+                      <div className={`h-14 lg:h-16 rounded-md border flex flex-col items-center justify-center p-1 text-center ${item.color}`}>
+                        <span className="text-[7px] lg:text-[7.5px] font-extrabold truncate max-w-full">
+                          {item.tag}
+                        </span>
+                        <span className="text-[6px] lg:text-[6.5px] text-slate-500 mt-0.5 font-sans font-semibold">{item.res}</span>
+                      </div>
+                      {/* Bottom sprocket perforations & timecode */}
+                      <div className="flex justify-between items-center px-0.5 text-slate-400">
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                        <span className="text-[6px] font-mono tracking-tighter text-slate-600 font-bold">
+                          {item.frame}
+                        </span>
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Film Strip (Scrolls Upward with Reverse) */}
+          <div className="absolute -top-10 right-1 sm:right-3 lg:right-6 2xl:right-12 hidden md:block w-20 lg:w-24 h-[920px] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] opacity-60 hover:opacity-90 transition-opacity">
+            <div className="animate-film-scroll-reverse flex flex-col gap-3.5">
+              {[...Array(2)].map((_, loopIdx) => (
+                <div key={loopIdx} className="flex flex-col gap-3.5">
+                  {[
+                    { frame: '00:32:01:04', tag: 'XIAOHONGSHU', res: 'HD RAW', color: 'text-red-600 bg-red-50 border-red-200' },
+                    { frame: '00:32:02:18', tag: 'VOICEOVER AI', res: 'ElevenLabs', color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
+                    { frame: '00:32:03:22', tag: 'GPM BROWSER', res: 'Anti-detect', color: 'text-teal-600 bg-teal-50 border-teal-200' },
+                    { frame: '00:32:05:01', tag: 'AUTO POST', res: 'TikTok US', color: 'text-rose-600 bg-rose-50 border-rose-200' },
+                    { frame: '00:32:06:15', tag: 'VIRAL PIPELINE', res: 'Batch 20', color: 'text-purple-600 bg-purple-50 border-purple-200' },
+                  ].map((item, itemIdx) => (
+                    <div
+                      key={itemIdx}
+                      className="w-20 lg:w-24 rounded-xl border border-slate-300 bg-white/90 shadow-sm p-1.5 flex flex-col gap-1 text-[8px] font-mono"
+                    >
+                      <div className="flex justify-between px-1">
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                      </div>
+                      <div className={`h-14 lg:h-16 rounded-md border flex flex-col items-center justify-center p-1 text-center ${item.color}`}>
+                        <span className="text-[7px] lg:text-[7.5px] font-extrabold truncate max-w-full">
+                          {item.tag}
+                        </span>
+                        <span className="text-[6px] lg:text-[6.5px] text-slate-500 mt-0.5 font-sans font-semibold">{item.res}</span>
+                      </div>
+                      <div className="flex justify-between items-center px-0.5 text-slate-400">
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                        <span className="text-[6px] font-mono tracking-tighter text-slate-600 font-bold">
+                          {item.frame}
+                        </span>
+                        <div className="w-1.5 h-1 rounded-xs bg-slate-400" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 6. Dynamic Audio Waveform Overlay (Spanning Center of Hero Behind Text) */}
+          <div className="absolute top-28 left-0 right-0 w-full overflow-hidden leading-none [mask-image:linear-gradient(to_bottom,transparent,black_30%,black_70%,transparent)] opacity-40">
+            <svg
+              className="w-full h-44 animate-wave-undulate"
+              viewBox="0 0 1440 160"
+              fill="none"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="heroWaveGradientMid" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.20" />
+                  <stop offset="40%" stopColor="#8b5cf6" stopOpacity="0.25" />
+                  <stop offset="70%" stopColor="#ec4899" stopOpacity="0.20" />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.15" />
+                </linearGradient>
+                <linearGradient id="heroWaveStrokeMid" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.6" />
+                  <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.6" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0,80 C180,20 360,140 540,65 C720,-10 900,150 1080,75 C1260,10 1350,110 1440,80 L1440,160 L0,160 Z"
+                fill="url(#heroWaveGradientMid)"
+              />
+              <path
+                d="M0,80 C180,20 360,140 540,65 C720,-10 900,150 1080,75 C1260,10 1350,110 1440,80"
+                stroke="url(#heroWaveStrokeMid)"
+                strokeWidth="2"
+                fill="none"
+              />
+            </svg>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          {/* Shimmer Announcement Badge with Live AI Audio Equalizer */}
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white border border-rose-200/90 shadow-sm text-xs font-semibold text-rose-700 mb-8 hover:border-rose-300 transition cursor-default animate-float-gentle">
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
             </span>
             <span>{t.hero.badge}</span>
+            <div className="flex items-center gap-0.5 h-3 px-1 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-500">
+              <span className="w-0.5 h-full bg-rose-500 rounded-full animate-wave-1" />
+              <span className="w-0.5 h-full bg-rose-500 rounded-full animate-wave-2" />
+              <span className="w-0.5 h-full bg-rose-500 rounded-full animate-wave-3" />
+              <span className="w-0.5 h-full bg-rose-500 rounded-full animate-wave-4" />
+              <span className="w-0.5 h-full bg-rose-500 rounded-full animate-wave-2" />
+            </div>
             <ArrowRight className="w-3.5 h-3.5 text-rose-500" />
           </div>
 
           {/* Monumental Headline */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
+          <h1 data-reveal className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 leading-[1.14]" style={{ animationDelay: '80ms' }}>
             {t.hero.titleLine1}{' '}
             <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 bg-clip-text text-transparent">
               {t.hero.titleGradient}
@@ -514,56 +875,83 @@ export default function LandingPage() {
           </h1>
 
           {/* Subheading */}
-          <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-normal">
-            {t.hero.description}
+          <p data-reveal className="mt-6 text-base sm:text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-normal" style={{ animationDelay: '180ms' }}>
+            {lang === 'vi' ? (
+              <>
+                Tải video Douyin & Xiaohongshu sạch{' '}
+                <span className="font-bold underline decoration-rose-500 decoration-2 underline-offset-4 text-slate-900">
+                  100% watermark
+                </span>
+                . Tự động xử lý & tối ưu hóa nội dung độc bản theo chuẩn kiểm duyệt khắt khe nhất của TikTok, YouTube Shorts và Facebook Reels qua AI thông minh (
+                <span className="text-rose-500 font-semibold">Ken Burns, Voiceover, Color Jitter</span>
+                ) và đăng bài qua Antidetect Browser an toàn tuyệt đối.
+              </>
+            ) : lang === 'zh' ? (
+              <>
+                自动批量采集抖音、小红书{' '}
+                <span className="font-bold underline decoration-rose-500 decoration-2 underline-offset-4 text-slate-900">
+                  100% 无水印
+                </span>
+                高清视频。通过智能 AI 重组算法（
+                <span className="text-rose-500 font-semibold">Ken Burns 运镜、微噪扰动、音频变频</span>
+                ）彻底突破 TikTok Beta、YouTube Shorts 与 Reels 的去重检测，并通过真实防关联指纹浏览器全自动发布。
+              </>
+            ) : (
+              <>
+                Download Douyin & Xiaohongshu videos with{' '}
+                <span className="font-bold underline decoration-rose-500 decoration-2 underline-offset-4 text-slate-900">
+                  100% zero watermark
+                </span>
+                . Automatically bypass algorithmic duplicate-content filters across TikTok Beta, YouTube Shorts, and Facebook Reels via smart AI transformations (
+                <span className="text-rose-500 font-semibold">Ken Burns, Voiceover, Color Jitter</span>
+                ), then publish seamlessly through real Antidetect Browsers.
+              </>
+            )}
           </p>
 
           {/* Action CTAs */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-2xl lg:max-w-3xl mx-auto">
+          <div data-reveal className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-2xl lg:max-w-3xl mx-auto" style={{ animationDelay: '280ms' }}>
+            {/* Primary Download Button */}
             <button
               type="button"
               onClick={handleDownload}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold shadow-xl shadow-rose-500/30 hover:shadow-rose-500/40 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center justify-center gap-3.5 group"
+              className="w-full sm:w-auto px-7 py-3 rounded-2xl bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold shadow-xl shadow-rose-500/25 hover:shadow-rose-500/35 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center justify-center gap-3.5 group"
             >
               <Download className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-              <div className="text-center sm:text-left leading-tight">
-                <span className="block text-xs uppercase tracking-wider text-rose-100 font-semibold">
-                  {lang === 'vi' ? 'Tải Bản' : lang === 'en' ? 'Download for' : '下载客户端'}
+              <div className="text-left leading-tight">
+                <span className="block text-[10px] tracking-wider uppercase text-rose-100 font-extrabold">
+                  {lang === 'vi' ? 'TẢI BẢN CHÍNH THỨC' : lang === 'en' ? 'OFFICIAL RELEASE' : '官方正式版本'}
                 </span>
-                <span className="block text-sm sm:text-base font-bold whitespace-nowrap">
-                  {lang === 'vi' ? 'Windows (64-bit)' : lang === 'en' ? 'Windows (64-bit)' : 'Windows (64位)'}
+                <span className="block text-sm sm:text-base font-extrabold whitespace-nowrap">
+                  Windows (64-bit)
                 </span>
               </div>
             </button>
 
+            {/* Watch Demo Button with Animated Gradient Border on Hover */}
             <button
               type="button"
               onClick={() => setYoutubeModalOpen(true)}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold border border-slate-200/90 shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center justify-center gap-3 group"
+              className="relative p-[1.5px] rounded-2xl group transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/15 active:scale-95 flex items-center justify-center w-full sm:w-auto"
             >
-              <Play className="w-4 h-4 fill-rose-600 text-rose-600 flex-shrink-0 group-hover:scale-110 transition-transform" />
-              <div className="text-center sm:text-left leading-tight">
-                <span className="block text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                  {lang === 'vi' ? 'Xem Video' : lang === 'en' ? 'Watch Demo' : '演示视频'}
-                </span>
-                <span className="block text-sm sm:text-base font-bold text-slate-800 whitespace-nowrap">
-                  {lang === 'vi' ? 'Trực Tiếp' : lang === 'en' ? 'Live Video' : '实机操作'}
+              <div className="absolute inset-0 rounded-2xl bg-slate-200/90 group-hover:bg-gradient-to-r group-hover:from-rose-500 group-hover:via-pink-500 group-hover:to-amber-500 transition-all duration-300" />
+              <div className="relative px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50/90 text-slate-800 font-bold transition flex items-center justify-center gap-2.5 h-full w-full">
+                <Play className="w-4 h-4 fill-rose-600 text-rose-600 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="text-sm sm:text-base font-bold text-slate-800 whitespace-nowrap">
+                  {lang === 'vi' ? 'Xem Video Trực Tiếp' : lang === 'en' ? 'Watch Demo' : '演示视频'}
                 </span>
               </div>
             </button>
 
+            {/* Pricing Button */}
             <a
               href="#pricing"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-100/90 hover:bg-slate-200/80 text-slate-700 font-bold border border-slate-200/60 transition-all active:scale-95 flex items-center justify-center gap-3"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-100/90 hover:bg-slate-200/80 text-slate-700 font-bold border border-slate-200/60 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              <div className="text-center sm:text-left leading-tight">
-                <span className="block text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                  {lang === 'vi' ? 'Xem' : lang === 'en' ? 'View' : '查看'}
-                </span>
-                <span className="block text-sm sm:text-base font-bold text-slate-700 whitespace-nowrap">
-                  {lang === 'vi' ? 'Bảng Giá' : lang === 'en' ? 'Pricing' : '价格方案'}
-                </span>
-              </div>
+              <Tag className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span className="text-sm sm:text-base font-bold text-slate-700 whitespace-nowrap">
+                {lang === 'vi' ? 'Xem Bảng Giá' : lang === 'en' ? 'View Pricing' : '查看价格方案'}
+              </span>
             </a>
           </div>
 
@@ -590,25 +978,61 @@ export default function LandingPage() {
               <span>{t.hero.trustBrowsers}</span>
             </span>
           </div>
+
+          {/* Platform & Browser Compatibility Row */}
+          <div className="mt-12 pt-8 pb-3 sm:pb-4 border-t border-slate-200/60 max-w-4xl mx-auto">
+            <p className="text-[11px] uppercase font-extrabold tracking-widest text-slate-400 mb-5">
+              {lang === 'vi'
+                ? 'TƯƠNG THÍCH HOÀN HẢO VỚI CÁC NỀN TẢNG VIDEO NGẮN & BROWSER'
+                : lang === 'zh'
+                  ? '完美兼容各大短视频平台与防关联指纹浏览器'
+                  : 'SEAMLESSLY COMPATIBLE WITH SHORT-FORM VIDEO PLATFORMS & ANTIDETECT BROWSERS'}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs sm:text-sm font-bold text-slate-700">
+              <div className="flex items-center gap-2 hover:text-slate-900 transition">
+                <img src="/images/tiktok-logo.png" alt="TikTok" className="w-4 h-4 object-contain" />
+                <span>TikTok</span>
+              </div>
+              <div className="flex items-center gap-2 hover:text-slate-900 transition">
+                <img src="/images/youtube-logo.png" alt="YouTube Shorts" className="w-4 h-4 object-contain" />
+                <span>YouTube Shorts</span>
+              </div>
+              <div className="flex items-center gap-2 hover:text-slate-900 transition">
+                <img src="/images/facebook-logo.png" alt="Facebook Reels" className="w-4 h-4 object-contain" />
+                <span>Facebook Reels</span>
+              </div>
+              <div className="flex items-center gap-2 hover:text-slate-900 transition">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>GPM Login</span>
+              </div>
+              <div className="flex items-center gap-2 hover:text-slate-900 transition">
+                <Bot className="w-4 h-4 text-purple-500" />
+                <span>GenLogin</span>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Aesthetic Glowing Gradient Divider positioned right below the platform list */}
+        <Divider className="mt-4 sm:mt-5 mb-8 sm:mb-12" />
 
         {/* =============================================================== */}
         {/* 3. INTERACTIVE SOFTWARE WORKSPACE DEMO SHOWCASE (Remotion Real App Studio) */}
         {/* =============================================================== */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-14">
-          <div className="relative rounded-2xl border border-slate-800 bg-[#0A0E1A] text-slate-100 shadow-2xl shadow-rose-950/20 overflow-hidden text-left">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8">
+          <div data-reveal="zoom" className="relative rounded-2xl border border-slate-800 bg-[#0A0E1A] text-slate-100 shadow-2xl shadow-rose-950/20 overflow-hidden text-left">
             {/* Desktop Window Titlebar (macOS Style Dots + Live System Pills) */}
-            <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-3 bg-[#0d1322]">
+            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 border-b border-slate-800/80 px-3 sm:px-4 py-2.5 sm:py-3 bg-[#0d1322]">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block" />
                 <span className="w-3 h-3 rounded-full bg-amber-400/90 inline-block" />
                 <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
                 <span className="ml-3 font-mono text-xs text-slate-400 font-semibold hidden sm:inline-block">
-                  ShortsStack Studio v2.1.0 • AI Video Engine & Auto-Pilot
+                  ShortsStack Studio v1.0.1 • AI Video Engine & Auto-Pilot
                 </span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
+              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Auto-Pilot: 4 Tasks Active</span>
                 </span>
@@ -623,10 +1047,58 @@ export default function LandingPage() {
               </div>
             </div>
 
+            {/* Mobile Tab Switcher (< lg) */}
+            <div className="lg:hidden border-b border-slate-800/80 bg-[#070B14] p-2.5 overflow-x-auto flex items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveMockupTab('dashboard')}
+                className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 flex items-center gap-1.5 transition ${activeMockupTab === 'dashboard'
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-xs'
+                  : 'text-slate-400 hover:text-white bg-slate-900/40'
+                  }`}
+              >
+                <Zap className="w-3.5 h-3.5 text-rose-400" />
+                <span>{lang === 'vi' ? 'Chiến Dịch Tự Động' : lang === 'zh' ? '自动运营战役' : 'Auto-Pilot'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveMockupTab('ai_engine')}
+                className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 flex items-center gap-1.5 transition ${activeMockupTab === 'ai_engine'
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-xs'
+                  : 'text-slate-400 hover:text-white bg-slate-900/40'
+                  }`}
+              >
+                <Wand2 className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{lang === 'vi' ? 'Biên Tập Video' : lang === 'zh' ? '视频编辑' : 'Video Studio'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveMockupTab('browsers')}
+                className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 flex items-center gap-1.5 transition ${activeMockupTab === 'browsers'
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-xs'
+                  : 'text-slate-400 hover:text-white bg-slate-900/40'
+                  }`}
+              >
+                <Globe className="w-3.5 h-3.5 text-purple-400" />
+                <span>{lang === 'vi' ? 'Dàn Trình Duyệt' : lang === 'zh' ? '指纹浏览器' : 'Browsers Farm'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveMockupTab('scheduler')}
+                className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 flex items-center gap-1.5 transition ${activeMockupTab === 'scheduler'
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-xs'
+                  : 'text-slate-400 hover:text-white bg-slate-900/40'
+                  }`}
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span>{lang === 'vi' ? 'Khung Giờ Đăng' : lang === 'zh' ? '发布时段' : 'Scheduler 24/7'}</span>
+              </button>
+            </div>
+
             {/* Desktop UI Body: Real App Sidebar + Interactive Work Area */}
             <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[520px]">
-              {/* App Left Sidebar (Matching Real Desktop App Navigation) */}
-              <div className="lg:col-span-3 border-r border-slate-800/80 bg-[#070B14] p-4 text-xs flex flex-col justify-between h-full">
+              {/* App Left Sidebar (Matching Real Desktop App Navigation - >= lg) */}
+              <div className="hidden lg:flex lg:col-span-3 border-r border-slate-800/80 bg-[#070B14] p-4 text-xs flex-col justify-between h-full">
                 <div className="space-y-3.5">
                   <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800/80">
                     <div className="w-8 h-8 rounded-lg overflow-hidden shadow-md shadow-rose-600/30 shrink-0 border border-slate-800">
@@ -1090,7 +1562,7 @@ export default function LandingPage() {
                 {activeMockupTab === 'ai_engine' && (
                   <div className="space-y-4">
                     <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                      {lang === 'vi' ? 'QUY TRÌNH 4 BƯỚC LÁCH THUẬT TOÁN ĐA TẦNG' : lang === 'zh' ? '四步多重算法去重流程' : '4-STEP ALGORITHMIC EVASION PIPELINE'}
+                      {lang === 'vi' ? 'QUY TRÌNH 4 BƯỚC TÁI TẠO NỘI DUNG ĐỘC BẢN AI' : lang === 'zh' ? '四步多重算法去重流程' : '4-STEP AI CONTENT RE-CREATION PIPELINE'}
                     </h4>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -1176,7 +1648,7 @@ export default function LandingPage() {
       {/* ===================================================================== */}
       {/* 4. LIVE MARQUEE TICKER (Animated Attention Catching Banner) */}
       {/* ===================================================================== */}
-      <div className="border-y border-slate-200/80 bg-white/90 py-3.5 overflow-hidden shadow-xs">
+      <div data-reveal className="border-y border-slate-200/80 bg-white/90 py-3.5 overflow-hidden shadow-xs">
         <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold shrink-0">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
@@ -1196,23 +1668,36 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* Aesthetic Glowing Gradient Divider */}
+      <Divider />
+
       {/* ===================================================================== */}
       {/* 5. FEATURES BENTO GRID (Deep Technical Capabilities) */}
       {/* ===================================================================== */}
-      <section id="features" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-xs uppercase font-extrabold tracking-wider px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+      <section id="features" className="pt-10 pb-12 sm:pt-14 sm:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative overflow-hidden isolate">
+        {/* Globe Ambient Glows */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
+          <div className="absolute -top-20 right-1/4 w-80 h-80 bg-rose-200/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 left-1/4 w-80 h-80 bg-indigo-200/20 rounded-full blur-3xl" />
+        </div>
+
+        <div data-reveal className="text-center max-w-3xl mx-auto mb-14 relative z-10">
+          <span className="text-xs uppercase font-bold tracking-wider px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
             {t.features.badge}
           </span>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 mt-4 tracking-tight">
-            {t.features.title}
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mt-4 tracking-tight">
+            {lang === 'vi' ? (
+              <>Vũ Khí Tối Thượng Để <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">Xây Kênh Triệu View</span></>
+            ) : (
+              t.features.title
+            )}
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600">
             {t.features.subtitle}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+        <div data-stagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {t.features.items.map((item, idx) => (
             <div
               key={idx}
@@ -1245,24 +1730,38 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Aesthetic Glowing Gradient Divider */}
+      <Divider />
+
       {/* ===================================================================== */}
       {/* 6. ANTIDETECT BROWSERS SHOWCASE (GPMLogin & GenLogin) */}
       {/* ===================================================================== */}
-      <section id="browsers" className="py-20 bg-slate-50/70 border-y border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-14">
-            <span className="text-xs uppercase font-extrabold tracking-wider px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <section id="browsers" className="pt-8 pb-14 sm:pt-10 sm:pb-16 relative overflow-hidden isolate">
+        {/* Architectural Lines + Globe Ambient Glows */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
+          <div className="absolute inset-0 bg-lines-light opacity-30 [mask-image:radial-gradient(ellipse_at_center,black_60%,transparent_90%)]" />
+          <div className="absolute -top-10 left-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 right-1/4 w-96 h-96 bg-indigo-200/25 rounded-full blur-3xl" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div data-reveal className="text-center max-w-3xl mx-auto mb-12">
+            <span className="text-xs uppercase font-bold tracking-wider px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               {t.browsers.badge}
             </span>
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 mt-4 tracking-tight">
-              {t.browsers.title}
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mt-4 tracking-tight">
+              {lang === 'vi' ? (
+                <>Tích Hợp Sâu <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">Trình Duyệt Antidetect</span></>
+              ) : (
+                t.browsers.title
+              )}
             </h2>
             <p className="mt-4 text-base sm:text-lg text-slate-600">
               {t.browsers.subtitle}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div data-stagger className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* GPMLogin Card */}
             <div className="p-8 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-lg transition">
               <div className="flex items-center gap-3 mb-4">
@@ -1297,7 +1796,7 @@ export default function LandingPage() {
           </div>
 
           {/* 3 Core Security Benefits */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
+          <div data-stagger className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
             <div className="p-5 rounded-xl bg-white border border-slate-200/80">
               <span className="font-bold text-slate-900 text-sm block mb-1">{t.browsers.benefit1Title}</span>
               <p className="text-xs text-slate-600">{t.browsers.benefit1Desc}</p>
@@ -1314,17 +1813,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Aesthetic Glowing Gradient Divider */}
+      <Divider />
+
       {/* ===================================================================== */}
       {/* 7. INTERACTIVE REVENUE SIMULATOR (Standout High-Engagement Widget) */}
       {/* ===================================================================== */}
-      <section id="calculator" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-white via-rose-50/30 to-indigo-50/20 border border-rose-200/70 shadow-xl shadow-slate-200/50">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-xs uppercase font-extrabold tracking-wider px-3 py-1 rounded-full bg-rose-100 text-rose-800">
+      <section id="calculator" className="pt-8 pb-12 sm:pt-10 sm:pb-14 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative overflow-hidden isolate">
+
+        <div data-reveal="zoom" className="max-w-5xl mx-auto p-5 sm:p-8 md:p-12 rounded-3xl bg-gradient-to-br from-white via-rose-50/30 to-indigo-50/20 border border-rose-200/70 shadow-xl shadow-slate-200/50">
+          <div data-reveal className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-xs uppercase font-bold tracking-wider px-3 py-1 rounded-full bg-rose-100 text-rose-800">
               {t.calculator.badge}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-3 tracking-tight">
-              {t.calculator.title}
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mt-3 tracking-tight">
+              {lang === 'vi' ? (
+                <>Ước Tính <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-amber-500 bg-clip-text text-transparent">Doanh Thu Tiềm Năng</span></>
+              ) : (
+                t.calculator.title
+              )}
             </h2>
             <p className="mt-2 text-sm text-slate-600">
               {t.calculator.subtitle}
@@ -1424,7 +1931,7 @@ export default function LandingPage() {
                   {t.calculator.estRevenue}
                 </span>
                 <div className="mt-1">
-                  <span className="text-4xl font-extrabold bg-gradient-to-r from-rose-600 to-amber-600 bg-clip-text text-transparent block">
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-rose-600 to-amber-600 bg-clip-text text-transparent block">
                     ${estimatedMonthlyRevenueUsd.toLocaleString()} USD
                   </span>
                   <span className="text-sm font-bold text-slate-700 block mt-1">
@@ -1449,23 +1956,36 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Aesthetic Glowing Gradient Divider */}
+      <Divider />
+
       {/* ===================================================================== */}
       {/* 8. TRANSPARENT LIFETIME PRICING (All Lifetime, 1 / 3 / 5 PCs) */}
       {/* ===================================================================== */}
-      <section id="pricing" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-xs uppercase font-extrabold tracking-wider px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+      <section id="pricing" className="pt-10 pb-14 sm:pt-12 sm:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative overflow-hidden isolate">
+        {/* Globe Ambient Glows */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
+          <div className="absolute -top-32 right-1/4 w-[500px] h-[500px] bg-rose-200/25 rounded-full blur-3xl" />
+          <div className="absolute -bottom-24 left-1/4 w-[500px] h-[500px] bg-indigo-200/25 rounded-full blur-3xl" />
+        </div>
+
+        <div data-reveal className="text-center max-w-3xl mx-auto mb-14 relative z-10">
+          <span className="text-xs uppercase font-bold tracking-wider px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
             {t.pricing.badge}
           </span>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 mt-4 tracking-tight">
-            {t.pricing.title}
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mt-4 tracking-tight">
+            {lang === 'vi' ? (
+              <>Bảng Giá License <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">Bản Quyền Trọn Đời</span></>
+            ) : (
+              t.pricing.title
+            )}
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600">
             {t.pricing.subtitle}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+        <div data-stagger className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch relative z-10">
           {/* Plan 1: Pro 1 PC */}
           <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
             <div>
@@ -1503,10 +2023,13 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Plan 2: Studio 3 PCs (MOST POPULAR - Elevated Card) */}
-          <div className="relative p-8 rounded-3xl bg-white border-2 border-rose-500 shadow-2xl shadow-rose-500/10 hover:shadow-rose-500/20 transition-all duration-300 flex flex-col justify-between scale-105 z-10">
+          {/* Plan 2: Studio 3 PCs (MOST POPULAR - Elevated Card on Desktop) */}
+          <div className="relative p-6 sm:p-8 rounded-3xl bg-white border-2 border-rose-500 shadow-2xl shadow-rose-500/10 hover:shadow-rose-500/20 transition-all duration-300 flex flex-col justify-between lg:scale-105 my-3 lg:my-0 z-10">
             {/* Popular Badge */}
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-rose-500 to-pink-600 text-white text-[11px] font-extrabold tracking-wider shadow-sm uppercase">
+            <div
+              className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 text-white text-[10px] sm:text-[11px] font-extrabold tracking-wider shadow-md uppercase whitespace-nowrap z-20 pointer-events-none"
+              style={{ whiteSpace: 'nowrap' }}
+            >
               {t.pricing.popularBadge}
             </div>
 
@@ -1588,24 +2111,37 @@ export default function LandingPage() {
         </p>
       </section>
 
+      {/* Aesthetic Glowing Gradient Divider */}
+      <Divider />
+
       {/* ===================================================================== */}
       {/* 9. TESTIMONIALS & REVIEWS */}
       {/* ===================================================================== */}
-      <section className="py-20 bg-slate-50/70 border-y border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="text-xs uppercase font-extrabold tracking-wider px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+      <section id="testimonials" className="pt-10 pb-14 sm:pt-12 sm:pb-16 relative overflow-hidden isolate">
+        {/* Globe Ambient Glows */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
+          <div className="absolute -top-28 left-1/3 w-[500px] h-[500px] bg-rose-200/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-28 right-1/4 w-[500px] h-[500px] bg-indigo-200/20 rounded-full blur-3xl" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div data-reveal className="text-center max-w-2xl mx-auto mb-12">
+            <span className="text-xs uppercase font-bold tracking-wider px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
               {t.reviews.badge}
             </span>
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 mt-4 tracking-tight">
-              {t.reviews.title}
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mt-4 tracking-tight">
+              {lang === 'vi' ? (
+                <>Được Tin Dùng Bởi <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">500+ Creator</span></>
+              ) : (
+                t.reviews.title
+              )}
             </h2>
             <p className="mt-4 text-base text-slate-600">
               {t.reviews.subtitle}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          <div data-stagger className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {t.reviews.items.map((rev, idx) => (
               <div key={idx} className="p-7 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
                 <div>
@@ -1644,24 +2180,36 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Aesthetic Glowing Gradient Divider */}
+      <Divider />
+
       {/* ===================================================================== */}
       {/* 10. COLLAPSIBLE FAQ ACCORDION */}
       {/* ===================================================================== */}
-      <section id="faq" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="text-xs uppercase font-extrabold tracking-wider px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+      <section id="faq" className="pt-10 pb-14 sm:pt-12 sm:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative overflow-hidden isolate">
+        {/* Globe Ambient Glows */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-rose-100/30 rounded-full blur-3xl" />
+        </div>
+
+        <div className="max-w-4xl mx-auto relative z-10">
+          <div data-reveal className="text-center mb-12">
+            <span className="text-xs uppercase font-bold tracking-wider px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
               {t.faq.badge}
             </span>
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 mt-4 tracking-tight">
-              {t.faq.title}
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mt-4 tracking-tight">
+              {lang === 'vi' ? (
+                <>Giải Đáp <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">Thắc Mắc Thường Gặp</span></>
+              ) : (
+                t.faq.title
+              )}
             </h2>
             <p className="mt-4 text-base text-slate-600">
               {t.faq.subtitle}
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div data-stagger className="space-y-4">
             {t.faq.items.map((item, index) => {
               const isOpen = openFaqIndex === index;
               return (
@@ -1694,399 +2242,454 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Aesthetic Glowing Gradient Divider */}
+      <Divider />
+
       {/* ===================================================================== */}
       {/* 11. CALL TO ACTION (CTA) SECTION */}
       {/* ===================================================================== */}
-      <section className="py-20 relative overflow-hidden bg-gradient-to-b from-white via-rose-50/30 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-3xl bg-gradient-to-r from-rose-600 via-rose-500 to-pink-600 p-8 sm:p-14 text-white shadow-xl shadow-rose-600/20 overflow-hidden">
-            {/* Background Decorative Rings */}
-            <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full border-[30px] border-white/10 pointer-events-none" />
-            <div className="absolute right-40 -top-10 w-48 h-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+      <section className="pt-8 pb-12 sm:pt-10 sm:pb-14 relative overflow-hidden isolate">
+        {/* Ambient Glows */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[400px] bg-rose-200/25 rounded-full blur-3xl" />
+        </div>
 
-            <div className="relative z-10 max-w-3xl">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold tracking-wide uppercase mb-4 border border-white/30">
-                <Sparkles className="w-3.5 h-3.5" />
-                {t.cta.badge}
-              </span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div data-reveal="zoom" className="relative rounded-3xl bg-gradient-to-r from-rose-600 via-rose-500 to-pink-600 p-8 sm:p-12 lg:p-14 text-white shadow-2xl shadow-rose-600/25 overflow-hidden">
+            {/* Background Decorative Rings & Ambient Glows */}
+            <div className="absolute -right-24 -bottom-24 w-96 h-96 rounded-full border-[36px] border-white/10 pointer-events-none" />
+            <div className="absolute right-1/3 -top-16 w-64 h-64 rounded-full bg-white/10 blur-3xl pointer-events-none" />
 
-              <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight text-white">
-                {t.cta.title}
-              </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+              {/* Left Column (7 Cols) */}
+              <div className="lg:col-span-7 relative z-10">
+                <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold tracking-wide uppercase mb-4 border border-white/30">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {t.cta.badge}
+                </span>
 
-              <p className="mt-4 text-sm sm:text-base text-rose-50 leading-relaxed max-w-2xl">
-                {t.cta.subtitle}
-              </p>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.2] text-white">
+                  {lang === 'vi' ? (
+                    <>Sẵn Sàng <span className="bg-gradient-to-r from-yellow-200 via-white to-pink-100 bg-clip-text text-transparent font-bold">Tự Động Hóa</span> Dàn Kênh Video <span className="bg-gradient-to-r from-white via-yellow-100 to-white bg-clip-text text-transparent font-bold">Triệu View</span> Của Bạn?</>
+                  ) : lang === 'zh' ? (
+                    <>准备好让您的 <span className="bg-gradient-to-r from-yellow-200 via-white to-pink-100 bg-clip-text text-transparent font-bold">百万播放视频矩阵</span> 全自动运转了吗？</>
+                  ) : (
+                    <>Ready to Put Your <span className="bg-gradient-to-r from-yellow-200 via-white to-pink-100 bg-clip-text text-transparent font-bold">Viral Video Channels</span> on Complete Auto-Pilot?</>
+                  )}
+                </h2>
 
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  className="px-6 py-3.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 font-bold text-sm shadow-md transition active:scale-95 flex items-center gap-2.5"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>{downloading ? '...' : t.cta.btnDownload}</span>
-                </button>
+                <p className="mt-4 text-sm sm:text-base text-rose-50 leading-relaxed max-w-2xl">
+                  {t.cta.subtitle}
+                </p>
 
-                <a
-                  href="#pricing"
-                  className="px-6 py-3.5 rounded-xl bg-rose-700/80 hover:bg-rose-700 text-white font-bold text-sm border border-white/20 transition active:scale-95 flex items-center gap-2"
-                >
-                  <span>{t.cta.btnPricing}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </a>
+                <div className="mt-8 flex flex-wrap items-center gap-3.5">
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    className="px-6 py-3.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 font-bold text-sm shadow-lg transition active:scale-95 flex items-center gap-2.5"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>{downloading ? '...' : t.cta.btnDownload}</span>
+                  </button>
 
-                <a
-                  href="#contact"
-                  className="px-5 py-3.5 rounded-xl bg-black/20 hover:bg-black/30 text-white font-semibold text-sm backdrop-blur-sm transition active:scale-95 flex items-center gap-2"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>{t.cta.btnContact}</span>
-                </a>
+                  <a
+                    href="#pricing"
+                    className="px-6 py-3.5 rounded-xl bg-rose-900/60 hover:bg-rose-900/80 text-white font-bold text-sm border border-white/25 transition active:scale-95 flex items-center gap-2"
+                  >
+                    <span>{t.cta.btnPricing}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+
+                  <a
+                    href="#contact"
+                    className="px-5 py-3.5 rounded-xl bg-black/20 hover:bg-black/30 text-white font-semibold text-sm backdrop-blur-sm border border-white/20 transition active:scale-95 flex items-center gap-2"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>{t.cta.btnContact}</span>
+                  </a>
+                </div>
+
+                {/* Guarantee items */}
+                <div className="mt-8 pt-6 border-t border-white/20 flex flex-wrap items-center gap-6 text-xs text-rose-100 font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    {t.cta.guaranteeOneTime}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    {t.cta.guaranteeHwid}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    {t.cta.guaranteeSupport}
+                  </span>
+                </div>
               </div>
 
-              {/* Guarantee items */}
-              <div className="mt-8 pt-6 border-t border-white/20 flex flex-wrap items-center gap-6 text-xs text-rose-100 font-medium">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                  {t.cta.guaranteeOneTime}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                  {t.cta.guaranteeHwid}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                  {t.cta.guaranteeSupport}
-                </span>
+              {/* Right Column: Dashboard Screenshot with Up-Down Floating Loop */}
+              <div className="lg:col-span-5 relative flex items-center justify-center mt-8 lg:mt-0">
+                <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto">
+                  {/* Soft glow behind image */}
+                  <div className="absolute inset-0 rounded-3xl bg-white/15 blur-2xl scale-105 pointer-events-none" />
+                  <img
+                    src="/images/cta-dashboard.png"
+                    alt="ShortsStack Dashboard"
+                    className="relative w-full h-auto object-contain drop-shadow-2xl rounded-2xl animate-float-updown"
+                    style={{ filter: 'drop-shadow(0 24px 48px rgba(0,0,0,0.4))' }}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Aesthetic Glowing Gradient Divider */}
+      <Divider />
+
       {/* ===================================================================== */}
       {/* 12. CONTACT SECTION (Direct Channels & Inquiries Form) */}
       {/* ===================================================================== */}
-      <section id="contact" className="py-20 bg-white border-t border-slate-200/80 scroll-mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="text-xs uppercase font-extrabold tracking-wider px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+      <section id="contact" className="pt-8 pb-12 sm:pt-10 sm:pb-14 relative overflow-hidden isolate scroll-mt-20">
+        {/* Globe Ambient Glows */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
+          <div className="absolute -top-24 right-1/4 w-96 h-96 bg-rose-200/25 rounded-full blur-3xl" />
+          <div className="absolute -bottom-24 left-1/4 w-96 h-96 bg-indigo-200/25 rounded-full blur-3xl" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div data-reveal className="text-center max-w-2xl mx-auto mb-12">
+            <span className="text-xs uppercase font-bold tracking-wider px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
               {t.contact.badge}
             </span>
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 mt-4 tracking-tight">
-              {t.contact.title}
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mt-4 tracking-tight">
+              {lang === 'vi' ? (
+                <>Liên Hệ Tư Vấn & <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">Hỗ Trợ Trực Tiếp</span></>
+              ) : (
+                t.contact.title
+              )}
             </h2>
             <p className="mt-4 text-base text-slate-600">
               {t.contact.subtitle}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Direct Channels Cards (Left 5 Cols) */}
-            <div className="lg:col-span-5 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900 mb-2">
-                {t.contact.directTitle}
-              </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            {/* Direct Channels Cards (Left 5 Cols - Perfectly Aligned Height & Container) */}
+            <div data-reveal="left" className="lg:col-span-5 bg-slate-50/70 p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900 mb-2">
+                  {t.contact.directTitle}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 mb-6">
+                  {lang === 'vi' ? 'Kết nối nhanh với chúng tôi qua các kênh hotline, email hoặc fanpage chính thức.' : lang === 'zh' ? '通过官方快速渠道联系我们。' : 'Connect with our team directly via hotline, email or official fanpage.'}
+                </p>
 
-              {/* Zalo Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 hover:bg-blue-50/40 border border-slate-200/90 hover:border-blue-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-2xs">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
-                    Zalo
+                <div data-stagger className="space-y-3.5">
+                  {/* Zalo Card */}
+                  <div className="p-4 rounded-2xl bg-white hover:bg-blue-50/40 border border-slate-200/90 hover:border-blue-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-2xs">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
+                        Zalo
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                          {t.contact.zaloLabel}
+                        </span>
+                        <span className="text-sm sm:text-base font-extrabold text-slate-900 group-hover:text-blue-600 transition truncate block">
+                          +84 326119184
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveQrModal({
+                            appName: 'Zalo',
+                            label: 'Zalo Hotline / Hỗ Trợ Kỹ Thuật 24/7',
+                            qrImage: '/images/qrcode/zalo.qr.PNG',
+                            directUrl: 'https://zalo.me/0326119184',
+                            accountInfo: '+84 326119184 (ShortsStack Studio)',
+                            badgeBg: 'bg-blue-600',
+                            buttonColor: 'bg-blue-600 hover:bg-blue-700',
+                          })
+                        }
+                        className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200/80 transition flex items-center gap-1.5 shadow-2xs"
+                        title="Quét mã QR bằng điện thoại"
+                      >
+                        <QrCode className="w-3.5 h-3.5 text-blue-600" />
+                        <span>{lang === 'vi' ? 'Quét QR' : lang === 'zh' ? '扫码' : 'QR Scan'}</span>
+                      </button>
+
+                      <a
+                        href="https://zalo.me/0326119184"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-1 shadow-xs"
+                      >
+                        <span>{lang === 'vi' ? 'Mở' : lang === 'zh' ? '打开' : 'Open'}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                      {t.contact.zaloLabel}
-                    </span>
-                    <span className="text-base font-extrabold text-slate-900 group-hover:text-blue-600 transition truncate block">
-                      +84 326119184
-                    </span>
+
+                  {/* Email Card */}
+                  <div className="p-4 rounded-2xl bg-white hover:bg-rose-50/40 border border-slate-200/90 hover:border-rose-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-2xs">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                          {t.contact.emailLabel}
+                        </span>
+                        <span className="text-xs sm:text-sm font-extrabold text-slate-900 group-hover:text-rose-600 transition truncate block">
+                          thenguyenfiner@gmail.com
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <a
+                        href="mailto:thenguyenfiner@gmail.com"
+                        className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition flex items-center gap-1 shadow-xs"
+                      >
+                        <span>{lang === 'vi' ? 'Mở' : lang === 'zh' ? '打开' : 'Open'}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActiveQrModal({
-                        appName: 'Zalo',
-                        label: 'Zalo Hotline / Hỗ Trợ Kỹ Thuật 24/7',
-                        qrImage: '/images/qrcode/zalo.qr.PNG',
-                        directUrl: 'https://zalo.me/0326119184',
-                        accountInfo: '+84 326119184 (ShortsStack Studio)',
-                        badgeBg: 'bg-blue-600',
-                        buttonColor: 'bg-blue-600 hover:bg-blue-700',
-                      })
-                    }
-                    className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200/80 transition flex items-center gap-1.5 shadow-2xs"
-                    title="Quét mã QR bằng điện thoại"
-                  >
-                    <QrCode className="w-3.5 h-3.5 text-blue-600" />
-                    <span>{lang === 'vi' ? 'Quét QR' : lang === 'zh' ? '扫码' : 'QR Scan'}</span>
-                  </button>
+                  {/* Facebook Fanpage Card */}
+                  <div className="p-4 rounded-2xl bg-white hover:bg-indigo-50/40 border border-slate-200/90 hover:border-indigo-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-2xs">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-[#1877F2] text-white flex items-center justify-center font-black text-base shrink-0 shadow-sm">
+                        f
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                          {t.contact.facebookLabel}
+                        </span>
+                        <span className="text-sm sm:text-base font-extrabold text-slate-900 group-hover:text-indigo-600 transition truncate block">
+                          ShortsStack Studio
+                        </span>
+                      </div>
+                    </div>
 
-                  <a
-                    href="https://zalo.me/0326119184"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-1 shadow-xs"
-                  >
-                    <span>{lang === 'vi' ? 'Mở' : lang === 'zh' ? '打开' : 'Open'}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveQrModal({
+                            appName: 'Facebook',
+                            label: 'Fanpage ShortsStack Studio',
+                            qrImage: '/images/qrcode/facebook.qr.PNG',
+                            directUrl: 'https://www.facebook.com/ShortsStackStudio',
+                            accountInfo: 'https://www.facebook.com/ShortsStackStudio',
+                            badgeBg: 'bg-[#1877F2]',
+                            buttonColor: 'bg-[#1877F2] hover:bg-[#166fe5]',
+                          })
+                        }
+                        className="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200/80 transition flex items-center gap-1.5 shadow-2xs"
+                        title="Quét mã QR bằng điện thoại"
+                      >
+                        <QrCode className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{lang === 'vi' ? 'Quét QR' : lang === 'zh' ? '扫码' : 'QR Scan'}</span>
+                      </button>
+
+                      <a
+                        href="https://www.facebook.com/ShortsStackStudio"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs transition flex items-center gap-1 shadow-xs"
+                      >
+                        <span>{lang === 'vi' ? 'Mở' : lang === 'zh' ? '打开' : 'Open'}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Card */}
+                  <div className="p-4 rounded-2xl bg-white hover:bg-emerald-50/40 border border-slate-200/90 hover:border-emerald-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-2xs">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <Phone className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                          {t.contact.whatsappLabel}
+                        </span>
+                        <span className="text-sm sm:text-base font-extrabold text-slate-900 group-hover:text-emerald-600 transition truncate block">
+                          +84 326119184
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveQrModal({
+                            appName: 'WhatsApp',
+                            label: 'WhatsApp Global Support',
+                            qrImage: '/images/qrcode/whatsapp.qr.PNG',
+                            directUrl: 'https://wa.me/84326119184',
+                            accountInfo: '+84 326119184',
+                            badgeBg: 'bg-[#25D366]',
+                            buttonColor: 'bg-[#25D366] hover:bg-[#20ba59]',
+                          })
+                        }
+                        className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200/80 transition flex items-center gap-1.5 shadow-2xs"
+                        title="Quét mã QR bằng điện thoại"
+                      >
+                        <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{lang === 'vi' ? 'Quét QR' : lang === 'zh' ? '扫码' : 'QR Scan'}</span>
+                      </button>
+
+                      <a
+                        href="https://wa.me/84326119184"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs transition flex items-center gap-1 shadow-xs"
+                      >
+                        <span>{lang === 'vi' ? 'Mở' : lang === 'zh' ? '打开' : 'Open'}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Email Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 hover:bg-rose-50/40 border border-slate-200/90 hover:border-rose-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-2xs">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <Mail className="w-6 h-6" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                      {t.contact.emailLabel}
-                    </span>
-                    <span className="text-sm sm:text-base font-extrabold text-slate-900 group-hover:text-rose-600 transition truncate block">
-                      thenguyenfiner@gmail.com
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <a
-                    href="mailto:thenguyenfiner@gmail.com"
-                    className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition flex items-center gap-1 shadow-xs"
-                  >
-                    <span>{lang === 'vi' ? 'Mở' : lang === 'zh' ? '打开' : 'Open'}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-
-              {/* Facebook Fanpage Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 hover:bg-indigo-50/40 border border-slate-200/90 hover:border-indigo-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-2xs">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-[#1877F2] text-white flex items-center justify-center font-black text-base shrink-0 shadow-sm">
-                    f
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                      {t.contact.facebookLabel}
-                    </span>
-                    <span className="text-base font-extrabold text-slate-900 group-hover:text-indigo-600 transition truncate block">
-                      ShortsStack Studio
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActiveQrModal({
-                        appName: 'Facebook',
-                        label: 'Fanpage ShortsStack Studio',
-                        qrImage: '/images/qrcode/facebook.qr.PNG',
-                        directUrl: 'https://www.facebook.com/ShortsStackStudio',
-                        accountInfo: 'https://www.facebook.com/ShortsStackStudio',
-                        badgeBg: 'bg-[#1877F2]',
-                        buttonColor: 'bg-[#1877F2] hover:bg-[#166fe5]',
-                      })
-                    }
-                    className="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200/80 transition flex items-center gap-1.5 shadow-2xs"
-                    title="Quét mã QR bằng điện thoại"
-                  >
-                    <QrCode className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>{lang === 'vi' ? 'Quét QR' : lang === 'zh' ? '扫码' : 'QR Scan'}</span>
-                  </button>
-
-                  <a
-                    href="https://www.facebook.com/ShortsStackStudio"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs transition flex items-center gap-1 shadow-xs"
-                  >
-                    <span>{lang === 'vi' ? 'Mở' : lang === 'zh' ? '打开' : 'Open'}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-
-              {/* WhatsApp Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 hover:bg-emerald-50/40 border border-slate-200/90 hover:border-emerald-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-2xs">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <Phone className="w-6 h-6" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                      {t.contact.whatsappLabel}
-                    </span>
-                    <span className="text-base font-extrabold text-slate-900 group-hover:text-emerald-600 transition truncate block">
-                      +84 326119184
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActiveQrModal({
-                        appName: 'WhatsApp',
-                        label: 'WhatsApp Global Support',
-                        qrImage: '/images/qrcode/whatsapp.qr.PNG',
-                        directUrl: 'https://wa.me/84326119184',
-                        accountInfo: '+84 326119184',
-                        badgeBg: 'bg-[#25D366]',
-                        buttonColor: 'bg-[#25D366] hover:bg-[#20ba59]',
-                      })
-                    }
-                    className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200/80 transition flex items-center gap-1.5 shadow-2xs"
-                    title="Quét mã QR bằng điện thoại"
-                  >
-                    <QrCode className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{lang === 'vi' ? 'Quét QR' : lang === 'zh' ? '扫码' : 'QR Scan'}</span>
-                  </button>
-
-                  <a
-                    href="https://wa.me/84326119184"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs transition flex items-center gap-1 shadow-xs"
-                  >
-                    <span>{lang === 'vi' ? 'Mở' : lang === 'zh' ? '打开' : 'Open'}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs leading-relaxed flex items-center gap-2.5">
+              {/* Bottom yellow/amber pill aligned */}
+              <div className="mt-6 p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-amber-900 text-xs leading-relaxed flex items-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 <span>{t.contact.directSubtitle}</span>
               </div>
             </div>
 
-            {/* Inquiries Form (Right 7 Cols) */}
-            <div className="lg:col-span-7 bg-slate-50/70 p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm">
-              <div className="mb-6">
-                <h3 className="text-xl font-extrabold text-slate-900">
-                  {lang === 'vi' ? 'Gửi Yêu Cầu Tư Vấn / Đặt Mua' : lang === 'zh' ? '发送咨询 / 采购需求' : 'Send Inquiry / Enterprise Request'}
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                  {lang === 'vi' ? 'Điền thông tin bên dưới để chuyên viên ShortsStack tư vấn giải pháp và cấu hình máy phù hợp nhất.' : lang === 'zh' ? '填写下方信息，ShortsStack 专家团队将为您提供针对性配置方案。' : 'Fill out the form below and our engineering team will get back to you shortly.'}
-                </p>
+            {/* Inquiries Form (Right 7 Cols - Matching Container Height) */}
+            <div data-reveal="right" className="lg:col-span-7 bg-slate-50/70 p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="mb-6">
+                  <h3 className="text-xl font-extrabold text-slate-900">
+                    {lang === 'vi' ? 'Gửi Yêu Cầu Tư Vấn / Đặt Mua' : lang === 'zh' ? '发送咨询 / 采购需求' : 'Send Inquiry / Enterprise Request'}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                    {lang === 'vi' ? 'Điền thông tin bên dưới để chuyên viên ShortsStack tư vấn giải pháp và cấu hình máy phù hợp nhất.' : lang === 'zh' ? '填写下方信息，ShortsStack 专家团队将为您提供针对性配置方案。' : 'Fill out the form below and our engineering team will get back to you shortly.'}
+                  </p>
+                </div>
+
+                {contactSuccess && (
+                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold mb-6 flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold block">{t.contact.formSuccess}</span>
+                      <span className="text-xs text-emerald-700">ShortsStack sẽ liên hệ lại qua email hoặc số điện thoại của bạn ngay khi tiếp nhận.</span>
+                    </div>
+                  </div>
+                )}
+
+                {contactError && (
+                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-semibold mb-6 flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                    <span>{contactError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleContactSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        {t.contact.formName} <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={contactForm.name}
+                        onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                        placeholder={lang === 'vi' ? 'Ví dụ: Nguyễn Văn A' : lang === 'zh' ? '如：张三' : 'e.g. John Doe'}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        {t.contact.formEmail} <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={contactForm.email}
+                        onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                        placeholder="email@cuaban.com"
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        {t.contact.formPhone}
+                      </label>
+                      <input
+                        type="tel"
+                        value={contactForm.phone}
+                        onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                        placeholder={lang === 'vi' ? '0912 345 678 (hoặc số Zalo)' : 'Phone number'}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        {t.contact.formTopic}
+                      </label>
+                      <select
+                        value={contactForm.topic}
+                        onChange={(e) => setContactForm({ ...contactForm, topic: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900"
+                      >
+                        {t.contact.topicOptions.map((opt: string, i: number) => (
+                          <option key={i} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      {t.contact.formMessage} <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      required
+                      rows={6}
+                      value={contactForm.message}
+                      onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                      placeholder={lang === 'vi' ? 'Nội dung cần hỗ trợ, số lượng kênh muốn nuôi hoặc yêu cầu demo...' : lang === 'zh' ? '请输入您的具体需求或要咨询的频道规模...' : 'Describe your channels or business needs...'}
+                      className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900 resize-none min-h-[140px]"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={contactSending}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-sm shadow-md shadow-rose-600/20 transition active:scale-98 flex items-center justify-center gap-2 disabled:opacity-70"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{contactSending ? 'Đang gửi...' : t.contact.formSubmit}</span>
+                  </button>
+                </form>
               </div>
 
-              {contactSuccess && (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold mb-6 flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold block">{t.contact.formSuccess}</span>
-                    <span className="text-xs text-emerald-700">ShortsStack sẽ liên hệ lại qua email hoặc số điện thoại của bạn ngay khi tiếp nhận.</span>
-                  </div>
-                </div>
-              )}
-
-              {contactError && (
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-semibold mb-6 flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-                  <span>{contactError}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleContactSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      {t.contact.formName} <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={contactForm.name}
-                      onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                      placeholder={lang === 'vi' ? 'Ví dụ: Nguyễn Văn A' : lang === 'zh' ? '如：张三' : 'e.g. John Doe'}
-                      className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      {t.contact.formEmail} <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={contactForm.email}
-                      onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                      placeholder={lang === 'vi' ? 'email@cuaban.com' : lang === 'zh' ? 'your@email.com' : 'you@company.com'}
-                      className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      {t.contact.formPhone}
-                    </label>
-                    <input
-                      type="tel"
-                      value={contactForm.phone}
-                      onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
-                      placeholder={lang === 'vi' ? '0912 345 678 (hoặc số Zalo)' : lang === 'zh' ? '微信号或手机号' : '+1 (555) 000-0000'}
-                      className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      {t.contact.formTopic}
-                    </label>
-                    <select
-                      value={contactForm.topic}
-                      onChange={(e) => setContactForm({ ...contactForm, topic: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900"
-                    >
-                      {t.contact.topicOptions.map((opt, i) => (
-                        <option key={i} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    {t.contact.formMessage} <span className="text-rose-500">*</span>
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={contactForm.message}
-                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                    placeholder={lang === 'vi' ? 'Nội dung cần hỗ trợ, số lượng kênh muốn nuôi hoặc yêu cầu demo...' : lang === 'zh' ? '请输入您的矩阵需求、想要运营的账号数量或定制功能...' : 'Tell us about your channels, team size, or custom workflow requirements...'}
-                    className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900 resize-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={contactSending}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-bold text-sm shadow-md transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{contactSending ? t.contact.formSending : t.contact.formSubmit}</span>
-                </button>
-
-                <p className="text-center text-[11px] text-slate-500 mt-2">
-                  🔒 {t.contact.guaranteeText}
-                </p>
-              </form>
+              {/* Bottom security text aligned with left bottom container */}
+              <div className="mt-4 pt-3 border-t border-slate-200/60 text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+                <span>🔒 Phản hồi trong vòng 15 phút • Hỗ trợ UltraViewer / TeamViewer cài đặt trực tiếp</span>
+              </div>
             </div>
           </div>
         </div>
@@ -2095,8 +2698,20 @@ export default function LandingPage() {
       {/* ===================================================================== */}
       {/* 13. RICH ENTERPRISE FOOTER (High-Density Multi-Column SaaS) */}
       {/* ===================================================================== */}
-      <footer className="mt-auto border-t border-slate-200 bg-white pt-14 pb-10 text-xs text-slate-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="mt-auto relative overflow-hidden bg-white/80 backdrop-blur-md pt-10 pb-10 text-xs text-slate-600 isolate border-t border-slate-200/50">
+        {/* Aesthetic Glowing Gradient Divider across the top edge */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-rose-500/40 to-transparent z-20 pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 flex items-center justify-center pointer-events-none z-20">
+          <div className="w-1/2 h-[2px] bg-gradient-to-r from-transparent via-rose-400/30 to-transparent blur-[2px]" />
+        </div>
+
+        {/* Same Architectural Dot Background in Footer as requested */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
+          <div className="absolute inset-0 bg-grid-slate-light opacity-65" />
+          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-gradient-to-b from-rose-100/40 via-indigo-100/25 to-transparent rounded-full blur-3xl" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12">
             {/* Left Brand Column (4 Cols) */}
             <div className="lg:col-span-4 space-y-4">
@@ -2602,6 +3217,19 @@ export default function LandingPage() {
           </div>
         </div>
       )}
+      {/* ===================================================================== */}
+      {/* 15. FLOATING SCROLL TO TOP BUTTON */}
+      {/* ===================================================================== */}
+      <button
+        type="button"
+        onClick={scrollToTop}
+        className={`fixed bottom-7 right-7 sm:bottom-9 sm:right-9 z-50 w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 via-rose-500 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-xl shadow-rose-600/35 hover:shadow-2xl hover:shadow-rose-600/50 hover:-translate-y-1 transition-all duration-300 active:scale-90 flex items-center justify-center border border-white/40 backdrop-blur-md cursor-pointer group ${showScrollTop ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-6 pointer-events-none'
+          }`}
+        aria-label={lang === 'vi' ? 'Cuộn lên đầu trang' : lang === 'zh' ? '回到顶部' : 'Scroll to top'}
+        title={lang === 'vi' ? 'Cuộn lên đầu trang' : lang === 'zh' ? '回到顶部' : 'Scroll to top'}
+      >
+        <ChevronUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform stroke-[2.5]" />
+      </button>
     </div>
   );
 }

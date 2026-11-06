@@ -227,12 +227,12 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       adminPortal: 'Cổng Quản Trị',
     },
     hero: {
-      badge: 'Bản Phát Hành 2.1.0 • Tích Hợp GPMLogin & GenLogin • Auto-Pilot AI',
+      badge: 'Bản Phát Hành 1.0.1 • Tích Hợp GPMLogin & GenLogin • Auto-Pilot AI',
       titleLine1: 'Hệ Thống Nuôi Kênh &',
       titleGradient: 'Tự Động Reup Video AI',
       titleLine2: 'Đa Nền Tảng Chuyên Nghiệp',
       description:
-        'Tải video Douyin & Xiaohongshu sạch 100% watermark. Tự động lách thuật toán kiểm duyệt khắt khe nhất của TikTok, YouTube Shorts và Facebook Reels qua AI thông minh (Ken Burns, Voiceover, Color Jitter) và đăng bài qua Antidetect Browser an toàn tuyệt đối.',
+        'Tải video Douyin & Xiaohongshu sạch 100% watermark. Tự động xử lý & tối ưu hóa nội dung độc bản theo chuẩn kiểm duyệt khắt khe nhất của TikTok, YouTube Shorts và Facebook Reels qua AI thông minh (Ken Burns, Voiceover, Color Jitter) và đăng bài qua Antidetect Browser an toàn tuyệt đối.',
       downloadBtn: 'Tải Bản Windows (64-bit)',
       demoBtn: 'Xem Video Trực Tiếp',
       pricingBtn: 'Xem Bảng Giá',
@@ -254,7 +254,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       ],
     },
     mockup: {
-      windowTitle: 'ShortsStack Desktop Engine v2.1.0 - [Quy Trình Auto-Pilot: Đang Hoạt Động]',
+      windowTitle: 'ShortsStack Desktop Engine v1.0.1 - [Quy Trình Auto-Pilot: Đang Hoạt Động]',
       statusActive: 'Hệ Thống Đang Chạy Ngầm',
       tabDashboard: 'Bảng Điều Khiển',
       tabAiEngine: 'Bộ Render AI',
@@ -267,7 +267,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       channelName: 'Dàn Nick TikTok Beta US #01',
       channelStatus: 'Khỏe mạnh • Đang tự động nuôi tương tác',
       aiStep1: 'Quét & tải Douyin không logo',
-      aiStep2: 'Lách bản quyền: Ken Burns & Noise',
+      aiStep2: 'Tái tạo độc bản: Ken Burns & Noise',
       aiStep3: 'Lồng tiếng ElevenLabs & Phụ đề ASS',
       aiStep4: 'Tự động đẩy vào GPMLogin đăng bài',
     },
@@ -284,10 +284,10 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
           highlight: 'Tốc độ tải đa luồng cực nhanh',
         },
         {
-          tag: 'AI EVASION ENGINE',
-          title: 'Thuật Toán Lách Bản Quyền Đa Tầng',
-          desc: 'Áp dụng bộ lọc quang học Ken Burns, vi sai màu sắc micro-noise, đổi nhẹ tần số âm thanh (pitch shift) và lật hình thông minh.',
-          highlight: 'Vượt qua bộ lọc kiểm duyệt 4 tầng',
+          tag: 'AI TRANSFORMATION ENGINE',
+          title: 'Công Nghệ Tái Tạo Video Độc Bản Đa Tầng',
+          desc: 'Áp dụng bộ lọc quang học Ken Burns, vi sai màu sắc micro-noise, đổi nhẹ tần số âm thanh (pitch shift) và chuẩn hóa khung hình thông minh.',
+          highlight: 'Đáp ứng tiêu chuẩn kiểm duyệt 4 tầng khắt khe',
         },
         {
           tag: 'VOICEOVER & SUBTITLE',
@@ -363,7 +363,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
         'Sử dụng vĩnh viễn (Trọn đời không gia hạn)',
         'Không giới hạn số kênh & video render',
         'Tải video Douyin & Xiaohongshu sạch logo',
-        'AI lách bản quyền hình ảnh & âm thanh',
+        'AI tái tạo video & âm thanh độc bản 100%',
         'Tích hợp GPMLogin & GenLogin tự động',
         'Cảnh báo Telegram 10.000 Follower',
         'Hỗ trợ kỹ thuật 1-1 qua Telegram',
@@ -406,7 +406,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
         {
           name: 'Đặng Tuấn Anh',
           role: 'Founder Studio Reup 12 Nhân Sự',
-          content: 'Gói Agency 5 máy giúp team mình giải phóng 80% thời gian biên tập. Video Douyin tải về được lách rất mượt, phụ đề ElevenLabs chuẩn từng từ. Doanh thu quỹ Beta tháng vừa rồi tăng hơn gấp đôi.',
+          content: 'Gói Agency 5 máy giúp team mình giải phóng 80% thời gian biên tập. Video Douyin tải về được tái tạo rất mượt, phụ đề ElevenLabs chuẩn từng từ. Doanh thu quỹ Beta tháng vừa rồi tăng hơn gấp đôi.',
           metric: '$4,200/tháng Doanh Thu',
           rating: 5,
           avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
@@ -422,7 +422,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
         {
           name: 'Lê Bảo Long',
           role: 'Chủ Kênh YouTube Shorts 450K Subs',
-          content: 'Tính năng lách bản quyền tự động với Ken Burns và Color Jitter hoạt động quá xuất sắc. Tỷ lệ video dính Content ID giảm từ 60% xuống gần như 0%. Lượng view Shorts tăng vọt và giữ phong độ rất ổn định.',
+          content: 'Tính năng tái tạo video độc bản tự động với Ken Burns và Color Jitter hoạt động quá xuất sắc. Tỷ lệ trùng lặp nội dung giảm từ 60% xuống gần như 0%. Lượng view Shorts tăng vọt và giữ phong độ rất ổn định.',
           metric: '+28.5M Views / Tháng',
           rating: 5,
           avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
@@ -545,7 +545,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
     },
     footer: {
       tagline: 'ShortsStack AI Studio',
-      desc1: 'Nền tảng quản lý và tự động hóa vận hành kênh video quy mô lớn. Đồng bộ GPMLogin, ElevenLabs AI, tự động lách thuật toán kiểm duyệt và theo dõi hiệu suất, doanh thu tập trung trên một hệ thống.',
+      desc1: 'Nền tảng quản lý và tự động hóa vận hành kênh video quy mô lớn. Đồng bộ GPMLogin, ElevenLabs AI, tự động tối ưu hóa nội dung chuẩn thuật toán kiểm duyệt và theo dõi hiệu suất, doanh thu tập trung trên một hệ thống.',
       desc2: 'Chuyên biệt cho nhu cầu vận hành của Creator, Studio & MCN.',
       col1Title: 'VẬN HÀNH & SẢN PHẨM',
       col1Links: [
@@ -560,7 +560,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       col2Links: [
         'Hướng Dẫn Cài Đặt (Win 10/11)',
         'Cấu Hình GPMLogin & GenLogin',
-        'Tối Ưu Tỷ Lệ Lách Bản Quyền',
+        'Tối Ưu Tỷ Lệ Độc Bản & Thuật Toán',
         'Tải Bản Cài Đặt (.exe)',
         'Câu Hỏi Thường Gặp (FAQ)',
         'Nhật Ký Hệ Thống (Audit Logs)',
@@ -596,7 +596,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       adminPortal: 'Admin Portal',
     },
     hero: {
-      badge: 'Release v2.1.0 • GPMLogin & GenLogin Integrated • AI Auto-Pilot',
+      badge: 'Release v1.0.1 • GPMLogin & GenLogin Integrated • AI Auto-Pilot',
       titleLine1: 'The Next-Gen Multi-Channel',
       titleGradient: 'AI Video Repurposing &',
       titleLine2: 'Channel Farming Auto-Pilot',
@@ -623,7 +623,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       ],
     },
     mockup: {
-      windowTitle: 'ShortsStack Desktop Engine v2.1.0 - [Auto-Pilot Pipeline: Active]',
+      windowTitle: 'ShortsStack Desktop Engine v1.0.1 - [Auto-Pilot Pipeline: Active]',
       statusActive: 'Background Engine Running',
       tabDashboard: 'Overview Dashboard',
       tabAiEngine: 'AI Render Pipeline',
@@ -653,10 +653,10 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
           highlight: 'High-speed multi-threaded scraper',
         },
         {
-          tag: 'AI EVASION ENGINE',
-          title: 'Multi-Layer Algorithmic Evasion',
+          tag: 'AI TRANSFORMATION ENGINE',
+          title: 'Multi-Layer AI Video Re-Creation Engine',
           desc: 'Applies dynamic Ken Burns optical zoom, micro-noise color jitter, subtle audio pitch resample, and smart portrait orientation conversion.',
-          highlight: 'Bypasses ByteDance 4-tier content filters',
+          highlight: 'Meets 4-tier content uniqueness standards',
         },
         {
           tag: 'VOICEOVER & SUBTITLE',
@@ -732,7 +732,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
         'Lifetime license (Never expires)',
         'Unlimited channels and video renders',
         'Scrape Douyin & Xiaohongshu without watermarks',
-        'AI video & audio evasion algorithms',
+        'AI video & audio uniqueness algorithms',
         'Automatic GPMLogin & GenLogin integration',
         'Telegram 10K follower milestone alerts',
         'Direct 1-on-1 support via Telegram',
@@ -791,7 +791,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
         {
           name: 'Liam Crawford',
           role: 'YouTube Shorts Creator (450K Subs)',
-          content: 'The automated algorithmic evasion using Ken Burns and micro color jitter is unmatched. Content ID copyright claims dropped from 60% down to practically 0%. View counts have stayed consistently viral.',
+          content: 'The automated video re-creation using Ken Burns and micro color jitter is unmatched. Content ID duplicate claims dropped from 60% down to practically 0%. View counts have stayed consistently viral.',
           metric: '+28.5M Views / Month',
           rating: 5,
           avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
@@ -914,7 +914,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
     },
     footer: {
       tagline: 'ShortsStack AI Studio',
-      desc1: 'Enterprise multi-channel automation and AI video repurposing platform. Seamlessly integrates GPMLogin, ElevenLabs AI, automated anti-ban evasion, and centralized performance analytics.',
+      desc1: 'Enterprise multi-channel automation and AI video repurposing platform. Seamlessly integrates GPMLogin, ElevenLabs AI, automated duplicate-content protection, and centralized performance analytics.',
       desc2: 'Tailored for professional content creators, boutique studios, and MCN agencies.',
       col1Title: 'OPERATIONS & PRODUCT',
       col1Links: [
@@ -929,7 +929,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       col2Links: [
         'Installation Guide (Win 10/11)',
         'GPMLogin & GenLogin Setup',
-        'Algorithm Evasion Best Practices',
+        'Content Uniqueness & Algorithmic Best Practices',
         'Download Installer (.exe)',
         'Frequently Asked Questions (FAQ)',
         'System Audit Logs',
@@ -965,7 +965,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       adminPortal: '管理后台',
     },
     hero: {
-      badge: '最新 v2.1.0 版本 • 深度集成 GPMLogin 与 GenLogin • AI 全自动运营',
+      badge: '最新 v1.0.1 版本 • 深度集成 GPMLogin 与 GenLogin • AI 全自动运营',
       titleLine1: '新一代多平台矩阵',
       titleGradient: 'AI 视频二次创作与',
       titleLine2: '批量养号全自动系统',
@@ -992,7 +992,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       ],
     },
     mockup: {
-      windowTitle: 'ShortsStack Desktop Engine v2.1.0 - [全自动运营流程：运行中]',
+      windowTitle: 'ShortsStack Desktop Engine v1.0.1 - [全自动运营流程：运行中]',
       statusActive: '后台引擎平稳运行中',
       tabDashboard: '总览面板',
       tabAiEngine: 'AI 渲染流水线',

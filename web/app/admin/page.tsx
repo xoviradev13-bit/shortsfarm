@@ -67,7 +67,7 @@ export default function AdminDashboard() {
 
   // Modal cập nhật release
   const [releaseForm, setReleaseForm] = useState({
-    version: '2.1.0',
+    version: '1.0.1',
     download_url: '',
     release_notes: '',
     file_size_mb: 85.5,
@@ -313,19 +313,19 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[#070A13] text-gray-100 flex flex-col">
       {/* Top Navbar */}
-      <header className="border-b border-gray-800/80 bg-[#0d121f]/80 backdrop-blur sticky top-0 z-40">
+      <header className="border-b border-gray-800/80 bg-[#0d121f]/90 backdrop-blur sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="font-extrabold text-lg text-white flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-pink-600 flex items-center justify-center text-white font-bold text-sm">
+            <Link href="/" className="font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
+              <span className="w-8 h-8 rounded-lg bg-pink-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
                 SS
               </span>
-              <span>ShortsStack Admin</span>
+              <span className="truncate">ShortsStack Admin</span>
             </Link>
-            <div className="hidden sm:flex items-center gap-1 ml-6 border-l border-gray-800 pl-6">
+            <div className="hidden sm:flex items-center gap-1 ml-4 lg:ml-6 border-l border-gray-800 pl-4 lg:pl-6 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('licenses')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === 'licenses'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === 'licenses'
                     ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
                     : 'text-gray-400 hover:text-white'
                   }`}
@@ -334,7 +334,7 @@ export default function AdminDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab('orders')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === 'orders'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === 'orders'
                     ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
                     : 'text-gray-400 hover:text-white'
                   }`}
@@ -343,7 +343,7 @@ export default function AdminDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab('downloads')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === 'downloads'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === 'downloads'
                     ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
                     : 'text-gray-400 hover:text-white'
                   }`}
@@ -352,7 +352,7 @@ export default function AdminDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab('releases')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === 'releases'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === 'releases'
                     ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
                     : 'text-gray-400 hover:text-white'
                   }`}
@@ -362,7 +362,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => verifyAndFetch(adminKey)}
               className="p-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition"
@@ -372,65 +372,109 @@ export default function AdminDashboard() {
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-xs text-rose-400 hover:bg-rose-500/10 transition"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-xs text-rose-400 hover:bg-rose-500/10 transition"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Thoát</span>
+              <span className="hidden xs:inline">Thoát</span>
             </button>
           </div>
+        </div>
+
+        {/* Mobile Sub-Header Tab Switcher (< sm) */}
+        <div className="sm:hidden border-t border-gray-800/80 bg-[#090d17] px-3 py-2 overflow-x-auto flex items-center gap-2 text-xs">
+          <button
+            onClick={() => setActiveTab('licenses')}
+            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
+              activeTab === 'licenses'
+                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
+                : 'text-gray-400 hover:text-white bg-gray-900/60'
+            }`}
+          >
+            Bản Quyền
+          </button>
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
+              activeTab === 'orders'
+                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
+                : 'text-gray-400 hover:text-white bg-gray-900/60'
+            }`}
+          >
+            Đơn Hàng {stats?.paid_orders_count ? `(${stats.paid_orders_count})` : ''}
+          </button>
+          <button
+            onClick={() => setActiveTab('downloads')}
+            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
+              activeTab === 'downloads'
+                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
+                : 'text-gray-400 hover:text-white bg-gray-900/60'
+            }`}
+          >
+            Nhật Ký Tải
+          </button>
+          <button
+            onClick={() => setActiveTab('releases')}
+            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
+              activeTab === 'releases'
+                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
+                : 'text-gray-400 hover:text-white bg-gray-900/60'
+            }`}
+          >
+            Bản Phát Hành
+          </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8 w-full flex-1">
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
         {/* Metric Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <div className="p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
             <div className="flex items-center justify-between text-gray-400 mb-2">
               <span className="text-xs font-medium">Tổng Lượt Tải</span>
               <Download className="w-4 h-4 text-pink-400" />
             </div>
-            <div className="text-2xl font-extrabold text-white">{stats?.total_downloads || 0}</div>
+            <div className="text-xl sm:text-2xl font-extrabold text-white">{stats?.total_downloads || 0}</div>
             <p className="text-[11px] text-gray-500 mt-1">Từ trang landing page</p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
             <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-xs font-medium">Bản Quyền Đang Chạy</span>
+              <span className="text-xs font-medium">Key Đang Chạy</span>
               <Key className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="text-2xl font-extrabold text-white">{stats?.active_licenses || 0}</div>
-            <p className="text-[11px] text-emerald-400 mt-1">Trên tổng số {stats?.total_licenses || 0} keys</p>
+            <div className="text-xl sm:text-2xl font-extrabold text-white">{stats?.active_licenses || 0}</div>
+            <p className="text-[11px] text-emerald-400 mt-1">Trên tổng {stats?.total_licenses || 0} keys</p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
             <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-xs font-medium">Máy Tính Đã Gán HWID</span>
+              <span className="text-xs font-medium">Máy Đã Gán HWID</span>
               <Laptop className="w-4 h-4 text-indigo-400" />
             </div>
-            <div className="text-2xl font-extrabold text-white">{stats?.total_activations || 0}</div>
-            <p className="text-[11px] text-gray-500 mt-1">Thiết bị đang hoạt động</p>
+            <div className="text-xl sm:text-2xl font-extrabold text-white">{stats?.total_activations || 0}</div>
+            <p className="text-[11px] text-gray-500 mt-1">Thiết bị hoạt động</p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#0d121f] border border-gray-800 border-emerald-500/20 bg-emerald-500/5">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0d121f] border border-gray-800 border-emerald-500/20 bg-emerald-500/5">
             <div className="flex items-center justify-between text-gray-400 mb-2">
               <span className="text-xs font-semibold text-emerald-400">Tổng Doanh Thu</span>
               <DollarSign className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="text-2xl font-black text-emerald-400">
+            <div className="text-xl sm:text-2xl font-black text-emerald-400 truncate">
               {(stats?.total_revenue || 0).toLocaleString('vi-VN')}₫
             </div>
             <p className="text-[11px] text-gray-400 mt-1">
-              {stats?.paid_orders_count || 0} đơn thanh toán VietQR
+              {stats?.paid_orders_count || 0} đơn VietQR
             </p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
+          <div className="col-span-2 sm:col-span-1 p-4 sm:p-5 rounded-2xl bg-[#0d121f] border border-gray-800">
             <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-xs font-medium">Phiên Bản Hiện Tại</span>
+              <span className="text-xs font-medium">Phiên Bản</span>
               <UploadCloud className="w-4 h-4 text-amber-400" />
             </div>
-            <div className="text-2xl font-extrabold text-white">v{releaseForm.version}</div>
+            <div className="text-xl sm:text-2xl font-extrabold text-white">v{releaseForm.version}</div>
             <p className="text-[11px] text-amber-400 mt-1">Sẵn sàng đẩy update</p>
           </div>
         </div>
@@ -462,7 +506,10 @@ export default function AdminDashboard() {
 
             {/* Table */}
             <div className="rounded-2xl border border-gray-800 bg-[#0d121f] overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <div className="sm:hidden px-4 pt-3 text-[10px] text-gray-500">
+                ← Vuốt ngang để xem đủ cột thông tin →
+              </div>
+              <table className="w-full text-left text-xs min-w-[760px]">
                 <thead className="bg-gray-900/60 border-b border-gray-800 text-gray-400 uppercase text-[10px] tracking-wider font-semibold">
                   <tr>
                     <th className="p-4">Mã Bản Quyền</th>
@@ -703,7 +750,7 @@ export default function AdminDashboard() {
                 </span>
               </div>
             </div>
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[760px]">
               <thead className="bg-gray-900/60 border-b border-gray-800 text-gray-400 uppercase text-[10px] tracking-wider font-semibold">
                 <tr>
                   <th className="p-4">Mã Đơn Hàng</th>
@@ -851,7 +898,7 @@ export default function AdminDashboard() {
               <h3 className="font-bold text-white text-sm">Lịch Sử Lượt Tải Gần Đây</h3>
               <span className="text-xs text-gray-400">Hiển thị các lượt tải mới nhất từ Landing Page</span>
             </div>
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[760px]">
               <thead className="bg-gray-900/60 border-b border-gray-800 text-gray-400 uppercase text-[10px]">
                 <tr>
                   <th className="p-4">Thời Gian</th>
@@ -960,7 +1007,7 @@ export default function AdminDashboard() {
             </p>
 
             <form onSubmit={handleUpdateRelease} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-300 font-medium mb-1">Số phiên bản (Version)</label>
                   <input
@@ -1037,7 +1084,7 @@ export default function AdminDashboard() {
       {/* Modal Tạo Key Mới */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-lg w-full bg-[#0d121f] border border-gray-800 rounded-2xl p-6 shadow-2xl">
+          <div className="max-w-lg w-full max-h-[92vh] overflow-y-auto bg-[#0d121f] border border-gray-800 rounded-2xl p-4 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-gray-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Key className="w-5 h-5 text-pink-400" /> Tạo Mã Bản Quyền Mới
@@ -1051,7 +1098,7 @@ export default function AdminDashboard() {
             </div>
 
             <form onSubmit={handleCreateKey} className="mt-4 space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-gray-300 font-medium mb-1">Tên khách hàng</label>
                   <input
@@ -1075,7 +1122,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-gray-300 font-medium mb-1">Gói cước</label>
                   <select

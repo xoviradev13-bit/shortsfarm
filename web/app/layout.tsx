@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
+
+const inter = Inter({
+  subsets: ['latin', 'vietnamese'],
+  variable: '--font-sans',
+  display: 'swap',
+});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.vercel.app';
 
@@ -21,14 +28,14 @@ export const metadata: Metadata = {
     template: '%s | ShortsStack Studio',
   },
   description:
-    'Phần mềm tự động tải video Douyin, Xiaohongshu, YouTube không logo, render lách bản quyền bằng AI thông minh (Ken Burns, Voiceover) và tự động đăng lịch đa nền tảng TikTok Beta, YouTube Shorts, Reels qua Antidetect Browser.',
+    'Phần mềm tự động tải video Douyin, Xiaohongshu, YouTube không logo, tối ưu hóa nội dung độc bản bằng AI thông minh (Ken Burns, Voiceover) và tự động đăng lịch đa nền tảng TikTok Beta, YouTube Shorts, Reels qua Antidetect Browser.',
   applicationName: 'ShortsStack',
   authors: [{ name: 'ShortsStack Systems', url: siteUrl }],
   generator: 'Next.js',
   keywords: [
     'ShortsStack',
     'tool reup video tiktok',
-    'lách bản quyền video tiktok',
+    'tối ưu hóa video tiktok',
     'tải video douyin không logo',
     'tải video xiaohongshu',
     'auto upload tiktok',
@@ -62,7 +69,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     title: 'ShortsStack - Hệ Thống Nuôi Kênh & Tự Động Reup Video AI Đa Nền Tảng',
     description:
-      'Tải video Douyin & Xiaohongshu sạch logo, render lách bản quyền AI và auto đăng đa nền tảng TikTok, YouTube Shorts, Facebook Reels qua GPMLogin & GenLogin.',
+      'Tải video Douyin & Xiaohongshu sạch logo, tối ưu hóa nội dung độc bản AI và auto đăng đa nền tảng TikTok, YouTube Shorts, Facebook Reels qua GPMLogin & GenLogin.',
     siteName: 'ShortsStack',
     images: [
       {
@@ -77,7 +84,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'ShortsStack - AI Video Engine & Multi-Channel Auto Uploader',
     description:
-      'Hệ thống tự động tải video Douyin, Xiaohongshu, render lách bản quyền AI và auto upload lên TikTok Beta, YouTube Shorts, Reels.',
+      'Hệ thống tự động tải video Douyin, Xiaohongshu, tối ưu hóa nội dung độc bản AI và auto upload lên TikTok Beta, YouTube Shorts, Reels.',
     images: ['/og-image.png'],
     creator: '@shortsstack',
   },
@@ -117,7 +124,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className="bg-[#FAFCFE] text-slate-800 antialiased selection:bg-rose-500 selection:text-white">
+      <body className={`${inter.variable} font-sans bg-[#FAFCFE] text-slate-800 antialiased selection:bg-rose-500 selection:text-white`}>
         {children}
       </body>
     </html>

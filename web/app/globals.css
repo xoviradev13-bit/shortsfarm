@@ -12,7 +12,10 @@ body {
   color: rgb(var(--foreground-rgb));
   background-color: #FAFCFE;
   min-height: 100vh;
+  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom scrollbar for refined light theme */
@@ -33,16 +36,42 @@ body {
 
 /* Subtle architectural dot grid */
 .bg-grid-slate-light {
-  background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
-  background-size: 24px 24px;
+  background-image: radial-gradient(#94a3b8 1.4px, transparent 1.4px);
+  background-size: 28px 28px;
 }
 
-/* Linear fine grid */
+/* Linear fine architectural grid */
 .bg-lines-light {
   background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, rgba(226, 232, 240, 0.4) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(226, 232, 240, 0.4) 1px, transparent 1px);
+    linear-gradient(to right, rgba(148, 163, 184, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.25) 1px, transparent 1px);
+}
+
+/* Premium 35mm Film Grain Texture (Visibly tactile without obscuring text) */
+.film-grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.22'/%3E%3C/svg%3E");
+}
+
+/* Kinetic Film Strip Loop */
+@keyframes filmScroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+.animate-film-scroll {
+  animation: filmScroll 20s linear infinite;
+}
+.animate-film-scroll-reverse {
+  animation: filmScroll 24s linear infinite reverse;
+}
+
+/* Audio Waveform Undulation */
+@keyframes waveUndulate {
+  0%, 100% { transform: scaleY(0.7) translateY(0); }
+  50% { transform: scaleY(1.3) translateY(-4px); }
+}
+.animate-wave-undulate {
+  animation: waveUndulate 3.5s ease-in-out infinite;
 }
 
 /* Sleek subtle keyframe animations */
@@ -52,6 +81,15 @@ body {
   }
   50% {
     transform: translateY(-8px);
+  }
+}
+
+@keyframes floatUpDown {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-16px);
   }
 }
 
@@ -91,6 +129,10 @@ body {
   100% {
     background-position: 200% 0;
   }
+}
+
+.animate-float-updown {
+  animation: floatUpDown 3.6s ease-in-out infinite;
 }
 
 .animate-float-slow {
@@ -187,3 +229,51 @@ body {
   animation: pulseGlowCyan 3s ease-in-out infinite;
 }
 
+
+
+/* ============================================================= */
+/* SCROLL-TRIGGERED SECTION REVEAL ANIMATIONS (data-reveal)       */
+/* ============================================================= */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+@media (scripting: enabled) {
+  [data-reveal]:not(.in),
+  [data-stagger]:not(.in) > * {
+    opacity: 0;
+  }
+}
+
+@keyframes reveal-up    { from { opacity: 0; transform: translateY(56px) scale(.97); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes reveal-left  { from { opacity: 0; transform: translateX(-64px); } to { opacity: 1; transform: none; } }
+@keyframes reveal-right { from { opacity: 0; transform: translateX(64px); }  to { opacity: 1; transform: none; } }
+@keyframes reveal-zoom  { from { opacity: 0; transform: scale(.9); }         to { opacity: 1; transform: none; } }
+@keyframes reveal-line  { from { opacity: 0; transform: scaleX(0); }         to { opacity: 1; transform: scaleX(1); } }
+
+[data-reveal].in,
+[data-stagger].in > * {
+  animation: reveal-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+[data-reveal="left"].in  { animation-name: reveal-left; }
+[data-reveal="right"].in { animation-name: reveal-right; }
+[data-reveal="zoom"].in  { animation-name: reveal-zoom; }
+[data-reveal="line"].in  { animation-name: reveal-line; transform-origin: center; animation-duration: 1.4s; }
+
+[data-stagger].in > * {
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+/* Scroll progress bar */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60;
+  transform-origin: left; transform: scaleX(0);
+  background: linear-gradient(90deg, #f43f5e, #ec4899, #f59e0b);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  [data-reveal], [data-stagger] > * { opacity: 1 !important; animation: none !important; }
+}

@@ -326,8 +326,8 @@ export default function AdminDashboard() {
               <button
                 onClick={() => setActiveTab('licenses')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === 'licenses'
-                    ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
-                    : 'text-gray-400 hover:text-white'
+                  ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
+                  : 'text-gray-400 hover:text-white'
                   }`}
               >
                 Quản Lý Bản Quyền
@@ -335,8 +335,8 @@ export default function AdminDashboard() {
               <button
                 onClick={() => setActiveTab('orders')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === 'orders'
-                    ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
-                    : 'text-gray-400 hover:text-white'
+                  ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
+                  : 'text-gray-400 hover:text-white'
                   }`}
               >
                 Đơn Hàng & Doanh Thu {stats?.paid_orders_count ? `(${stats.paid_orders_count})` : ''}
@@ -344,8 +344,8 @@ export default function AdminDashboard() {
               <button
                 onClick={() => setActiveTab('downloads')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === 'downloads'
-                    ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
-                    : 'text-gray-400 hover:text-white'
+                  ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
+                  : 'text-gray-400 hover:text-white'
                   }`}
               >
                 Nhật Ký Tải Về
@@ -353,8 +353,8 @@ export default function AdminDashboard() {
               <button
                 onClick={() => setActiveTab('releases')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === 'releases'
-                    ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
-                    : 'text-gray-400 hover:text-white'
+                  ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
+                  : 'text-gray-400 hover:text-white'
                   }`}
               >
                 Link Tải & Auto-Update
@@ -384,41 +384,37 @@ export default function AdminDashboard() {
         <div className="sm:hidden border-t border-gray-800/80 bg-[#090d17] px-3 py-2 overflow-x-auto flex items-center gap-2 text-xs">
           <button
             onClick={() => setActiveTab('licenses')}
-            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
-              activeTab === 'licenses'
-                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
-                : 'text-gray-400 hover:text-white bg-gray-900/60'
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${activeTab === 'licenses'
+              ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
+              : 'text-gray-400 hover:text-white bg-gray-900/60'
+              }`}
           >
             Bản Quyền
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
-              activeTab === 'orders'
-                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
-                : 'text-gray-400 hover:text-white bg-gray-900/60'
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${activeTab === 'orders'
+              ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
+              : 'text-gray-400 hover:text-white bg-gray-900/60'
+              }`}
           >
             Đơn Hàng {stats?.paid_orders_count ? `(${stats.paid_orders_count})` : ''}
           </button>
           <button
             onClick={() => setActiveTab('downloads')}
-            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
-              activeTab === 'downloads'
-                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
-                : 'text-gray-400 hover:text-white bg-gray-900/60'
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${activeTab === 'downloads'
+              ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
+              : 'text-gray-400 hover:text-white bg-gray-900/60'
+              }`}
           >
             Nhật Ký Tải
           </button>
           <button
             onClick={() => setActiveTab('releases')}
-            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${
-              activeTab === 'releases'
-                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
-                : 'text-gray-400 hover:text-white bg-gray-900/60'
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-semibold shrink-0 transition ${activeTab === 'releases'
+              ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
+              : 'text-gray-400 hover:text-white bg-gray-900/60'
+              }`}
           >
             Bản Phát Hành
           </button>
@@ -561,10 +557,10 @@ export default function AdminDashboard() {
                           <td className="p-4 uppercase font-bold">
                             <span
                               className={`px-2 py-0.5 rounded text-[10px] font-semibold ${lic.plan === 'agency_5pc' || lic.plan === 'lifetime'
-                                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                                  : lic.plan === 'studio_3pc' || lic.plan === 'yearly'
-                                    ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
-                                    : 'bg-pink-500/15 text-pink-400 border border-pink-500/30'
+                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                : lic.plan === 'studio_3pc' || lic.plan === 'yearly'
+                                  ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
+                                  : 'bg-pink-500/15 text-pink-400 border border-pink-500/30'
                                 }`}
                             >
                               {lic.plan === 'pro_1pc' || lic.plan === 'monthly'
@@ -706,11 +702,10 @@ export default function AdminDashboard() {
                           {prev && p - prev > 1 && <span className="px-1 text-gray-600">...</span>}
                           <button
                             onClick={() => setCurrentPage(p)}
-                            className={`w-8 h-8 rounded-lg font-bold text-xs transition ${
-                              currentPage === p
-                                ? 'bg-pink-600 text-white shadow-md shadow-pink-600/30'
-                                : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
-                            }`}
+                            className={`w-8 h-8 rounded-lg font-bold text-xs transition ${currentPage === p
+                              ? 'bg-pink-600 text-white shadow-md shadow-pink-600/30'
+                              : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
+                              }`}
                           >
                             {p}
                           </button>
@@ -782,10 +777,10 @@ export default function AdminDashboard() {
                           {ord.plan === 'pro_1pc' || ord.plan === 'monthly'
                             ? '1 PC (Vĩnh Viễn)'
                             : ord.plan === 'studio_3pc' || ord.plan === 'yearly'
-                            ? 'Studio (3 PCs)'
-                            : ord.plan === 'agency_5pc' || ord.plan === 'lifetime'
-                            ? 'Agency (5 PCs)'
-                            : ord.plan}
+                              ? 'Studio (3 PCs)'
+                              : ord.plan === 'agency_5pc' || ord.plan === 'lifetime'
+                                ? 'Agency (5 PCs)'
+                                : ord.plan}
                         </span>
                       </td>
                       <td className="p-4 font-bold text-emerald-400">
@@ -866,11 +861,10 @@ export default function AdminDashboard() {
                         {prev && p - prev > 1 && <span className="px-1 text-gray-600">...</span>}
                         <button
                           onClick={() => setOrdersPage(p)}
-                          className={`w-8 h-8 rounded-lg font-bold text-xs transition ${
-                            ordersPage === p
-                              ? 'bg-pink-600 text-white shadow-md shadow-pink-600/30'
-                              : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
-                          }`}
+                          className={`w-8 h-8 rounded-lg font-bold text-xs transition ${ordersPage === p
+                            ? 'bg-pink-600 text-white shadow-md shadow-pink-600/30'
+                            : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
+                            }`}
                         >
                           {p}
                         </button>
@@ -972,11 +966,10 @@ export default function AdminDashboard() {
                         {prev && p - prev > 1 && <span className="px-1 text-gray-600">...</span>}
                         <button
                           onClick={() => setDownloadsPage(p)}
-                          className={`w-8 h-8 rounded-lg font-bold text-xs transition ${
-                            downloadsPage === p
-                              ? 'bg-pink-600 text-white shadow-md shadow-pink-600/30'
-                              : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
-                          }`}
+                          className={`w-8 h-8 rounded-lg font-bold text-xs transition ${downloadsPage === p
+                            ? 'bg-pink-600 text-white shadow-md shadow-pink-600/30'
+                            : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
+                            }`}
                         >
                           {p}
                         </button>
@@ -1156,7 +1149,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 font-medium mb-1">Số ngày dùng (0 = Vĩnh viễn)</label>
+                  <label className="block text-gray-300 font-medium mb-1">Số ngày dùng</label>
                   <input
                     type="number"
                     value={newKeyForm.duration_days}

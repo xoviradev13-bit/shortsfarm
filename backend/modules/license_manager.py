@@ -290,7 +290,22 @@ def verify_license(force_remote: bool = False) -> Dict[str, Any]:
     }
 
 def deactivate_license() -> Dict[str, Any]:
-    """Hủy liên kết key khỏi máy tính này (để nhập key khác)"""
+    """Hủy liên kết key khỏi máy tính này và đồng bộ máy chủ để có thể kích hoạt trên máy tính khác"""
+    key = get_setting("license_key", "").strip().upper()
+    hwid = get_hwid()
+
+    # Gửi yêu cầu gỡ HWID này khỏi máy chủ Web Portal
+    if key and hwid:
+        payload = {"license_key": key, "hwid": hwid}
+        for portal in _get_portal_urls():
+            try:
+                url = f"{portal}/api/license/deactivate"
+                st, resp = _make_http_request(url, method="POST", data=payload, timeout=6)
+                if st == 200 and resp.get("success"):
+                    break
+            except Exception:
+                pass
+
     set_setting("license_key", "")
     set_setting("license_status", "unlicensed")
     set_setting("license_plan", "unlicensed")
@@ -298,7 +313,7 @@ def deactivate_license() -> Dict[str, Any]:
     set_setting("license_customer_email", "")
     set_setting("license_last_verified", "")
     set_setting("license_signature", "")
-    return {"success": True, "message": "Đã hủy kích hoạt bản quyền trên máy này."}
+    return {"success": True, "message": "Đã hủy kích hoạt bản quyền trên máy này. Key đã sẵn sàng để dùng trên máy khác."}
 
 def _parse_semver(v: str) -> Tuple[int, ...]:
     nums = re.findall(r"\d+", str(v))

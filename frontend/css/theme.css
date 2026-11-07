@@ -1,0 +1,2171 @@
+/* ==========================================================================
+   ShortsStack Comprehensive Theme System (Light / Dark Mode)
+   Covers:
+   - Sidebar & Sticky Sidebar Footer (Image 2 fix)
+   - Topbar Header, Badges & Browser Selectors
+   - Kanban Pipeline Board 4-Stages (Image 1 fix)
+   - All 21 Modals & Internal Cards / Sections / Tabs / Overlays
+   - Form Controls, Multi-Select Containers & Custom Inputs
+   - Tables, Sort Headers & Row Hover States
+   - Floating Action Popups, Dropdowns & Tooltips
+   - Audio Studio & Preview Dock
+   - Video Studio Cards & Mockup View
+   ========================================================================== */
+
+/* ── Light Mode Color Tokens & Overrides ── */
+body.light-mode {
+    color-scheme: light;
+    --bg-dark: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;
+    --border-color: rgba(0, 0, 0, 0.09);
+    --border-highlight: rgba(2, 132, 199, 0.35);
+
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+
+    --accent-cyan: #0284c7;
+    --accent-blue: #2563eb;
+    --accent-pink: #e11d48;
+    --accent-gold: #d97706;
+    --accent-green: #059669;
+    --accent-purple: #7c3aed;
+
+    --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.05);
+
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(225, 29, 72, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(2, 132, 199, 0.04) 0%, transparent 40%);
+}
+
+/* Smooth theme transitions */
+body {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ── Sidebar (Light Mode) ── */
+body.light-mode .sidebar {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-right: 1px solid var(--border-color) !important;
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .brand {
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+body.light-mode .brand-text h2 {
+    color: #0f172a !important;
+}
+
+body.light-mode .brand-text p {
+    color: #64748b !important;
+}
+
+body.light-mode .sidebar-toggle-btn {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light-mode .sidebar-toggle-btn:hover {
+    background: #f1f5f9 !important;
+    color: var(--accent-cyan) !important;
+    border-color: var(--accent-cyan) !important;
+}
+
+body.light-mode .nav-section-title {
+    color: #94a3b8 !important;
+    font-weight: 700 !important;
+}
+
+body.light-mode .nav-item {
+    color: #475569 !important;
+}
+
+body.light-mode .nav-item:hover {
+    color: var(--accent-cyan) !important;
+    background: rgba(2, 132, 199, 0.06) !important;
+}
+
+body.light-mode .nav-item.active {
+    color: var(--accent-cyan) !important;
+    background: rgba(2, 132, 199, 0.12) !important;
+    font-weight: 600 !important;
+}
+
+/* Fix for Sidebar Footer Black Background (Image 2) */
+body.light-mode .sidebar-footer {
+    background: #ffffff !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+body.light-mode .sidebar-footer .gpm-status-card {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .sidebar-footer .gpm-status-card:hover {
+    background: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+}
+
+body.light-mode #sidebarHostLabel {
+    color: #0f172a !important;
+}
+
+/* ── Topbar (Light Mode) ── */
+body.light-mode .topbar {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .topbar-title h1 {
+    color: #0f172a !important;
+}
+
+body.light-mode .topbar-title p.subtitle {
+    color: #64748b !important;
+}
+
+body.light-mode .btn-secondary {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #1e293b !important;
+}
+
+body.light-mode .btn-secondary:hover {
+    background: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .btn-secondary i {
+    color: #475569 !important;
+}
+
+body.light-mode .btn-outline {
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+body.light-mode .btn-outline:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+/* ── Panels, Cards & Stepper (Light Mode) ── */
+body.light-mode .glass-panel {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .stat-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .stat-label {
+    color: #64748b !important;
+}
+
+body.light-mode .stat-value,
+body.light-mode .stat-num {
+    color: #0f172a !important;
+}
+
+body.light-mode .stat-title {
+    color: #334155 !important;
+}
+
+body.light-mode .stat-hint {
+    color: #94a3b8 !important;
+}
+
+body.light-mode .pipeline-stepper-banner {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .step-item {
+    color: #64748b !important;
+}
+
+body.light-mode .step-item .step-meta h4 {
+    color: #1e293b !important;
+}
+
+body.light-mode .step-item .step-meta p {
+    color: #64748b !important;
+}
+
+body.light-mode .step-item.active .step-meta h4 {
+    color: var(--accent-cyan) !important;
+}
+
+body.light-mode .step-badge {
+    background: transparent !important;
+    border: none !important;
+    color: #64748b !important;
+    padding: 0 !important;
+}
+
+body.light-mode .step-item.active .step-badge {
+    background: transparent !important;
+    border: none !important;
+    color: var(--accent-cyan) !important;
+    padding: 0 !important;
+}
+
+body.light-mode .step-item {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .step-item.active {
+    background: #ffffff !important;
+    border: 1.5px solid var(--accent-cyan) !important;
+    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.12) !important;
+}
+
+body.light-mode .step-circle {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.light-mode .step-connector i {
+    color: #cbd5e1 !important;
+}
+
+body.light-mode .settings-section {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .settings-section h4 {
+    color: #0f172a !important;
+}
+
+/* ── KANBAN PIPELINE BOARD (Fix for Image 1) ── */
+body.light-mode .kanban-col {
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .kanban-col-header {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .kanban-col-header h4 {
+    color: #0f172a !important;
+}
+
+body.light-mode .kanban-count-badge {
+    background: #e2e8f0 !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.light-mode .kanban-task-card {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .kanban-task-card:hover {
+    background: #ffffff !important;
+    border-color: var(--accent-cyan) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-mode .kanban-task-card h5,
+body.light-mode .kanban-task-title {
+    color: #0f172a !important;
+}
+
+body.light-mode .kanban-meta-item,
+body.light-mode .kanban-task-meta {
+    color: #64748b !important;
+}
+
+body.light-mode .kanban-col-body .text-center {
+    color: #94a3b8 !important;
+}
+
+/* ── Form Controls, Inputs & Multi-Select (Light Mode) ── */
+body.light-mode input[type="text"],
+body.light-mode input[type="number"],
+body.light-mode input[type="password"],
+body.light-mode input[type="search"],
+body.light-mode input[type="time"],
+body.light-mode textarea,
+body.light-mode .input-field,
+body.light-mode .custom-input,
+body.light-mode .custom-select,
+body.light-mode select {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    color-scheme: light !important;
+}
+
+body.light-mode input:focus,
+body.light-mode textarea:focus,
+body.light-mode .input-field:focus,
+body.light-mode .custom-input:focus,
+body.light-mode .custom-select:focus,
+body.light-mode select:focus {
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+body.light-mode select option,
+body.light-mode select optgroup {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+
+body.light-mode ::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Multi-select dropdown boxes (Campaign channels & GPM profiles) */
+body.light-mode .multi-select-container {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .multi-select-search-wrap {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .multi-select-search-input {
+    background: transparent !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .multi-select-item {
+    color: #334155 !important;
+}
+
+body.light-mode .multi-select-item:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .multi-select-header-actions {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* ── Data Tables & Key Pools (Light Mode) ── */
+body.light-mode .data-table,
+body.light-mode .key-pool-table,
+body.light-mode table {
+    color: #334155 !important;
+    background-color: #ffffff !important;
+}
+
+body.light-mode .data-table th,
+body.light-mode .key-pool-table th,
+body.light-mode #ytChannelsTable th,
+body.light-mode #savedChannelsTable th,
+body.light-mode #audioSearchTable th,
+body.light-mode #localTracksTable th,
+body.light-mode #videoManagerTable th,
+body.light-mode #pipelineVideosTable th,
+body.light-mode #videoLibraryTableBody tr th {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    font-weight: 600 !important;
+}
+
+/* Sticky First & Last Columns in Table Headers */
+body.light-mode #ytChannelsTable th:first-child,
+body.light-mode #savedChannelsTable th:first-child,
+body.light-mode #audioSearchTable th:first-child,
+body.light-mode #localTracksTable th:first-child,
+body.light-mode #ytChannelsTable th:last-child,
+body.light-mode #savedChannelsTable th:last-child,
+body.light-mode #audioSearchTable th:last-child,
+body.light-mode #localTracksTable th:last-child,
+body.light-mode .data-table th:first-child,
+body.light-mode .data-table th:last-child {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: none !important;
+}
+
+body.light-mode .data-table td,
+body.light-mode .key-pool-table td {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    color: #334155 !important;
+}
+
+/* Normal Row Sticky First & Last Cell (Fix for pitch black cells) */
+body.light-mode #ytChannelsTable td:first-child:not([colspan]),
+body.light-mode #ytChannelsTable td:last-child:not([colspan]),
+body.light-mode #savedChannelsTable td:first-child:not([colspan]),
+body.light-mode #savedChannelsTable td:last-child:not([colspan]),
+body.light-mode #audioSearchTable td:first-child:not([colspan]),
+body.light-mode #audioSearchTable td:last-child:not([colspan]),
+body.light-mode #localTracksTable td:first-child:not([colspan]),
+body.light-mode #localTracksTable td:last-child:not([colspan]),
+body.light-mode .data-table td:first-child:not([colspan]),
+body.light-mode .data-table td:last-child:not([colspan]) {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border-color: #f1f5f9 !important;
+    box-shadow: none !important;
+}
+
+/* Row Hover - All cells including Sticky First & Last Cells (Fix for Image 7) */
+body.light-mode .data-table tr:hover td,
+body.light-mode .data-table tbody tr:hover td,
+body.light-mode table tbody tr:hover td,
+body.light-mode .key-pool-table tr:hover td {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .data-table tr:hover td:first-child:not([colspan]),
+body.light-mode .data-table tr:hover td:last-child:not([colspan]),
+body.light-mode #ytChannelsTable tr:hover td:first-child:not([colspan]),
+body.light-mode #ytChannelsTable tr:hover td:last-child:not([colspan]),
+body.light-mode #savedChannelsTable tr:hover td:first-child:not([colspan]),
+body.light-mode #savedChannelsTable tr:hover td:last-child:not([colspan]),
+body.light-mode #audioSearchTable tr:hover td:first-child:not([colspan]),
+body.light-mode #audioSearchTable tr:hover td:last-child:not([colspan]),
+body.light-mode #localTracksTable tr:hover td:first-child:not([colspan]),
+body.light-mode #localTracksTable tr:hover td:last-child:not([colspan]) {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+/* Saved Row Accent in Light Mode */
+body.light-mode .data-table tr.row-saved td,
+body.light-mode .data-table tr.row-saved td:first-child:not([colspan]),
+body.light-mode .data-table tr.row-saved td:last-child:not([colspan]),
+body.light-mode tr.row-saved td:first-child:not([colspan]),
+body.light-mode tr.row-saved td:last-child:not([colspan]) {
+    background: #ecfdf5 !important;
+    color: #065f46 !important;
+}
+
+body.light-mode .data-table tr.row-saved:hover td,
+body.light-mode .data-table tr.row-saved:hover td:first-child:not([colspan]),
+body.light-mode .data-table tr.row-saved:hover td:last-child:not([colspan]) {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+/* ── ALL 21 MODALS & INTERNAL DIALOG COMPONENTS (Light Mode) ── */
+body.light-mode .modal {
+    background: rgba(15, 23, 42, 0.45) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+body.light-mode .modal-content,
+body.light-mode .modal-channel-detail {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-mode .modal-header {
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+}
+
+body.light-mode .modal-header h3,
+body.light-mode .modal-header h4 {
+    color: #0f172a !important;
+}
+
+body.light-mode .modal-sub,
+body.light-mode .modal-header p {
+    color: #64748b !important;
+}
+
+body.light-mode .modal-body {
+    color: #334155 !important;
+}
+
+body.light-mode .modal-footer,
+body.light-mode .modal-channel-detail .modal-footer {
+    border-top: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
+}
+
+body.light-mode .modal-tabs-header {
+    background: #f1f5f9 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .modal-tab-nav {
+    color: #64748b !important;
+}
+
+body.light-mode .modal-tab-nav:hover {
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .modal-tab-nav.active {
+    color: var(--accent-cyan) !important;
+    background: #ffffff !important;
+    border-bottom: 2px solid var(--accent-cyan) !important;
+}
+
+body.light-mode .modal-corner-close,
+body.light-mode .close-btn {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #64748b !important;
+}
+
+body.light-mode .modal-corner-close:hover,
+body.light-mode .close-btn:hover {
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #dc2626 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Modal Inner Dark Containers Override (Hardware ID, Update Notes, License Box) */
+body.light-mode .modal-body [style*="background: rgba(15, 23, 42"],
+body.light-mode .modal-body [style*="background: rgba(0,0,0"],
+body.light-mode .modal-body [style*="background: rgba(0, 0, 0"],
+body.light-mode .modal-body [style*="background:rgba(0,0,0"],
+body.light-mode .modal-body [style*="background: rgba(255, 255, 255, 0.02)"],
+body.light-mode .modal-body [style*="background: rgba(255, 255, 255, 0.04)"],
+body.light-mode .modal-body [style*="background: rgba(255, 255, 255, 0.05)"],
+body.light-mode .modal-body [style*="background: rgba(255,255,255,0.02)"],
+body.light-mode .modal-body [style*="background: rgba(255,255,255,0.04)"],
+body.light-mode .settings-section [style*="background: rgba(15, 23, 42"],
+body.light-mode .settings-section [style*="background: rgba(0,0,0"] {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #1e293b !important;
+}
+
+body.light-mode .modal-body code,
+body.light-mode .modal-body pre,
+body.light-mode .settings-section code {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* Specific Modal Titles and Confirmation Prompts (Fix for Invisible Text in Light Mode) */
+body.light-mode #modalGlobalConfirm #globalConfirmTitle,
+body.light-mode #globalConfirmTitle,
+body.light-mode #confirmDeactivateModal h3,
+body.light-mode #licenseActivationModal h3,
+body.light-mode #appUpdateModal h3,
+body.light-mode #updateModalVersionText,
+body.light-mode .modal-content h3,
+body.light-mode .modal-content h4,
+body.light-mode .modal-content h5 {
+    color: #0f172a !important;
+}
+
+body.light-mode #modalGlobalConfirm #globalConfirmMessage,
+body.light-mode #globalConfirmMessage,
+body.light-mode #modalGlobalConfirm .modal-body p,
+body.light-mode #confirmDeactivateModal .modal-body p,
+body.light-mode #licenseActivationModal .modal-body p,
+body.light-mode #appUpdateModal .modal-body p {
+    color: #1e293b !important;
+}
+
+body.light-mode #globalConfirmDetails {
+    color: #64748b !important;
+}
+
+body.light-mode #updateModalNotesText {
+    color: #334155 !important;
+    background: transparent !important;
+}
+
+/* ── Auto-Pilot Pipeline Master Banner (Fix for Image 6) ── */
+body.light-mode .auto-master-banner {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .master-title-row h3,
+body.light-mode #masterSchedulerTitle {
+    color: #0f172a !important;
+}
+
+body.light-mode #masterSchedulerDesc {
+    color: #64748b !important;
+}
+
+/* ── 4-Stage Workflow Step Cards ── */
+body.light-mode .flow-step-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .flow-step-content h4 {
+    color: #0f172a !important;
+}
+
+body.light-mode .flow-step-meta {
+    color: #64748b !important;
+}
+
+body.light-mode .flow-badge {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* ── Campaign Cards (Fix for Image 6) ── */
+body.light-mode .campaign-card {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .campaign-card:hover {
+    background: #ffffff !important;
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 8px 24px rgba(2, 132, 199, 0.12) !important;
+}
+
+body.light-mode .campaign-header-row {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .campaign-card-title {
+    color: #0f172a !important;
+}
+
+body.light-mode .campaign-pipeline-flow {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .pipeline-node .node-text h5 {
+    color: #0f172a !important;
+}
+
+body.light-mode .pipeline-node .node-text p {
+    color: #64748b !important;
+}
+
+body.light-mode .campaign-footer-row {
+    border-top: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+}
+
+body.light-mode .campaign-footer-left span,
+body.light-mode .campaign-footer-right span {
+    color: #64748b !important;
+}
+
+/* ── Video Studio 9:16 Panels & Controls (Light Mode) ── */
+body.light-mode .studio-video-picker,
+body.light-mode .studio-recipe-controls {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .recipe-section-title {
+    color: #0f172a !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .studio-active-info-box {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode #studioActiveVideoTitle {
+    color: #0f172a !important;
+}
+
+body.light-mode .studio-meta-tag {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+body.light-mode .recipe-card-choice {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.light-mode .recipe-card-choice:hover {
+    background: #f1f5f9 !important;
+    border-color: var(--accent-cyan) !important;
+}
+
+body.light-mode .recipe-card-choice.active {
+    background: rgba(2, 132, 199, 0.08) !important;
+    border-color: var(--accent-cyan) !important;
+}
+
+body.light-mode .recipe-card-choice h5 {
+    color: #0f172a !important;
+}
+
+body.light-mode .recipe-card-choice p {
+    color: #64748b !important;
+}
+
+body.light-mode .studio-tab-btn {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.light-mode .studio-tab-btn.active {
+    background: #ffffff !important;
+    color: var(--accent-cyan) !important;
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ── Channel & Video Title Typography (Fix for Image 1, 3, 4) ── */
+body.light-mode .channel-title-main,
+body.light-mode .channel-title-link,
+body.light-mode #ytChannelsTable .channel-title-link,
+body.light-mode #savedChannelsTable .channel-title-link,
+body.light-mode .table-channel-name,
+body.light-mode strong.channel-title-link {
+    color: #0f172a !important;
+}
+
+body.light-mode .channel-title-link:hover {
+    color: var(--accent-cyan) !important;
+    text-shadow: none !important;
+}
+
+body.light-mode .kanban-task-card strong,
+body.light-mode .kanban-task-card h5,
+body.light-mode .kanban-task-title {
+    color: #0f172a !important;
+}
+
+body.light-mode .panel-header h2,
+body.light-mode .panel-header h3,
+body.light-mode .panel-header h4,
+body.light-mode .glass-panel h2,
+body.light-mode .glass-panel h3,
+body.light-mode .glass-panel h4,
+body.light-mode .glass-panel h5 {
+    color: #0f172a !important;
+}
+
+body.light-mode .sources-subnav-tabs {
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .subnav-tab-btn {
+    color: #475569 !important;
+}
+
+body.light-mode .subnav-tab-btn:hover {
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Fix for Image 2: High contrast white text on active blue tab */
+body.light-mode .subnav-tab-btn.active {
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35) !important;
+}
+
+body.light-mode .subnav-tab-btn.active i,
+body.light-mode .subnav-tab-btn.active span {
+    color: #ffffff !important;
+}
+
+body.light-mode .btn-audio-settings-header {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+body.light-mode .btn-audio-settings-header:hover {
+    background: #f1f5f9 !important;
+    border-color: var(--accent-cyan) !important;
+    color: var(--accent-cyan) !important;
+}
+
+/* ── Settings Page Sections & Dividers (Fix for Image 5 & Request 5) ── */
+#tab-settings .settings-section {
+    padding: 20px 22px !important;
+    border-radius: 14px !important;
+    margin-top: 16px !important;
+    margin-bottom: 16px !important;
+}
+
+body.light-mode #tab-settings .settings-section {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+    padding: 20px 22px !important;
+    margin-top: 16px !important;
+    margin-bottom: 16px !important;
+}
+
+body.light-mode #tab-settings .settings-section h4,
+body.light-mode #tab-settings h4 {
+    color: #0f172a !important;
+}
+
+body.light-mode #tab-settings .settings-divider {
+    display: none !important;
+}
+
+body.light-mode #tab-settings strong {
+    color: #0f172a !important;
+}
+
+body.light-mode #tab-settings [style*="background: rgba(15, 23, 42"],
+body.light-mode #tab-settings [style*="background: rgba(255,255,255,0.02)"],
+body.light-mode #tab-settings [style*="background: rgba(255, 255, 255, 0.02)"] {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode #tab-settings strong[style*="color: #fff"],
+body.light-mode #tab-settings strong[style*="color:#fff"],
+body.light-mode #settingLicenseExpires {
+    color: #0f172a !important;
+}
+
+body.light-mode #tab-settings code[style*="color: #fff"],
+body.light-mode #settingLicenseCurrentKey {
+    color: #0f172a !important;
+    background: #e2e8f0 !important;
+}
+
+/* ── Video Studio Cards & Controls (Light Mode) ── */
+body.light-mode .studio-video-card {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .studio-video-card:hover {
+    background: #f8fafc !important;
+    border-color: var(--accent-cyan) !important;
+}
+
+body.light-mode .studio-video-card.selected {
+    background: rgba(2, 132, 199, 0.08) !important;
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 0 16px rgba(2, 132, 199, 0.18) !important;
+}
+
+body.light-mode .studio-video-card h4,
+body.light-mode .svc-title {
+    color: #0f172a !important;
+}
+
+body.light-mode .svc-channel,
+body.light-mode .svc-meta {
+    color: #64748b !important;
+}
+
+body.light-mode .studio-phone-mockup-wrap {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+/* ── Audio Studio & Floating Preview Dock (Light Mode) ── */
+body.light-mode .audio-preview-dock {
+    background: rgba(255, 255, 255, 0.97) !important;
+    border: 1px solid rgba(2, 132, 199, 0.35) !important;
+    color: #0f172a !important;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.12), 0 0 25px rgba(2, 132, 199, 0.08) !important;
+}
+
+body.light-mode .audio-dock-title {
+    color: #0f172a !important;
+}
+
+body.light-mode .audio-dock-sub {
+    color: #64748b !important;
+}
+
+body.light-mode .audio-dock-tag {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* ── Table & Card More Action Button (Fix for invisible icon on hover) ── */
+body.light-mode .btn-more-actions,
+body.light-mode .btn-icon,
+body.light-mode .action-btn {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+body.light-mode .btn-more-actions:hover,
+body.light-mode .btn-more-actions.active,
+body.light-mode .btn-icon:hover,
+body.light-mode .action-btn:hover {
+    background: #e2e8f0 !important;
+    color: var(--accent-cyan) !important;
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-mode .btn-more-actions i,
+body.light-mode .btn-more-actions:hover i {
+    color: inherit !important;
+}
+
+/* ── Dropdowns, Popups & Floating Menus (Fix for Mở YouTube invisible on hover) ── */
+body.light-mode .col-picker-dropdown,
+body.light-mode .action-dropdown-menu,
+body.light-mode .filter-dropdown,
+body.light-mode .dropdown-menu {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .action-dropdown-item,
+body.light-mode .dropdown-item,
+body.light-mode .action-dropdown-menu button,
+body.light-mode .action-dropdown-menu a,
+body.light-mode .dropdown-menu a {
+    color: #1e293b !important;
+}
+
+body.light-mode .action-dropdown-item:hover,
+body.light-mode .dropdown-item:hover,
+body.light-mode .action-dropdown-menu button:hover,
+body.light-mode .action-dropdown-menu a:hover,
+body.light-mode .dropdown-menu a:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .action-dropdown-item.text-danger {
+    color: #dc2626 !important;
+}
+
+body.light-mode .action-dropdown-item.text-danger:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #b91c1c !important;
+}
+
+body.light-mode .dropdown-divider {
+    background: #e2e8f0 !important;
+}
+
+/* ── Tooltips in Light Mode ── */
+body.light-mode .has-tooltip::after,
+body.light-mode .sidebar-toggle-btn::after,
+body.light-mode body.sidebar-collapsed .nav-item::after {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(2, 132, 199, 0.4) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+}
+
+body.light-mode .has-tooltip::before {
+    border-color: transparent transparent #0f172a transparent !important;
+}
+
+body.light-mode .has-tooltip.tooltip-left::before {
+    border-color: transparent transparent transparent #0f172a !important;
+}
+
+body.light-mode .has-tooltip.tooltip-top::before {
+    border-color: #0f172a transparent transparent transparent !important;
+}
+
+/* ==========================================================================
+   10. LIGHT MODE CONTRAST & ACCESSIBILITY MASTER OVERRIDES
+   ========================================================================== */
+
+/* Topbar Sync Button (#btnSyncGpmTopbar) */
+body.light-mode #btnSyncGpmTopbar,
+body.light-mode #btnSyncGpmTopbar * {
+    background: #0284c7 !important;
+    border-color: #0369a1 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+}
+body.light-mode #btnSyncGpmTopbar:hover,
+body.light-mode #btnSyncGpmTopbar:hover * {
+    background: #0369a1 !important;
+    border-color: #075985 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+}
+
+/* YouTube & Saved Channels Tables High Contrast */
+body.light-mode #ytChannelsTable,
+body.light-mode #savedChannelsTable,
+body.light-mode .data-table {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+body.light-mode #ytChannelsTable th,
+body.light-mode #savedChannelsTable th,
+body.light-mode .data-table th {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+}
+body.light-mode #ytChannelsTable td,
+body.light-mode #savedChannelsTable td,
+body.light-mode .data-table td {
+    color: #1e293b !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+body.light-mode #ytChannelsTable td div,
+body.light-mode #savedChannelsTable td div,
+body.light-mode .data-table td div {
+    color: #1e293b !important;
+}
+body.light-mode .badge-ratio {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fcd34d !important;
+    font-weight: 700 !important;
+}
+body.light-mode .badge-ratio.good {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+    border: 1px solid #6ee7b7 !important;
+}
+body.light-mode .badge-ratio.high {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fca5a5 !important;
+}
+
+/* ElevenLabs Voice Cards High Contrast */
+body.light-mode .voice-card,
+body.light-mode .voice-preview-card,
+body.light-mode .voice-library-grid > div {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+}
+body.light-mode .voice-card h4,
+body.light-mode .voice-card p,
+body.light-mode .voice-card span,
+body.light-mode .voice-preview-card h4,
+body.light-mode .voice-preview-card p,
+body.light-mode .voice-preview-card span,
+body.light-mode .voice-info,
+body.light-mode .voice-desc {
+    color: #1e293b !important;
+}
+
+/* Audio Studio & Playlist Local Tracks */
+body.light-mode #localTracksTable td,
+body.light-mode #localTracksTable td div,
+body.light-mode #localTracksTable td span {
+    color: #1e293b !important;
+}
+body.light-mode .audio-category-chip {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+}
+body.light-mode .audio-category-chip.active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0369a1 !important;
+}
+
+/* System Logs & Diagnostics Subtabs */
+body.light-mode .logs-subnav {
+    background: #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+body.light-mode .btn-subtab {
+    color: #334155 !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+}
+body.light-mode .btn-subtab:hover {
+    color: #0f172a !important;
+    background: #f8fafc !important;
+}
+body.light-mode .btn-subtab.active {
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    border: 1px solid #0284c7 !important;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35) !important;
+}
+body.light-mode .btn-subtab.active * {
+    color: #ffffff !important;
+}
+
+/* ── Toast Notifications (Light Mode) ── */
+body.light-mode .toast,
+body.light-mode .toast-container .toast-message {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* ── Badges, Chips & Tags (Light Mode) ── */
+body.light-mode .badge-secondary {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.light-mode .badge-outline {
+    border-color: #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+body.light-mode .badge-cyan,
+body.light-mode .badge-blue {
+    background: rgba(2, 132, 199, 0.1) !important;
+    color: #0284c7 !important;
+    border: 1px solid rgba(2, 132, 199, 0.25) !important;
+}
+
+body.light-mode .badge-green,
+body.light-mode .badge-success {
+    background: rgba(16, 185, 129, 0.1) !important;
+    color: #059669 !important;
+    border: 1px solid rgba(16, 185, 129, 0.25) !important;
+}
+
+/* ── Log Terminal (Preserved dark slate style for optimal contrast in light mode) ── */
+body.light-mode #tab-logs .log-terminal {
+    background: #0f172a !important;
+    border: 1px solid #334155 !important;
+    color: #e2e8f0 !important;
+}
+
+/* ── Scrollbars in Light Mode ── */
+body.light-mode ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18) !important;
+}
+
+body.light-mode ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ── Topbar Switchers & Controls ── */
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.lang-selector-wrapper {
+    display: inline-flex;
+    align-items: center;
+}
+
+.lang-select {
+    padding: 7px 28px 7px 10px !important;
+    height: 35px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    cursor: pointer;
+}
+
+/* ── App Version Badge (Next to ShortsStack at top of sidebar) ── */
+.app-version-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 2.5px 7px;
+    border-radius: 99px;
+    background: rgba(0, 242, 254, 0.12);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(0, 242, 254, 0.35);
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+}
+
+body.light-mode .app-version-badge {
+    background: rgba(2, 132, 199, 0.1) !important;
+    color: #0284c7 !important;
+    border-color: rgba(2, 132, 199, 0.3) !important;
+}
+
+/* ── Sidebar Bottom License Button (Moved from Topbar) ── */
+.sidebar-license-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidebar-license-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.sidebar-license-btn.btn-license-active {
+    background: rgba(16, 185, 129, 0.1) !important;
+    border-color: rgba(16, 185, 129, 0.35) !important;
+    color: #10b981 !important;
+}
+
+.sidebar-license-btn.btn-license-warning {
+    background: rgba(245, 158, 11, 0.1) !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+    color: #f59e0b !important;
+}
+
+body.light-mode .sidebar-license-btn {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #1e293b !important;
+}
+
+body.light-mode .sidebar-license-btn:hover {
+    background: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .sidebar-license-btn.btn-license-active {
+    background: rgba(16, 185, 129, 0.12) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+    color: #059669 !important;
+}
+
+body.light-mode .sidebar-license-btn.btn-license-warning {
+    background: rgba(245, 158, 11, 0.12) !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+    color: #d97706 !important;
+}
+
+body.sidebar-collapsed .sidebar-license-btn {
+    padding: 8px 0 !important;
+    justify-content: center !important;
+}
+
+body.sidebar-collapsed .sidebar-license-btn span {
+    display: none !important;
+}
+
+/* ── Sidebar Bottom License Tooltip Cutoff Fix ── */
+.sidebar-license-btn.has-tooltip::after {
+    bottom: calc(100% + 10px) !important;
+    top: auto !important;
+    left: 8px !important;
+    right: auto !important;
+    transform: translateY(-4px) !important;
+    white-space: normal !important;
+    width: 236px !important;
+    max-width: 250px !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
+    font-size: 11.5px !important;
+    padding: 8px 12px !important;
+    z-index: 999999 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+.sidebar-license-btn.has-tooltip::before {
+    bottom: calc(100% + 4px) !important;
+    top: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(-4px) !important;
+    z-index: 1000000 !important;
+}
+
+.sidebar-license-btn.has-tooltip:hover::after {
+    transform: translateY(0) !important;
+}
+
+.sidebar-license-btn.has-tooltip:hover::before {
+    transform: translateX(-50%) translateY(0) !important;
+}
+
+body.sidebar-collapsed .sidebar-license-btn.has-tooltip::after {
+    left: calc(100% + 12px) !important;
+    bottom: auto !important;
+    top: 50% !important;
+    transform: translateY(-50%) translateX(-4px) !important;
+    width: 220px !important;
+    text-align: left !important;
+}
+
+body.sidebar-collapsed .sidebar-license-btn.has-tooltip::before {
+    left: calc(100% + 6px) !important;
+    bottom: auto !important;
+    top: 50% !important;
+    transform: translateY(-50%) translateX(-4px) !important;
+    border-width: 5px 6px 5px 0 !important;
+    border-color: transparent rgba(2, 132, 199, 0.45) transparent transparent !important;
+}
+
+body.sidebar-collapsed .sidebar-license-btn.has-tooltip:hover::after {
+    transform: translateY(-50%) translateX(0) !important;
+}
+
+body.sidebar-collapsed .sidebar-license-btn.has-tooltip:hover::before {
+    transform: translateY(-50%) translateX(0) !important;
+}
+
+
+/* ==========================================================================
+   ENHANCED LIGHT MODE OVERRIDES: Modals, Campaigns, Settings, & Studio
+   ========================================================================== */
+
+/* ── 1. Auto Campaign Cards in Light Mode ── */
+body.light-mode .campaign-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .campaign-card:hover {
+    background: #ffffff !important;
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-mode .campaign-header-row {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .campaign-card-title {
+    color: #0f172a !important;
+}
+
+body.light-mode .campaign-pipeline-flow {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .node-text h5 {
+    color: #0f172a !important;
+}
+
+body.light-mode .node-text p {
+    color: #64748b !important;
+}
+
+body.light-mode .pipeline-dir-tag {
+    background: #e2e8f0 !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* ── 2. Settings Sections Card Padding & Spacing ── */
+#tab-settings .settings-section {
+    background: rgba(20, 26, 40, 0.45);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-top: 14px;
+    margin-bottom: 14px;
+}
+
+#tab-settings .settings-divider {
+    display: none;
+}
+
+body.light-mode #tab-settings .settings-section {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    padding: 18px 20px !important;
+    margin-top: 14px !important;
+    margin-bottom: 14px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode #tab-settings .settings-divider {
+    display: none !important;
+}
+
+/* ── 3. Custom Select & Dropdowns in Light Mode ── */
+body.light-mode .custom-select,
+body.light-mode select.input-field,
+body.light-mode select {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+body.light-mode .custom-select option,
+body.light-mode select.input-field option,
+body.light-mode select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+
+/* ── 4. AI Cost Center Stat Cards in Light Mode ── */
+body.light-mode #tab-ai-usage [style*="color:rgba(255,255,255,0.7)"],
+body.light-mode #tab-ai-usage [style*="color: rgba(255, 255, 255, 0.7)"],
+body.light-mode #tab-ai-usage [style*="color:rgba(255,255,255,0.5)"],
+body.light-mode #tab-ai-usage [style*="color: rgba(255, 255, 255, 0.5)"] {
+    color: #475569 !important;
+}
+
+body.light-mode #tab-ai-usage [style*="background:rgba(56,189,248,0.06)"],
+body.light-mode #tab-ai-usage [style*="background: rgba(56, 189, 248, 0.06)"] {
+    background: #f0f9ff !important;
+    border-color: #bae6fd !important;
+}
+
+body.light-mode #tab-ai-usage [style*="background:rgba(168,85,247,0.06)"],
+body.light-mode #tab-ai-usage [style*="background: rgba(168, 85, 247, 0.06)"] {
+    background: #faf5ff !important;
+    border-color: #e9d5ff !important;
+}
+
+body.light-mode #tab-ai-usage [style*="background:rgba(34,197,94,0.06)"],
+body.light-mode #tab-ai-usage [style*="background: rgba(34, 197, 94, 0.06)"] {
+    background: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+}
+
+body.light-mode #tab-ai-usage [style*="background:rgba(245,158,11,0.06)"],
+body.light-mode #tab-ai-usage [style*="background: rgba(245, 158, 11, 0.06)"] {
+    background: #fffbeb !important;
+    border-color: #fde68a !important;
+}
+
+/* ── 5. Modals & Studio Theme Overrides in Light Mode ── */
+body.light-mode .modal label,
+body.light-mode .modal-form-grid label,
+body.light-mode .form-group label,
+body.light-mode .studio-container label {
+    color: #1e293b !important;
+}
+
+body.light-mode .modal h1,
+body.light-mode .modal h2,
+body.light-mode .modal h3,
+body.light-mode .modal h4,
+body.light-mode .modal h5,
+body.light-mode .modal h6,
+body.light-mode .modal strong {
+    color: #0f172a !important;
+}
+
+body.light-mode [style*="background:rgba(0,0,0,0.25)"],
+body.light-mode [style*="background: rgba(0, 0, 0, 0.25)"],
+body.light-mode [style*="background:rgba(0, 0, 0, 0.25)"] {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-mode [style*="background:rgba(255,255,255,0.03)"],
+body.light-mode [style*="background: rgba(255, 255, 255, 0.03)"],
+body.light-mode [style*="background:rgba(255,255,255,0.04)"],
+body.light-mode [style*="background: rgba(255, 255, 255, 0.04)"] {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-mode [style*="background:rgba(236,72,153,0.06)"],
+body.light-mode [style*="background: rgba(236, 72, 153, 0.06)"] {
+    background: #fff5f7 !important;
+    border-color: #fbcfe8 !important;
+}
+
+body.light-mode [style*="background:rgba(192,132,252,0.06)"],
+body.light-mode [style*="background: rgba(192, 132, 252, 0.06)"] {
+    background: #faf5ff !important;
+    border-color: #e9d5ff !important;
+}
+
+body.light-mode [style*="background:rgba(168, 85, 247, 0.05)"],
+body.light-mode [style*="background:rgba(168,85,247,0.05)"],
+body.light-mode [style*="background: rgba(168, 85, 247, 0.05)"] {
+    background: #faf5ff !important;
+    border-color: #e9d5ff !important;
+}
+
+body.light-mode [style*="background:rgba(0,242,254,0.04)"],
+body.light-mode [style*="background: rgba(0, 242, 244, 0.04)"],
+body.light-mode [style*="background: rgba(0, 242, 254, 0.04)"] {
+    background: #f0fdfa !important;
+    border-color: #ccfbf1 !important;
+}
+
+body.light-mode .modal [style*="color:#fff"],
+body.light-mode .modal [style*="color: #fff"],
+body.light-mode .modal [style*="color:white"],
+body.light-mode .modal [style*="color: white"],
+body.light-mode #tab-video-studio [style*="color:#fff"],
+body.light-mode #tab-video-studio [style*="color: #fff"],
+body.light-mode #tab-video-studio [style*="color:white"],
+body.light-mode #tab-video-studio [style*="color: white"] {
+    color: #0f172a !important;
+}
+
+/* ── 6. Global Confirmation Modal in Light Mode ── */
+body.light-mode #modalGlobalConfirm .modal-content {
+    background: #ffffff !important;
+    border-color: #fca5a5 !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.light-mode #globalConfirmTitle,
+body.light-mode #globalConfirmMessage {
+    color: #0f172a !important;
+}
+
+body.light-mode #globalConfirmDetails {
+    color: #64748b !important;
+}
+
+
+/* ==========================================================================
+   ENHANCED LIGHT MODE CONTRAST & ACCESSIBILITY FIXES (BATCH 2)
+   ========================================================================== */
+
+/* ── 1. Topbar Sync Button (Đồng Bộ) in Light Mode ── */
+body.light-mode #btnSyncGpmTopbar {
+    background: #0284c7 !important;
+    border: 1px solid #0369a1 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25) !important;
+}
+
+body.light-mode #btnSyncGpmTopbar i {
+    color: #ffffff !important;
+}
+
+body.light-mode #btnSyncGpmTopbar:hover {
+    background: #0369a1 !important;
+    border-color: #075985 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+}
+
+/* ── 2. YouTube & Saved Channels Tables High-Contrast Columns ── */
+body.light-mode .channel-id-tag {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+body.light-mode .btn-copy-id {
+    border-color: #cbd5e1 !important;
+    color: #64748b !important;
+}
+
+body.light-mode .btn-copy-id:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .data-table td [style*="color:#cbd5e1"],
+body.light-mode .data-table td [style*="color: #cbd5e1"],
+body.light-mode #ytChannelsTable td [style*="color:#cbd5e1"],
+body.light-mode #savedChannelsTable td [style*="color:#cbd5e1"] {
+    color: #475569 !important;
+    font-weight: 600 !important;
+}
+
+body.light-mode .data-table td [style*="color:#fff"],
+body.light-mode .data-table td [style*="color: #fff"],
+body.light-mode .data-table td [style*="color:white"],
+body.light-mode .data-table td [style*="color: white"],
+body.light-mode #ytChannelsTable td [style*="color:#fff"],
+body.light-mode #savedChannelsTable td [style*="color:#fff"] {
+    color: #0f172a !important;
+}
+
+body.light-mode .data-table td[data-col="col-videos"],
+body.light-mode .data-table td[data-col="col-total-views"],
+body.light-mode .data-table td[data-col="col-last-upload"] {
+    color: #334155 !important;
+}
+
+body.light-mode .data-table td[data-col="col-avg-views"] {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* ── 3. ElevenLabs Studio Voice Gallery in Light Mode ── */
+body.light-mode #elVoiceGalleryGrid .glass-panel {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode #elVoiceGalleryGrid .glass-panel:hover {
+    border-color: #c084fc !important;
+    box-shadow: 0 4px 14px rgba(192, 132, 252, 0.15) !important;
+}
+
+body.light-mode #elVoiceGalleryGrid .glass-panel div[style*="color: white"],
+body.light-mode #elVoiceGalleryGrid .glass-panel div[style*="color:white"] {
+    color: #0f172a !important;
+}
+
+body.light-mode #elVoiceGalleryGrid .glass-panel p {
+    color: #334155 !important;
+    font-weight: 500 !important;
+}
+
+body.light-mode .el-filter-btn {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+body.light-mode .el-filter-btn:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .el-filter-btn.active,
+body.light-mode .el-filter-btn[style*="#c084fc"] {
+    background: #f3e8ff !important;
+    border-color: #c084fc !important;
+    color: #9333ea !important;
+    font-weight: 700 !important;
+}
+
+/* ── 4. Playlist & Audio Library in Light Mode ── */
+body.light-mode .audio-chip-wrapper {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .audio-chip-wrapper .audio-chip {
+    color: #334155 !important;
+    font-weight: 600 !important;
+}
+
+body.light-mode .audio-chip-wrapper.active {
+    background: #e0f2fe !important;
+    border-color: #0284c7 !important;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.18) !important;
+}
+
+body.light-mode .audio-chip-wrapper.active .audio-chip {
+    color: #0369a1 !important;
+    font-weight: 700 !important;
+}
+
+body.light-mode .audio-chip-wrapper.active .audio-chip i {
+    color: #0284c7 !important;
+}
+
+body.light-mode .audio-chip-count {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+body.light-mode .audio-chip-wrapper.active .audio-chip-count {
+    background: #bae6fd !important;
+    border-color: #7dd3fc !important;
+    color: #0369a1 !important;
+    font-weight: 700 !important;
+}
+
+body.light-mode .chip-action-btn {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+body.light-mode .chip-action-btn:hover {
+    background: #0284c7 !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+}
+
+body.light-mode .chip-action-btn.danger:hover {
+    background: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+body.light-mode #localTracksTable td div[style*="color:#fff"],
+body.light-mode #localTracksTable td div[style*="color: #fff"],
+body.light-mode #localTracksTable td div[style*="color:white"],
+body.light-mode #localTracksTable td div[style*="color: white"] {
+    color: #0f172a !important;
+}
+
+/* ── 5. System Logs & Diagnostics 3 Subtabs in Light Mode ── */
+.logs-subnav {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+}
+
+body.light-mode .logs-subnav {
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .btn-subtab {
+    color: #475569 !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+}
+
+body.light-mode .btn-subtab:hover {
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-mode .btn-subtab.active {
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    border: 1px solid #0284c7 !important;
+    box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35) !important;
+}
+
+body.light-mode .btn-subtab.active i,
+body.light-mode .btn-subtab.active span {
+    color: #ffffff !important;
+}
+
+
+/* ── 6. Action Boxes (Thao Tác Nhanh) in Light Mode ── */
+body.light-mode .action-box {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .action-box:hover {
+    background: #ffffff !important;
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06) !important;
+    transform: translateY(-2px) !important;
+}
+
+body.light-mode .action-box h4 {
+    color: #0f172a !important;
+}
+
+body.light-mode .action-box p {
+    color: #64748b !important;
+}
+
+
+/* ==========================================================================
+   MASTER CONTRAST & ACCESSIBILITY OVERRIDES (LIGHT MODE)
+   Tooltips, Popovers, Modals, Headers, Badges, Tables, Forms, AI Cost Cards
+   ========================================================================== */
+
+/* 1. Global Headings & Panel Titles */
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4,
+body.light-mode h5,
+body.light-mode h6,
+body.light-mode .panel-header h2,
+body.light-mode .panel-header h3,
+body.light-mode .panel-header h4,
+body.light-mode #tab-video-manager h2,
+body.light-mode #tab-sources h2,
+body.light-mode #tab-video-studio h2,
+body.light-mode #tab-auto-pipeline h2,
+body.light-mode #tab-elevenlabs h2,
+body.light-mode #tab-audio-studio h2,
+body.light-mode #tab-gpm-farm h2,
+body.light-mode #tab-overview h2,
+body.light-mode #tab-pipeline-queue h2,
+body.light-mode #tab-ai-usage h2,
+body.light-mode #tab-logs h2,
+body.light-mode #tab-settings h2 {
+    color: #0f172a !important;
+}
+
+body.light-mode .panel-sub,
+body.light-mode .modal-sub {
+    color: #475569 !important;
+}
+
+/* 2. Global Safety Net for Hardcoded White Text */
+body.light-mode [style*="color:#fff"]:not(.btn-primary):not(.btn-danger):not(.badge-danger):not(.badge-primary):not(.badge-success):not(#btnSyncGpmTopbar):not(.subnav-tab-btn.active):not(.btn-subtab.active),
+body.light-mode [style*="color: #fff"]:not(.btn-primary):not(.btn-danger):not(.badge-danger):not(.badge-primary):not(.badge-success):not(#btnSyncGpmTopbar):not(.subnav-tab-btn.active):not(.btn-subtab.active),
+body.light-mode [style*="color:white"]:not(.btn-primary):not(.btn-danger):not(.badge-danger):not(.badge-primary):not(.badge-success):not(#btnSyncGpmTopbar):not(.subnav-tab-btn.active):not(.btn-subtab.active),
+body.light-mode [style*="color: white"]:not(.btn-primary):not(.btn-danger):not(.badge-danger):not(.badge-primary):not(.badge-success):not(#btnSyncGpmTopbar):not(.subnav-tab-btn.active):not(.btn-subtab.active) {
+    color: #0f172a !important;
+}
+
+/* 3. Subnav Tabs (Quét & Tìm Kênh Mới vs Kênh Đang Giám Sát) */
+body.light-mode .sources-subnav-tabs {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+body.light-mode .subnav-tab-btn {
+    color: #334155 !important;
+    font-weight: 600 !important;
+}
+
+body.light-mode .subnav-tab-btn:hover {
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-mode .subnav-tab-btn.active {
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35) !important;
+    border: none !important;
+}
+
+body.light-mode .subnav-tab-btn.active *,
+body.light-mode .subnav-tab-btn.active span,
+body.light-mode .subnav-tab-btn.active i {
+    color: #ffffff !important;
+}
+
+/* 4. AI Cost Center 4 Stat Cards */
+body.light-mode #tab-ai-usage div[style*="minmax(210px"] > div {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode #tab-ai-usage div[style*="minmax(210px"] > div span:first-child {
+    color: #334155 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+}
+
+body.light-mode #aiStatTotalCalls {
+    color: #0284c7 !important;
+}
+
+body.light-mode #aiStatTotalTokens {
+    color: #7e22ce !important;
+}
+
+body.light-mode #aiStatTotalCostUsd {
+    color: #15803d !important;
+}
+
+body.light-mode #aiStatActiveModel {
+    color: #b45309 !important;
+}
+
+body.light-mode #aiStatTodayCalls,
+body.light-mode #aiStatTodayTokens,
+body.light-mode #aiStatTotalCostVnd {
+    color: #475569 !important;
+    font-weight: 600 !important;
+}
+
+/* 5. Stepper Badges (BƯỚC 1, 2, 3, 4) */
+body.light-mode .step-badge {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: #475569 !important;
+    font-weight: 800 !important;
+    padding: 0 !important;
+}
+
+body.light-mode .step-item.active .step-badge {
+    color: var(--accent-cyan) !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* 6. Form Groups, Checkboxes & Options */
+body.light-mode .form-group label,
+body.light-mode .form-label,
+body.light-mode .check-title,
+body.light-mode label {
+    color: #1e293b !important;
+}
+
+body.light-mode .form-hint,
+body.light-mode small {
+    color: #64748b !important;
+}
+
+body.light-mode .custom-select,
+body.light-mode select.input-field,
+body.light-mode input.input-field {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode select option {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+/* 7. YouTube Channels Table Columns */
+body.light-mode #ytChannelsTable td[data-col="col-videos"],
+body.light-mode #ytChannelsTable td[data-col="col-videos"] div,
+body.light-mode #ytChannelsTable td[data-col="col-total-views"],
+body.light-mode #ytChannelsTable td[data-col="col-total-views"] div,
+body.light-mode #ytChannelsTable td[data-col="col-last-upload"],
+body.light-mode #ytChannelsTable td[data-col="col-last-upload"] div {
+    color: #334155 !important;
+    font-weight: 500 !important;
+}
+
+body.light-mode #ytChannelsTable td[data-col="col-avg-views"],
+body.light-mode #ytChannelsTable td[data-col="col-avg-views"] div {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* 8. Action Dropdown Popovers & More Button */
+body.light-mode .action-dropdown-menu {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .action-dropdown-item {
+    color: #1e293b !important;
+}
+
+body.light-mode .action-dropdown-item:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .action-dropdown-item:hover i {
+    color: var(--accent-cyan) !important;
+}
+
+body.light-mode .btn-more-actions {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+body.light-mode .btn-more-actions:hover,
+body.light-mode .btn-more-actions.active {
+    background: #e2e8f0 !important;
+    color: var(--accent-cyan) !important;
+    border-color: var(--accent-cyan) !important;
+}
+
+body.light-mode .btn-more-actions i {
+    color: inherit !important;
+}
+
+/* 9. Tooltips & Floating Hints */
+body.light-mode .has-tooltip::after,
+body.light-mode .sidebar-toggle-btn::after,
+body.light-mode .sidebar-license-btn.has-tooltip::after,
+body.light-mode.sidebar-collapsed .nav-item::after {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(2, 132, 199, 0.4) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+}
+
+body.light-mode .has-tooltip::before {
+    border-color: transparent transparent #0f172a transparent !important;
+}
+
+body.light-mode .has-tooltip.tooltip-left::before {
+    border-color: transparent transparent transparent #0f172a !important;
+}
+
+body.light-mode .has-tooltip.tooltip-top::before {
+    border-color: #0f172a transparent transparent transparent !important;
+}
+
+/* ==========================================================================
+   10. LIGHT MODE CONTRAST & ACCESSIBILITY MASTER OVERRIDES
+   ========================================================================== */
+
+/* Topbar Sync Button (#btnSyncGpmTopbar) */
+body.light-mode #btnSyncGpmTopbar,
+body.light-mode #btnSyncGpmTopbar * {
+    background: #0284c7 !important;
+    border-color: #0369a1 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+}
+body.light-mode #btnSyncGpmTopbar:hover,
+body.light-mode #btnSyncGpmTopbar:hover * {
+    background: #0369a1 !important;
+    border-color: #075985 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+}
+
+/* YouTube & Saved Channels Tables High Contrast */
+body.light-mode #ytChannelsTable,
+body.light-mode #savedChannelsTable,
+body.light-mode .data-table {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+body.light-mode #ytChannelsTable th,
+body.light-mode #savedChannelsTable th,
+body.light-mode .data-table th {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+}
+body.light-mode #ytChannelsTable td,
+body.light-mode #savedChannelsTable td,
+body.light-mode .data-table td {
+    color: #1e293b !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+body.light-mode #ytChannelsTable td div,
+body.light-mode #savedChannelsTable td div,
+body.light-mode .data-table td div {
+    color: #1e293b !important;
+}
+body.light-mode .badge-ratio {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fcd34d !important;
+    font-weight: 700 !important;
+}
+body.light-mode .badge-ratio.good {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+    border: 1px solid #6ee7b7 !important;
+}
+body.light-mode .badge-ratio.high {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fca5a5 !important;
+}
+
+/* ElevenLabs Voice Cards High Contrast */
+body.light-mode .voice-card,
+body.light-mode .voice-preview-card,
+body.light-mode .voice-library-grid > div {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+}
+body.light-mode .voice-card h4,
+body.light-mode .voice-card p,
+body.light-mode .voice-card span,
+body.light-mode .voice-preview-card h4,
+body.light-mode .voice-preview-card p,
+body.light-mode .voice-preview-card span,
+body.light-mode .voice-info,
+body.light-mode .voice-desc {
+    color: #1e293b !important;
+}
+
+/* Audio Studio & Playlist Local Tracks */
+body.light-mode #localTracksTable td,
+body.light-mode #localTracksTable td div,
+body.light-mode #localTracksTable td span {
+    color: #1e293b !important;
+}
+body.light-mode .audio-category-chip {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+}
+body.light-mode .audio-category-chip.active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0369a1 !important;
+}
+
+/* System Logs & Diagnostics Subtabs */
+body.light-mode .logs-subnav {
+    background: #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+body.light-mode .btn-subtab {
+    color: #334155 !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+}
+body.light-mode .btn-subtab:hover {
+    color: #0f172a !important;
+    background: #f8fafc !important;
+}
+body.light-mode .btn-subtab.active {
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    border: 1px solid #0284c7 !important;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35) !important;
+}
+body.light-mode .btn-subtab.active * {
+    color: #ffffff !important;
+}

@@ -370,6 +370,12 @@ class SaveApiKeysRequest(BaseModel):
     adspower_api_base_url: Optional[str] = ""
     dolphin_api_base_url: Optional[str] = ""
     genlogin_api_base_url: Optional[str] = ""
+    app_language: Optional[str] = "vi"
+    app_theme: Optional[str] = "dark"
+
+class UIPreferencesRequest(BaseModel):
+    language: Optional[str] = None
+    theme: Optional[str] = None
 
 class SystemTraySettingsRequest(BaseModel):
     autostart: Optional[bool] = None
@@ -1224,6 +1230,7 @@ def clear_channel_history(req: ClearChannelHistoryRequest):
 
 @app.post("/api/youtube/channels/scan-now")
 def scan_channel_now(req: ScanChannelRequest):
+    check_active_license("Quét Kênh YouTube")
     result = yt_monitor.scan_single_channel(req.channel_id, max_videos=req.max_videos)
     return result
 
@@ -1397,6 +1404,8 @@ def get_pipeline_status():
 
 @app.post("/api/pipeline/toggle-scheduler")
 def toggle_pipeline_scheduler():
+    if not scheduler.is_running:
+        check_active_license("Bật Tự Động Hóa Auto-Pilot")
     if scheduler.is_running:
         scheduler.stop()
         log_event("WARNING", "Đã tạm dừng Background Automation Scheduler.")
@@ -1453,6 +1462,7 @@ def trigger_process_uploads(bg_tasks: BackgroundTasks):
 
 @app.post("/api/pipeline/scan-all")
 def scan_all_channels_pipeline(bg_tasks: BackgroundTasks):
+    check_active_license("Quét Toàn Bộ Kênh")
     def _do_scan():
         try:
             total = yt_monitor.scan_all_monitored_channels(
@@ -1896,6 +1906,7 @@ def get_campaign(campaign_id: int):
 
 @app.put("/api/campaigns/{campaign_id}")
 def update_campaign(campaign_id: int, req: CreateCampaignRequest):
+    check_active_license("Chỉnh Sửa Chiến Dịch")
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name FROM campaigns WHERE id = ?", (campaign_id,))
@@ -2081,6 +2092,7 @@ def update_campaign(campaign_id: int, req: CreateCampaignRequest):
 
 @app.get("/api/campaigns/{campaign_id}/logs")
 def get_campaign_logs(campaign_id: int):
+    check_active_license("Xem Nhật Ký Chiến Dịch")
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM campaigns WHERE id = ?", (campaign_id,))
@@ -2233,6 +2245,7 @@ def run_engagement_task(task_id: int):
 
 @app.post("/api/campaigns/{campaign_id}/test-run")
 def test_run_campaign(campaign_id: int, bg_tasks: BackgroundTasks):
+    check_active_license("Chạy Thử Chiến Dịch")
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM campaigns WHERE id = ?", (campaign_id,))
@@ -3843,6 +3856,8 @@ def get_api_keys():
     adspower_url = os.getenv("ADSPOWER_API_BASE_URL", db_settings.get("ADSPOWER_API_BASE_URL", "http://local.adspower.net:50325"))
     dolphin_url = os.getenv("DOLPHIN_API_BASE_URL", db_settings.get("DOLPHIN_API_BASE_URL", "http://localhost:3001/v1.0"))
     genlogin_url = os.getenv("GENLOGIN_API_BASE_URL", db_settings.get("GENLOGIN_API_BASE_URL", "http://localhost:55550"))
+    app_language = os.getenv("APP_LANGUAGE", db_settings.get("APP_LANGUAGE", "vi"))
+    app_theme = os.getenv("APP_THEME", db_settings.get("APP_THEME", "dark"))
 
     sub_style = os.getenv("SUBTITLE_STYLE", db_settings.get("SUBTITLE_STYLE", getattr(cfg, 'SUBTITLE_STYLE', 'karaoke_yellow')))
     sub_pos = os.getenv("SUBTITLE_POSITION", db_settings.get("SUBTITLE_POSITION", getattr(cfg, 'SUBTITLE_POSITION', 'center')))
@@ -3879,6 +3894,8 @@ def get_api_keys():
         "adspower_api_base_url": adspower_url,
         "dolphin_api_base_url": dolphin_url,
         "genlogin_api_base_url": genlogin_url,
+        "app_language": app_language,
+        "app_theme": app_theme,
     }
 
 @app.post("/api/settings/keys")
@@ -3949,6 +3966,10 @@ def save_api_keys(req: SaveApiKeysRequest):
         updates["DOLPHIN_API_BASE_URL"] = req.dolphin_api_base_url.strip()
     if req.genlogin_api_base_url is not None and req.genlogin_api_base_url.strip():
         updates["GENLOGIN_API_BASE_URL"] = req.genlogin_api_base_url.strip()
+    if req.app_language is not None and req.app_language.strip():
+        updates["APP_LANGUAGE"] = req.app_language.strip().lower()
+    if req.app_theme is not None and req.app_theme.strip():
+        updates["APP_THEME"] = req.app_theme.strip().lower()
 
     # 1. Save to .env file
     save_env_config(updates)
@@ -3969,6 +3990,30 @@ def save_api_keys(req: SaveApiKeysRequest):
         notifier.bot_token = updates["TELEGRAM_BOT_TOKEN"]
     log_event("INFO", f"Đã cập nhật cấu hình API keys và lưu vào DB: {list(updates.keys())}")
     return {"status": "ok", "message": "Đã lưu cấu hình thành công", "pool_size": yt_scanner.key_pool.total_keys}
+
+@app.get("/api/settings/ui-preferences")
+def get_ui_preferences():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM settings WHERE key IN ('APP_LANGUAGE', 'APP_THEME')")
+    rows = dict(cursor.fetchall())
+    conn.close()
+    return {
+        "language": rows.get("APP_LANGUAGE") or os.getenv("APP_LANGUAGE", "vi"),
+        "theme": rows.get("APP_THEME") or os.getenv("APP_THEME", "dark")
+    }
+
+@app.post("/api/settings/ui-preferences")
+def set_ui_preferences(req: UIPreferencesRequest):
+    conn = get_connection()
+    cursor = conn.cursor()
+    if req.language and req.language in ("vi", "en", "zh"):
+        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('APP_LANGUAGE', ?)", (req.language,))
+    if req.theme and req.theme in ("dark", "light"):
+        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('APP_THEME', ?)", (req.theme,))
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
 
 class UpdateSchedulerSettingsRequest(BaseModel):
     interval_minutes: int = 15

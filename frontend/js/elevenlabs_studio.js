@@ -150,7 +150,7 @@ function renderVoiceGalleryCards(filter = 'all') {
                             ${v.name ? v.name.slice(0, 2).toUpperCase() : 'EL'}
                         </div>
                         <div>
-                            <div style="font-weight: 700; font-size: 13.5px; color: white;">${v.name}</div>
+                            <div style="font-weight: 700; font-size: 13.5px; color: var(--text-primary);">${v.name}</div>
                             <span style="font-size: 11px; color: ${genderColor};"><i class="fa-solid ${genderIcon}"></i> ${genderText} ${v.labels?.accent ? '• ' + v.labels.accent : ''}</span>
                         </div>
                     </div>
@@ -159,7 +159,7 @@ function renderVoiceGalleryCards(filter = 'all') {
                     </span>
                 </div>
 
-                <p style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px; height: 34px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 12px; height: 36px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                     ${v.description || 'Giọng đọc siêu thực chuẩn Studio của ElevenLabs'}
                 </p>
 
@@ -180,13 +180,13 @@ function renderVoiceGalleryCards(filter = 'all') {
 
 function filterVoiceGallery(type, btn) {
     document.querySelectorAll('.el-filter-btn').forEach(b => {
-        b.style.background = 'rgba(255, 255, 255, 0.06)';
-        b.style.color = 'var(--text-muted)';
+        b.classList.remove('active');
+        b.style.background = '';
+        b.style.color = '';
+        b.style.borderColor = '';
     });
     if (btn) {
-        btn.style.background = '#c084fc20';
-        btn.style.color = '#c084fc';
-        btn.style.borderColor = '#c084fc50';
+        btn.classList.add('active');
     }
     renderVoiceGalleryCards(type);
 }

@@ -46,6 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initLanguageVoiceAutoSync();
     ensureAudioCategoriesLoaded();
     if (typeof loadActiveBrowser === 'function') loadActiveBrowser();
+    if (window.themeManager && typeof window.themeManager.init === 'function') window.themeManager.init();
+    if (window.i18n && typeof window.i18n.applyTranslations === 'function') window.i18n.applyTranslations();
+    document.addEventListener('appLanguageChanged', () => {
+        if (typeof window.updateActiveTabHeaders === 'function') {
+            window.updateActiveTabHeaders();
+        }
+    });
 
     // Close column dropdown & action menus when clicking outside
     document.addEventListener('click', (e) => {
@@ -705,61 +712,74 @@ function switchTab(tabId) {
     }
 
     // Update Topbar Title & Subtitle for every sidebar item
-    const tabMeta = {
-        'tab-auto-pipeline': {
-            title: 'Chiến Dịch Tự Động Hóa (Auto-Pilot)',
-            sub: 'Quy trình khép kín: Quét RSS Kênh → Tải MP4 → AI Render 9:16 → Tự Đăng Tài Khoản'
-        },
-        'tab-video-studio': {
-            title: 'Studio Biên Tập Video 9:16',
-            sub: 'Tùy chỉnh mẫu cắt >60s chuẩn Quỹ Beta & xem trước trực tiếp trên điện thoại mô phỏng'
-        },
-        'tab-video-manager': {
-            title: 'Quản Lý Video & Tải Đa Nền Tảng',
-            sub: 'Tải video sạch không watermark từ 7 nền tảng, nạp kho video cục bộ & quản lý thư viện video'
-        },
-        'tab-elevenlabs': {
-            title: 'Phòng Thu Giọng Đọc ElevenLabs AI',
-            sub: 'Tạo giọng đọc siêu thực đa cảm xúc, thử nghiệm âm thanh và kết nối với từng Kênh/Chiến dịch TikTok'
-        },
-        'tab-sources': {
-            title: 'Quản Lý Kênh YouTube Nguồn',
-            sub: 'Theo dõi nguồn RSS chất lượng cao và quét từ khóa tự động tìm kênh mới'
-        },
-        'tab-gpm-farm': {
-            title: 'Dàn Tài Khoản Đa Nền Tảng',
-            sub: 'Quản lý profile, theo dõi tăng trưởng follower và cấu hình thông báo Telegram'
-        },
-        'tab-overview': {
-            title: 'Bảng Điều Khiển Tổng Quan',
-            sub: 'Số liệu tổng quan hệ thống, tài nguyên và tiến độ tăng trưởng'
-        },
-        'tab-pipeline-queue': {
-            title: 'Hàng Đợi & Lịch Đăng (Kanban)',
-            sub: 'Theo dõi 4 giai đoạn: Mới tải về → Đã render 9:16 → Chờ lịch đăng → Đã đăng'
-        },
-        'tab-logs': {
-            title: 'Nhật Ký Hệ Thống',
-            sub: 'Theo dõi toàn bộ sự kiện, tiến trình chạy nền và cảnh báo lỗi thời gian thực'
-        },
-        'tab-ai-usage': {
-            title: 'Quản Lý Mức Sử Dụng & Chi Phí AI',
-            sub: 'Theo dõi lượng token, số lượt gọi API và ngân sách hệ thống theo thời gian thực.'
-        },
-        'tab-audio-studio': {
-            title: 'Kho Âm Thanh & Nhạc Nền (Audio Studio)',
-            sub: 'Tìm kiếm nhạc YouTube No-Copyright, tải lên MP3 và quản lý playlist chủ đề theo kênh'
-        },
-        'tab-settings': {
-            title: 'Cài Đặt API & Cấu Hình Hệ Thống',
-            sub: 'Thiết lập YouTube Data API, OpenAI, Gemini và Telegram Alert Bot'
+    function updateActiveTabHeaders() {
+        if (window.i18n && typeof window.i18n.getTabMeta === 'function') {
+            const meta = window.i18n.getTabMeta(currentTab);
+            const titleEl = document.getElementById('pageTitle');
+            const subEl = document.getElementById('pageSubtitle');
+            if (titleEl) titleEl.textContent = meta.title;
+            if (subEl) subEl.textContent = meta.sub;
+            return;
         }
-    };
-    const meta = tabMeta[tabId] || { title: 'TikTok Beta Farm', sub: 'Hệ thống tự động hóa khai thác YouTube sang TikTok Beta' };
-    const titleEl = document.getElementById('pageTitle');
-    const subEl = document.getElementById('pageSubtitle');
-    if (titleEl) titleEl.textContent = meta.title;
-    if (subEl) subEl.textContent = meta.sub;
+
+        const tabMeta = {
+            'tab-auto-pipeline': {
+                title: 'Chiến Dịch Tự Động Hóa',
+                sub: 'Quy trình khép kín: Quét RSS Kênh → Tải MP4 → AI Render 9:16 → Tự Đăng Tài Khoản'
+            },
+            'tab-video-studio': {
+                title: 'Studio Biên Tập Video 9:16',
+                sub: 'Tùy chỉnh mẫu cắt >60s chuẩn Quỹ Beta & xem trước trực tiếp trên điện thoại mô phỏng'
+            },
+            'tab-video-manager': {
+                title: 'Quản Lý Video & Tải Đa Nền Tảng',
+                sub: 'Tải video sạch không watermark từ 7 nền tảng, nạp kho video cục bộ & quản lý thư viện video'
+            },
+            'tab-elevenlabs': {
+                title: 'Phòng Thu Giọng Đọc ElevenLabs AI',
+                sub: 'Tạo giọng đọc siêu thực đa cảm xúc, thử nghiệm âm thanh và kết nối với từng Kênh/Chiến dịch TikTok'
+            },
+            'tab-sources': {
+                title: 'Quản Lý Kênh YouTube Nguồn',
+                sub: 'Theo dõi nguồn RSS chất lượng cao và quét từ khóa tự động tìm kênh mới'
+            },
+            'tab-gpm-farm': {
+                title: 'Dàn Tài Khoản Đa Nền Tảng',
+                sub: 'Quản lý profile, theo dõi tăng trưởng follower và cấu hình thông báo Telegram'
+            },
+            'tab-overview': {
+                title: 'Bảng Điều Khiển Tổng Quan',
+                sub: 'Số liệu tổng quan hệ thống, tài nguyên và tiến độ tăng trưởng'
+            },
+            'tab-pipeline-queue': {
+                title: 'Hàng Đợi & Lịch Đăng',
+                sub: 'Theo dõi 4 giai đoạn: Mới tải về → Đã render 9:16 → Chờ lịch đăng → Đã đăng'
+            },
+            'tab-logs': {
+                title: 'Nhật Ký Hệ Thống',
+                sub: 'Theo dõi toàn bộ sự kiện, tiến trình chạy nền và cảnh báo lỗi thời gian thực'
+            },
+            'tab-ai-usage': {
+                title: 'Quản Lý Mức Sử Dụng & Chi Phí AI',
+                sub: 'Theo dõi lượng token, số lượt gọi API và ngân sách hệ thống theo thời gian thực.'
+            },
+            'tab-audio-studio': {
+                title: 'Kho Âm Thanh & Nhạc Nền',
+                sub: 'Tìm kiếm nhạc YouTube No-Copyright, tải lên MP3 và quản lý playlist chủ đề theo kênh'
+            },
+            'tab-settings': {
+                title: 'Cài Đặt API & Cấu Hình Hệ Thống',
+                sub: 'Thiết lập YouTube Data API, OpenAI, Gemini và Telegram Alert Bot'
+            }
+        };
+        const meta = tabMeta[currentTab] || { title: 'TikTok Beta Farm', sub: 'Hệ thống tự động hóa khai thác YouTube sang TikTok Beta' };
+        const titleEl = document.getElementById('pageTitle');
+        const subEl = document.getElementById('pageSubtitle');
+        if (titleEl) titleEl.textContent = meta.title;
+        if (subEl) subEl.textContent = meta.sub;
+    }
+    window.updateActiveTabHeaders = updateActiveTabHeaders;
+    updateActiveTabHeaders();
 
     if (tabId === 'tab-auto-pipeline') {
         loadCampaigns();
@@ -788,6 +808,14 @@ function switchTab(tabId) {
         if (typeof loadVideoLibraryTable === 'function') loadVideoLibraryTable();
     } else if (tabId === 'tab-elevenlabs') {
         if (typeof loadElevenLabsStudio === 'function') loadElevenLabsStudio();
+    }
+
+    // Auto-translate newly revealed tab pane if not in base Vietnamese
+    if (window.i18n && typeof window.i18n.translateDOM === 'function' && window.i18n.currentLang !== 'vi') {
+        setTimeout(() => {
+            const pane = document.getElementById(tabId);
+            if (pane) window.i18n.translateDOM(pane);
+        }, 60);
     }
 }
 
@@ -1535,15 +1563,15 @@ function renderYtChannelsTable() {
                 <div style="font-size:13px; font-weight:700; color:var(--text-primary);">${c.subscriber_count ? formatNumber(c.subscriber_count) : '<span class="text-muted">Ẩn</span>'}</div>
             </td>
             <td data-col="col-videos">
-                <div style="font-size:12.5px; color:#cbd5e1;">${c.video_count ? c.video_count.toLocaleString() : 'N/A'}</div>
+                <div style="font-size:12.5px; color:var(--text-secondary);">${c.video_count ? c.video_count.toLocaleString() : 'N/A'}</div>
             </td>
             <td data-col="col-avg-views">
-                <div style="font-size:13px; font-weight:700; color:#fff;">
+                <div style="font-size:13px; font-weight:700; color:var(--text-primary);">
                     ${c.avg_views ? formatNumber(c.avg_views) : '<span class="text-muted">N/A</span>'}
                 </div>
             </td>
             <td data-col="col-total-views">
-                <div style="font-size:12.5px; color:#cbd5e1;">${c.total_view_count ? formatNumber(c.total_view_count) : 'N/A'}</div>
+                <div style="font-size:12.5px; color:var(--text-secondary);">${c.total_view_count ? formatNumber(c.total_view_count) : 'N/A'}</div>
             </td>
             <td data-col="col-ratio">
                 ${ratioBadge || '<span class="text-muted" style="font-size:11px;">—</span>'}
@@ -3776,6 +3804,9 @@ async function saveFollowerSchedulerSettings(btn) {
 
 // 5. Upload Modal
 function openUploadModal(videoId, specificPath = null) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Đăng Video Lên Nick')) {
+        return;
+    }
     const video = cachedVideos.find(v => v.id == videoId || v.yt_video_id === videoId);
     if (!video) {
         showToast('Không tìm thấy thông tin video!', 'warning');
@@ -4425,12 +4456,12 @@ function renderSavedChannelsTable() {
 
                 <!-- Col 5: Tổng Video -->
                 <td>
-                    <div style="font-size:12.5px; color:#cbd5e1;">${c.video_count ? c.video_count.toLocaleString() : 'N/A'}</div>
+                    <div style="font-size:12.5px; color:var(--text-secondary);">${c.video_count ? c.video_count.toLocaleString() : 'N/A'}</div>
                 </td>
 
                 <!-- Col 6: Lượt Xem TB -->
                 <td>
-                    <div style="font-weight:700; color:#fff; font-size:13px;">${c.avg_views ? formatNumber(c.avg_views) : '<span class="text-muted">N/A</span>'}</div>
+                    <div style="font-weight:700; color:var(--text-primary); font-size:13px;">${c.avg_views ? formatNumber(c.avg_views) : '<span class="text-muted">N/A</span>'}</div>
                 </td>
 
                 <!-- Col 7: Tỷ Lệ View/Sub (Separate Column) -->
@@ -4439,7 +4470,7 @@ function renderSavedChannelsTable() {
                 </td>
 
                 <!-- Col 8: Video Mới Nhất -->
-                <td><span style="font-size:12px; color:#cbd5e1;">${lastUploadText}</span></td>
+                <td><span style="font-size:12px; color:var(--text-secondary);">${lastUploadText}</span></td>
 
                 <!-- Col 9: Tần Suất Đăng -->
                 <td><span class="badge badge-purple">${cadenceDesc}</span></td>
@@ -4633,6 +4664,9 @@ async function refreshActiveChannelStats(btn) {
 }
 
 async function scanSingleChannel(channelId, btn, maxVideos = null) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Quét Kênh YouTube')) {
+        return;
+    }
     closeAllActionMenus();
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
@@ -4675,6 +4709,9 @@ async function scanSingleChannel(channelId, btn, maxVideos = null) {
 }
 
 async function scanAllSavedChannels(btn) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Quét Toàn Bộ Kênh')) {
+        return;
+    }
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
@@ -5458,7 +5495,7 @@ function renderKanbanPipeline(videos, uploadTasks) {
 
     const renderCard = (v, actionType) => `
         <div class="kanban-task-card">
-            <strong style="font-size:12px; color:#fff; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHtml(v.title || 'Video #' + v.id)}</strong>
+            <strong style="font-size:12px; color:var(--text-primary); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHtml(v.title || 'Video #' + v.id)}</strong>
             <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-muted);">
                 <span><i class="fa-solid fa-clock"></i> ${v.duration || 65}s</span>
                 <span class="badge badge-cyan" style="font-size:10px;">${escapeHtml(v.channel_name || 'Kênh')}</span>
@@ -5493,7 +5530,7 @@ function renderKanbanPipeline(videos, uploadTasks) {
             const isFailed = t.status === 'failed';
             return `
             <div class="kanban-task-card" style="${isFailed ? 'border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.05);' : ''}">
-                <strong style="font-size:12px; color:#fff; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${escapeHtml(t.video_title || t.title || 'Task #' + t.id)}">
+                <strong style="font-size:12px; color:var(--text-primary); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${escapeHtml(t.video_title || t.title || 'Task #' + t.id)}">
                     ${escapeHtml(t.video_title || t.title || 'Task #' + t.id)}
                 </strong>
                 <div style="font-size:11px; color:${isFailed ? '#ef4444' : 'var(--accent-gold)'}; display:flex; align-items:center; gap:5px; margin-top:2px;">
@@ -5524,7 +5561,7 @@ function renderKanbanPipeline(videos, uploadTasks) {
             const nick = t.tiktok_username ? (t.tiktok_username.startsWith('@') ? t.tiktok_username : '@' + t.tiktok_username) : (t.gpm_profile_name || 'GPM');
             return `
             <div class="kanban-task-card">
-                <strong style="font-size:12px; color:#fff; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${escapeHtml(t.video_title || t.title || 'Task #' + t.id)}">
+                <strong style="font-size:12px; color:var(--text-primary); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${escapeHtml(t.video_title || t.title || 'Task #' + t.id)}">
                     ${escapeHtml(t.video_title || t.title || 'Task #' + t.id)}
                 </strong>
                 <div style="font-size:11px; color:var(--accent-green); display:flex; align-items:center; gap:5px; margin-top:2px;">
@@ -5575,6 +5612,10 @@ async function triggerProcessUploads() {
 
 // Master Scheduler Toggle
 async function toggleMasterScheduler(btn) {
+    const isCurrentlyRunning = localStorage.getItem('scheduler_running') === '1';
+    if (!isCurrentlyRunning && window.LicenseManager && !window.LicenseManager.requireLicense('Bật Tự Động Hóa Auto-Pilot')) {
+        return;
+    }
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Lưu...';
@@ -5601,6 +5642,9 @@ async function toggleMasterScheduler(btn) {
 
 // Scan All Channels
 async function scanAllChannelsPipeline(btn) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Quét Kênh Ngay Lập Tức')) {
+        return;
+    }
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
@@ -6620,6 +6664,9 @@ async function deleteCampaign(id) {
 let editCampaignOriginalData = null;
 
 async function openEditCampaignModal(id) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Chỉnh Sửa Chiến Dịch')) {
+        return;
+    }
     const modal = document.getElementById('editCampaignModal');
     if (!modal) return;
     switchModalTab('edit', 'source');
@@ -7032,6 +7079,9 @@ function setEditCampaignSchedulePreset(val) {
 
 async function handleEditCampaignSubmit(e) {
     e.preventDefault();
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Lưu Chỉnh Sửa Chiến Dịch')) {
+        return;
+    }
     const campId = document.getElementById('editCampaignId')?.value;
     if (!campId) return;
 
@@ -7265,6 +7315,9 @@ async function handleEditCampaignSubmit(e) {
 let activeLogCampaignId = null;
 
 async function openCampaignLogs(campaignId, campaignName) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Xem Nhật Ký Chiến Dịch')) {
+        return;
+    }
     activeLogCampaignId = campaignId;
     const modal = document.getElementById('campaignLogsModal');
     if (!modal) return;
@@ -7496,6 +7549,9 @@ function switchCampaignDetailTab(tab) {
 }
 
 async function triggerCampaignTestRun() {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Chạy Thử Chiến Dịch')) {
+        return;
+    }
     if (!activeLogCampaignId) return;
     const btn = document.getElementById('btnTestRunCampaign');
     if (btn) {
@@ -7524,6 +7580,9 @@ async function triggerCampaignTestRun() {
 }
 
 async function triggerDirectCampaignRun(id, name) {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Chạy Thử Chiến Dịch')) {
+        return;
+    }
     showToast(`⚡ Đang gửi yêu cầu quét và kiểm tra chạy thử cho chiến dịch '${name}'...`);
     try {
         const res = await fetch(`/api/campaigns/${id}/test-run`, { method: 'POST' });
@@ -8334,6 +8393,9 @@ async function renderStudioActiveVideo(btn) {
 }
 
 function openUploadModalForActiveStudioVideo() {
+    if (window.LicenseManager && !window.LicenseManager.requireLicense('Đăng Video Lên Nick')) {
+        return;
+    }
     if (!activeStudioVideo) {
         showToast('Vui lòng chọn video trước!', true);
         return;
@@ -8460,6 +8522,15 @@ async function loadApiKeySettings() {
 
         const genEl = document.getElementById('settingGenLoginUrl');
         if (genEl) genEl.value = data.genlogin_api_base_url || '';
+
+        if (data.app_language) {
+            const langEl = document.getElementById('settingAppLanguage');
+            if (langEl) langEl.value = data.app_language;
+        }
+        if (data.app_theme) {
+            const themeEl = document.getElementById('settingAppTheme');
+            if (themeEl) themeEl.value = data.app_theme;
+        }
 
         // Render key pool status table
         renderKeyPoolTable(data.youtube_key_pool || []);
@@ -8847,6 +8918,8 @@ async function saveApiKeySettings(btn) {
         adspower_api_base_url: document.getElementById('settingAdsPowerUrl')?.value.trim() || '',
         dolphin_api_base_url: document.getElementById('settingDolphinUrl')?.value.trim() || '',
         genlogin_api_base_url: document.getElementById('settingGenLoginUrl')?.value.trim() || '',
+        app_language: document.getElementById('settingAppLanguage')?.value || 'vi',
+        app_theme: document.getElementById('settingAppTheme')?.value || 'dark',
     };
 
     try {
@@ -8858,6 +8931,16 @@ async function saveApiKeySettings(btn) {
         const data = await res.json();
         if (res.ok && data.status === 'ok') {
             await saveSchedulerSettings(null, false);
+
+            // Apply selected language and theme immediately and persist to DB
+            const savedLang = document.getElementById('settingAppLanguage')?.value;
+            const savedTheme = document.getElementById('settingAppTheme')?.value;
+            if (savedLang && typeof window.setAppLanguage === 'function') {
+                window.setAppLanguage(savedLang, true);
+            }
+            if (savedTheme && typeof window.setAppTheme === 'function') {
+                window.setAppTheme(savedTheme, true);
+            }
 
             // Save cleanup retention policy
             try {
@@ -11074,7 +11157,7 @@ function renderLocalTracksTable(tracks) {
         return `
             <tr>
                 <td>
-                    <div class="table-text-truncate" style="max-width: 260px; font-weight:600; color:#fff;" title="${escapeHtml(t.filename)}">
+                    <div class="table-text-truncate" style="max-width: 260px; font-weight:600; color:var(--text-primary);" title="${escapeHtml(t.filename)}">
                         <i class="fa-solid fa-file-audio text-cyan" style="margin-right:6px;"></i>
                         ${escapeHtml(t.filename)}
                     </div>

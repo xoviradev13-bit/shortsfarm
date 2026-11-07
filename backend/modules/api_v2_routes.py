@@ -24,10 +24,10 @@ def get_active_browser():
     active = browser_manager.get_active_browser()
     options = [
         {"id": "auto", "name": "Tự động phát hiện (Auto-detect)", "desc": "Tự kết nối trình duyệt nào đang mở"},
-        {"id": "gpm", "name": "GPMLogin", "desc": "Port 9495 / 19995"},
-        {"id": "adspower", "name": "AdsPower Browser", "desc": "Port 50325 (SunBrowser)"},
-        {"id": "dolphin", "name": "Dolphin Anty", "desc": "Port 3001 (Automation Mode)"},
-        {"id": "genlogin", "name": "GenLogin", "desc": "Port 55550"},
+        {"id": "gpm", "name": "GPMLogin", "desc": "Antidetect Browser"},
+        {"id": "adspower", "name": "AdsPower Browser", "desc": "SunBrowser"},
+        {"id": "dolphin", "name": "Dolphin Anty", "desc": "Automation Mode"},
+        {"id": "genlogin", "name": "GenLogin", "desc": "Antidetect Browser"},
     ]
     return {
         "active_browser": active,

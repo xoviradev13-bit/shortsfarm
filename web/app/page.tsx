@@ -56,14 +56,6 @@ import { TRANSLATIONS, Language } from '@/lib/translations';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shortsstack.com';
 
-function Divider({ className = 'my-6 sm:my-10' }: { className?: string }) {
-  return (
-    <div data-reveal="line" className={`relative max-w-7xl mx-auto px-4 pointer-events-none ${className}`}>
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-rose-500/35 to-transparent" />
-    </div>
-  );
-}
-
 export default function LandingPage() {
   // Language Selection (vi, en, zh) - default to 'vi'
   const [lang, setLang] = useState<Language>('vi');
@@ -1013,13 +1005,10 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Aesthetic Glowing Gradient Divider positioned right below the platform list */}
-        <Divider className="mt-4 sm:mt-5 mb-8 sm:mb-12" />
-
         {/* =============================================================== */}
         {/* 3. INTERACTIVE SOFTWARE WORKSPACE DEMO SHOWCASE (Remotion Real App Studio) */}
         {/* =============================================================== */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-12">
           <div data-reveal="zoom" className="relative rounded-2xl border border-slate-800 bg-[#0A0E1A] text-slate-100 shadow-2xl shadow-rose-950/20 overflow-hidden text-left">
             {/* Desktop Window Titlebar (macOS Style Dots + Live System Pills) */}
             <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 border-b border-slate-800/80 px-3 sm:px-4 py-2.5 sm:py-3 bg-[#0d1322]">
@@ -1668,20 +1657,17 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Aesthetic Glowing Gradient Divider */}
-      <Divider />
-
       {/* ===================================================================== */}
       {/* 5. FEATURES BENTO GRID (Deep Technical Capabilities) */}
       {/* ===================================================================== */}
-      <section id="features" className="pt-10 pb-12 sm:pt-14 sm:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative overflow-hidden isolate">
+      <section id="features" className="pt-10 pb-10 sm:pt-14 sm:pb-14 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative overflow-hidden isolate">
         {/* Globe Ambient Glows */}
         <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
           <div className="absolute -top-20 right-1/4 w-80 h-80 bg-rose-200/20 rounded-full blur-3xl" />
-          <div className="absolute -bottom-20 left-1/4 w-80 h-80 bg-indigo-200/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-10 left-1/4 w-80 h-80 bg-indigo-200/20 rounded-full blur-3xl" />
         </div>
 
-        <div data-reveal className="text-center max-w-3xl mx-auto mb-14 relative z-10">
+        <div data-reveal className="text-center max-w-3xl mx-auto mb-10 sm:mb-12 relative z-10">
           <span className="text-xs uppercase font-bold tracking-wider px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
             {t.features.badge}
           </span>
@@ -1730,22 +1716,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Aesthetic Glowing Gradient Divider */}
-      <Divider />
-
       {/* ===================================================================== */}
       {/* 6. ANTIDETECT BROWSERS SHOWCASE (GPMLogin & GenLogin) */}
       {/* ===================================================================== */}
-      <section id="browsers" className="pt-8 pb-14 sm:pt-10 sm:pb-16 relative overflow-hidden isolate">
+      <section id="browsers" className="pt-10 pb-12 sm:pt-12 sm:pb-16 relative overflow-hidden isolate">
         {/* Architectural Lines + Globe Ambient Glows */}
         <div className="absolute inset-0 pointer-events-none select-none z-0 overflow-hidden">
-          <div className="absolute inset-0 bg-lines-light opacity-30 [mask-image:radial-gradient(ellipse_at_center,black_60%,transparent_90%)]" />
-          <div className="absolute -top-10 left-1/4 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-lines-light opacity-30 [mask-image:linear-gradient(to_bottom,black_85%,transparent_100%)]" />
+          <div className="absolute -top-16 left-1/4 w-96 h-96 bg-emerald-200/35 rounded-full blur-3xl" />
           <div className="absolute -bottom-20 right-1/4 w-96 h-96 bg-indigo-200/25 rounded-full blur-3xl" />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div data-reveal className="text-center max-w-3xl mx-auto mb-12">
+          <div data-reveal className="text-center max-w-3xl mx-auto mb-10 sm:mb-12">
             <span className="text-xs uppercase font-bold tracking-wider px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               {t.browsers.badge}
             </span>
@@ -1812,9 +1795,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* Aesthetic Glowing Gradient Divider */}
-      <Divider />
 
       {/* ===================================================================== */}
       {/* 7. INTERACTIVE REVENUE SIMULATOR (Standout High-Engagement Widget) */}
@@ -1955,9 +1935,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* Aesthetic Glowing Gradient Divider */}
-      <Divider />
 
       {/* ===================================================================== */}
       {/* 8. TRANSPARENT LIFETIME PRICING (All Lifetime, 1 / 3 / 5 PCs) */}
@@ -2111,9 +2088,6 @@ export default function LandingPage() {
         </p>
       </section>
 
-      {/* Aesthetic Glowing Gradient Divider */}
-      <Divider />
-
       {/* ===================================================================== */}
       {/* 9. TESTIMONIALS & REVIEWS */}
       {/* ===================================================================== */}
@@ -2180,9 +2154,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Aesthetic Glowing Gradient Divider */}
-      <Divider />
-
       {/* ===================================================================== */}
       {/* 10. COLLAPSIBLE FAQ ACCORDION */}
       {/* ===================================================================== */}
@@ -2241,9 +2212,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* Aesthetic Glowing Gradient Divider */}
-      <Divider />
 
       {/* ===================================================================== */}
       {/* 11. CALL TO ACTION (CTA) SECTION */}
@@ -2343,9 +2311,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* Aesthetic Glowing Gradient Divider */}
-      <Divider />
 
       {/* ===================================================================== */}
       {/* 12. CONTACT SECTION (Direct Channels & Inquiries Form) */}

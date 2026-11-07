@@ -118,6 +118,7 @@ SERVER_PORT = 8088
 
 # Application Version & Licensing Portal
 APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 LICENSE_PORTAL_URL = os.getenv("LICENSE_PORTAL_URL", "http://localhost:3000").rstrip("/")
 FALLBACK_PORTAL_URL = os.getenv("FALLBACK_PORTAL_URL", "https://shortsstack.com").rstrip("/")
 

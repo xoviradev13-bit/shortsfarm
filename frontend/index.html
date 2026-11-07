@@ -6,6 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
     <title>ShortsStack & AI Video Engine</title>
+    <script>
+        (function () {
+            var theme = localStorage.getItem('app_theme') || 'dark';
+            var html = document.documentElement;
+            html.setAttribute('data-theme', theme);
+            if (theme === 'light') {
+                html.style.colorScheme = 'light';
+            }
+        })();
+    </script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +24,8 @@
         rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css?v=20261106_01">
+    <link rel="stylesheet" href="/static/css/style.css?v=20261107_02">
+    <link rel="stylesheet" href="/static/css/theme.css?v=20261107_12">
     <link rel="icon" type="image/x-icon" href="/logo/app-logo.ico">
     <link rel="shortcut icon" type="image/x-icon" href="/logo/app-logo.ico">
     <link rel="apple-touch-icon" href="/logo/app-logo.png">
@@ -29,7 +40,10 @@
                 <img src="/logo/app-logo.png" alt="ShortsStack" class="brand-logo-img">
             </div>
             <div class="brand-text">
-                <h2>SHORTSSTACK</h2>
+                <div style="display: flex; align-items: center; gap: 7px;">
+                    <h2>SHORTSSTACK</h2>
+                    <span class="app-version-badge" id="sidebarAppVersionBadge">v1.0.1</span>
+                </div>
                 <p>AI Engine & Auto Upload</p>
             </div>
             <!-- Toggle anchored on brand bottom divider -->
@@ -40,51 +54,64 @@
 
 
         <nav class="nav-menu">
-            <div class="nav-section-title">QUY TRÌNH TỰ ĐỘNG</div>
+            <div class="nav-section-title" data-i18n="nav_auto_pipeline_title">QUY TRÌNH TỰ ĐỘNG</div>
             <a href="#auto-pipeline" class="nav-item active" data-tab="tab-auto-pipeline"
-                data-tooltip="Chiến Dịch Tự Động">
-                <i class="fa-solid fa-bolt"></i> <span>Chiến Dịch Tự Động</span>
+                data-i18n-tooltip="nav_campaigns" data-tooltip="Chiến Dịch Tự Động">
+                <i class="fa-solid fa-bolt"></i> <span data-i18n="nav_campaigns">Chiến Dịch Tự Động</span>
             </a>
-            <a href="#video-studio" class="nav-item" data-tab="tab-video-studio" data-tooltip="Studio & Công Thức Edit">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Studio Biên Tập Video</span>
-            </a>
-
-            <div class="nav-section-title">TÀI NGUYÊN</div>
-            <a href="#video-manager" class="nav-item" data-tab="tab-video-manager"
-                data-tooltip="Quản Lý Video & Tải Đa Nền Tảng">
-                <i class="fa-solid fa-film"></i> <span>Quản Lý Video</span>
-            </a>
-            <a href="#elevenlabs" class="nav-item" data-tab="tab-elevenlabs"
-                data-tooltip="Phòng Thu Giọng Đọc ElevenLabs AI">
-                <i class="fa-solid fa-microphone-lines" style="color: #c084fc;"></i> <span>Phòng Thu ElevenLabs</span>
-            </a>
-            <a href="#sources" class="nav-item" data-tab="tab-sources" data-tooltip="Kênh YouTube Nguồn">
-                <i class="fa-brands fa-youtube" style="color:#ff0000;"></i> <span>Kênh Nguồn YouTube</span>
-            </a>
-            <a href="#audio-studio" class="nav-item" data-tab="tab-audio-studio" data-tooltip="Kho Âm Thanh & Nhạc Nền">
-                <i class="fa-solid fa-music" style="color:#00f2fe;"></i> <span>Kho Âm Thanh & BGM</span>
-            </a>
-            <a href="#gpm-farm" class="nav-item" data-tab="tab-gpm-farm"
-                data-tooltip="Dàn Tài Khoản Đa Nền Tảng (TikTok, YouTube, Facebook)">
-                <i class="fa-solid fa-robot" style="color:#10b981;"></i> <span>Quản Lý Dàn Account</span>
+            <a href="#video-studio" class="nav-item" data-tab="tab-video-studio" data-i18n-tooltip="nav_studio"
+                data-tooltip="Studio Biên Tập Video">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="nav_studio">Studio Biên Tập
+                    Video</span>
             </a>
 
-            <div class="nav-section-title">GIÁM SÁT & HỆ THỐNG</div>
-            <a href="#overview" class="nav-item" data-tab="tab-overview" data-tooltip="Tổng Quan">
-                <i class="fa-solid fa-chart-pie"></i> <span>Tổng Quan</span>
+            <div class="nav-section-title" data-i18n="nav_resources_title">TÀI NGUYÊN</div>
+            <a href="#video-manager" class="nav-item" data-tab="tab-video-manager" data-i18n-tooltip="nav_video_manager"
+                data-tooltip="Quản Lý Video">
+                <i class="fa-solid fa-film"></i> <span data-i18n="nav_video_manager">Quản Lý Video</span>
             </a>
-            <a href="#pipeline-queue" class="nav-item" data-tab="tab-pipeline-queue"
+            <a href="#elevenlabs" class="nav-item" data-tab="tab-elevenlabs" data-i18n-tooltip="nav_elevenlabs"
+                data-tooltip="Phòng Thu ElevenLabs">
+                <i class="fa-solid fa-microphone-lines" style="color: #c084fc;"></i> <span
+                    data-i18n="nav_elevenlabs">Phòng Thu ElevenLabs</span>
+            </a>
+            <a href="#sources" class="nav-item" data-tab="tab-sources" data-i18n-tooltip="nav_sources"
+                data-tooltip="Kênh Nguồn YouTube">
+                <i class="fa-brands fa-youtube" style="color:#ff0000;"></i> <span data-i18n="nav_sources">Kênh Nguồn
+                    YouTube</span>
+            </a>
+            <a href="#audio-studio" class="nav-item" data-tab="tab-audio-studio" data-i18n-tooltip="nav_audio_studio"
+                data-tooltip="Kho Âm Thanh & BGM">
+                <i class="fa-solid fa-music" style="color:#00f2fe;"></i> <span data-i18n="nav_audio_studio">Kho Âm Thanh
+                    & BGM</span>
+            </a>
+            <a href="#gpm-farm" class="nav-item" data-tab="tab-gpm-farm" data-i18n-tooltip="nav_gpm_farm"
+                data-tooltip="Quản Lý Dàn Account">
+                <i class="fa-solid fa-robot" style="color:#10b981;"></i> <span data-i18n="nav_gpm_farm">Quản Lý Dàn
+                    Account</span>
+            </a>
+
+            <div class="nav-section-title" data-i18n="nav_monitor_title">GIÁM SÁT & HỆ THỐNG</div>
+            <a href="#overview" class="nav-item" data-tab="tab-overview" data-i18n-tooltip="nav_overview"
+                data-tooltip="Tổng Quan">
+                <i class="fa-solid fa-chart-pie"></i> <span data-i18n="nav_overview">Tổng Quan</span>
+            </a>
+            <a href="#pipeline-queue" class="nav-item" data-tab="tab-pipeline-queue" data-i18n-tooltip="nav_queue"
                 data-tooltip="Hàng Đợi & Lịch Đăng">
-                <i class="fa-solid fa-list-check"></i> <span>Hàng Đợi & Lịch Đăng</span>
+                <i class="fa-solid fa-list-check"></i> <span data-i18n="nav_queue">Hàng Đợi & Lịch Đăng</span>
             </a>
-            <a href="#ai-usage" class="nav-item" data-tab="tab-ai-usage" data-tooltip="Chi Phí & Quản Lý AI">
-                <i class="fa-solid fa-brain" style="color:#a855f7;"></i> <span>Chi Phí & Quản Lý AI</span>
+            <a href="#ai-usage" class="nav-item" data-tab="tab-ai-usage" data-i18n-tooltip="nav_ai_usage"
+                data-tooltip="Chi Phí & Quản Lý AI">
+                <i class="fa-solid fa-brain" style="color:#a855f7;"></i> <span data-i18n="nav_ai_usage">Chi Phí & Quản
+                    Lý AI</span>
             </a>
-            <a href="#logs" class="nav-item" data-tab="tab-logs" data-tooltip="Nhật Ký Hệ Thống">
-                <i class="fa-solid fa-terminal"></i> <span>Nhật Ký Hệ Thống</span>
+            <a href="#logs" class="nav-item" data-tab="tab-logs" data-i18n-tooltip="nav_logs"
+                data-tooltip="Nhật Ký Hệ Thống">
+                <i class="fa-solid fa-terminal"></i> <span data-i18n="nav_logs">Nhật Ký Hệ Thống</span>
             </a>
-            <a href="#settings" class="nav-item" data-tab="tab-settings" data-tooltip="Cài Đặt">
-                <i class="fa-solid fa-gear"></i> <span>Cài Đặt</span>
+            <a href="#settings" class="nav-item" data-tab="tab-settings" data-i18n-tooltip="nav_settings"
+                data-tooltip="Cài Đặt">
+                <i class="fa-solid fa-gear"></i> <span data-i18n="nav_settings">Cài Đặt</span>
             </a>
         </nav>
 
@@ -99,6 +126,13 @@
                     </span>
                 </div>
             </div>
+            <!-- License Button moved from Topbar to Sidebar Bottom below Computer Name -->
+            <button class="sidebar-license-btn has-tooltip tooltip-top" id="btnTopbarLicense"
+                onclick="window.LicenseManager.openLicenseModal()"
+                data-tooltip="Xem thông tin bản quyền hoặc kích hoạt License Key">
+                <i class="fa-solid fa-shield-halved" id="topbarLicenseIcon" style="color:var(--text-muted);"></i>
+                <span id="topbarLicenseText" data-i18n="topbar_license">Bản Quyền</span>
+            </button>
         </div>
     </aside>
 
@@ -107,17 +141,25 @@
         <!-- Top Navigation Bar (Sticky across all views) -->
         <header class="topbar">
             <div class="topbar-title">
-                <h1 id="pageTitle">Chiến Dịch Tự Động Hóa (Auto-Pilot)</h1>
+                <h1 id="pageTitle">Chiến Dịch Tự Động Hóa</h1>
                 <p class="subtitle" id="pageSubtitle">Quy trình khép kín: Quét RSS Kênh → Tải MP4 → AI Render 9:16 → Tự
                     Đăng Tài Khoản</p>
             </div>
             <div class="topbar-actions">
-                <button class="btn btn-secondary btn-sm has-tooltip tooltip-left" id="btnTopbarLicense"
-                    onclick="window.LicenseManager.openLicenseModal()"
-                    data-tooltip="Xem thông tin bản quyền hoặc kích hoạt License Key">
-                    <i class="fa-solid fa-shield-halved" id="topbarLicenseIcon" style="color:var(--text-muted);"></i>
-                    <i class="fa-solid fa-shield-halved" id="topbarLicenseIcon" style="color: #ffffff;"></i>
-                    <span id="topbarLicenseText">Bản Quyền</span>
+                <div class="lang-selector-wrapper">
+                    <select id="selectAppLanguage" class="btn btn-secondary btn-sm lang-select"
+                        onchange="window.setAppLanguage(this.value)" data-i18n-tooltip="topbar_lang_tooltip"
+                        title="Chọn ngôn ngữ / Select Language / 选择语言">
+                        <option value="vi">VI - Tiếng Việt</option>
+                        <option value="en">EN - English</option>
+                        <option value="zh">ZH - 简体中文</option>
+                    </select>
+                </div>
+                <button class="btn btn-secondary btn-sm theme-toggle-btn has-tooltip tooltip-left" id="themeToggleBtn"
+                    onclick="window.toggleAppTheme()" data-i18n-tooltip="topbar_theme_tooltip"
+                    data-tooltip="Chuyển sang giao diện Sáng/Tối">
+                    <i class="fa-solid fa-moon" id="themeToggleIcon"></i>
+                    <span id="themeToggleText" data-i18n="topbar_theme_dark">Tối</span>
                 </button>
                 <button class="btn btn-info btn-sm has-tooltip tooltip-left" id="btnUpdateAvailable"
                     onclick="window.LicenseManager.openUpdateModal()" style="display:none;"
@@ -128,15 +170,15 @@
                     <select id="selectActiveBrowser" class="btn btn-secondary btn-sm"
                         onchange="changeActiveBrowser(this.value)"
                         title="Chọn trình duyệt Antidetect để đồng bộ và điều khiển">
-                        <option value="gpm" selected>🌐 GPMLogin (Port 19995)</option>
-                        <option value="genlogin">🚀 GenLogin (Port 55550)</option>
+                        <option value="gpm" selected>🌐 GPMLogin</option>
+                        <option value="genlogin">🚀 GenLogin</option>
                         <option value="adspower" style="display: none;">AdsPower</option>
                         <option value="dolphin" style="display: none;">Dolphin Anty</option>
                     </select>
                 </div>
                 <button class="btn btn-secondary btn-sm has-tooltip tooltip-left" id="btnSyncGpmTopbar"
                     onclick="syncGPMProfiles(this)" data-tooltip="Đồng bộ lại danh sách Profiles từ Trình Duyệt">
-                    <i class="fa-solid fa-rotate"></i> Đồng Bộ
+                    <i class="fa-solid fa-rotate"></i> <span data-i18n="topbar_sync">Đồng Bộ</span>
                 </button>
             </div>
         </header>
@@ -226,7 +268,7 @@
 
                 <div class="dashboard-row">
                     <!-- Quick Actions Panel -->
-                    <div class="glass-panel col-8">
+                    <div class="glass-panel col-8" style="display: flex; flex-direction: column;">
                         <div class="panel-header"
                             style="display:flex; justify-content:space-between; align-items:center;">
                             <h3><i class="fa-solid fa-bolt"></i> Thao Tác Nhanh</h3>
@@ -237,7 +279,7 @@
                             </button>
                         </div>
                         <div class="quick-actions-grid"
-                            style="grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); margin-top: 14px;">
+                            style="grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); flex: 1; display: grid; align-content: center; justify-content: center; margin: auto 0; padding: 12px 0;">
                             <div class="action-box" onclick="switchTab('tab-auto-pipeline')">
                                 <i class="fa-solid fa-bolt" style="color:var(--accent-purple);"></i>
                                 <h4>Chiến Dịch Tự Động</h4>
@@ -295,7 +337,7 @@
                 <div class="panel-header" style="margin-bottom: 24px;">
                     <div>
                         <h2
-                            style="font-size: 20px; font-weight: 800; margin: 0; color: white; display: flex; align-items: center; gap: 10px;">
+                            style="font-size: 20px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 10px; color: var(--text-primary);">
                             <i class="fa-solid fa-film" style="color: var(--accent-pink);"></i> Quản Lý Video & Tải Đa
                             Nền Tảng
                         </h2>
@@ -317,7 +359,7 @@
                                 <i class="fa-solid fa-cloud-arrow-down" style="color: #f59e0b; font-size: 16px;"></i>
                             </div>
                             <div>
-                                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: white;">Tải Video 7 Nền
+                                <h4 style="margin: 0; font-size: 15px; font-weight: 700;">Tải Video 7 Nền
                                     Tảng Sạch</h4>
                                 <span style="font-size: 11.5px; color: var(--text-muted);">Bóc tách CDN không dính logo
                                     watermark</span>
@@ -381,7 +423,7 @@
                                 <i class="fa-solid fa-list-check" style="color: #22c55e; font-size: 16px;"></i>
                             </div>
                             <div>
-                                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: white;">Thư Viện Video
+                                <h4 style="margin: 0; font-size: 15px; font-weight: 700;">Thư Viện Video
                                     (Kho Video Đã Tải & Sẵn Sàng Xử Lý)</h4>
                                 <span style="font-size: 11px; color: var(--text-muted);">Quản lý trạng thái xử lý AI và
                                     lịch đăng</span>
@@ -450,7 +492,7 @@
                             </div>
                             <div>
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: white;">Hạn Mức Ký
+                                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 700;">Hạn Mức Ký
                                         Tự &amp; Gói Cước ElevenLabs</h4>
                                     <span id="elStudioTierBadge" class="badge"
                                         style="font-size: 10.5px; padding: 2px 8px; border-radius: 6px;">
@@ -490,8 +532,8 @@
                                 <i class="fa-solid fa-users" style="color: #f59e0b; font-size: 16px;"></i>
                             </div>
                             <div>
-                                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: white;">Thư Viện Giọng
-                                    Đọc ElevenLabs (Voice Gallery)</h4>
+                                <h4 style="margin: 0; font-size: 15px; font-weight: 700;">Thư Viện Giọng
+                                    Đọc ElevenLabs</h4>
                                 <span style="font-size: 11.5px; color: var(--text-muted);">Nghe thử mẫu thu trực tiếp và
                                     bấm "Chọn Giọng" để sử dụng</span>
                             </div>
@@ -499,9 +541,9 @@
 
                         <!-- Filter Buttons -->
                         <div style="display: flex; gap: 6px;">
-                            <button class="btn btn-secondary btn-sm el-filter-btn" type="button"
+                            <button class="btn btn-secondary btn-sm el-filter-btn active" type="button"
                                 onclick="filterVoiceGallery('all', this)"
-                                style="height: 30px; font-size: 11.5px; padding: 0 12px; background: #c084fc20; color: #c084fc; border-color: #c084fc50;">
+                                style="height: 30px; font-size: 11.5px; padding: 0 12px;">
                                 Tất Cả
                             </button>
                             <button class="btn btn-secondary btn-sm el-filter-btn" type="button"
@@ -1416,7 +1458,7 @@
                                         <th style="width: 100px;">Định Dạng</th>
                                         <th style="width: 110px;">Dung Lượng</th>
                                         <th style="width: 150px;">Ngày Thêm</th>
-                                        <th style="width: 260px;" class="text-center">Nghe Thử (Player)</th>
+                                        <th style="width: 260px;" class="text-center">Nghe Thử</th>
                                         <th style="width: 80px;" class="text-center">Xóa</th>
                                     </tr>
                                 </thead>
@@ -1480,7 +1522,7 @@
                     <div class="panel-header">
                         <div>
                             <h3><i class="fa-solid fa-diagram-project text-cyan"></i> Quy Trình Tự Động Hóa
-                                (Automation Workflow)</h3>
+                            </h3>
                             <p class="panel-sub">Video mới sẽ di chuyển liên tục qua 4 công đoạn hoàn toàn tự động</p>
                         </div>
                         <div class="scheduler-badge-wrap">
@@ -1541,7 +1583,7 @@
                     <div class="panel-header">
                         <div>
                             <h3><i class="fa-solid fa-layer-group text-primary"></i> Danh Sách Chiến Dịch Đang Chạy
-                                (Auto Campaigns)</h3>
+                            </h3>
                             <p class="panel-sub">Mỗi chiến dịch kết nối: Kênh YouTube &rarr; Mẫu Edit &rarr; Dàn Nick
                                 nhận bài</p>
                         </div>
@@ -1720,7 +1762,7 @@
                     <div class="studio-recipe-controls">
                         <div class="recipe-section-title">
                             <i class="fa-solid fa-sliders text-cyan"></i>
-                            <span>Công Thức Biên Tập (Video Recipe)</span>
+                            <span>Công Thức Biên Tập</span>
                         </div>
 
                         <div class="studio-recipe-scroll-content">
@@ -1749,14 +1791,13 @@
 
                             <!-- Preset Dropdown -->
                             <div class="form-group" style="min-width:0;">
-                                <label><i class="fa-solid fa-wand-magic-sparkles text-accent"></i> Mẫu Cấu Hình Sẵn
-                                    (Preset):</label>
+                                <label><i class="fa-solid fa-wand-magic-sparkles text-accent"></i> Mẫu Cấu Hình Sẵn:</label>
                                 <select id="studioPresetSelect" class="input-field"
                                     onchange="applyStudioPreset(this.value)">
                                     <option value="beta-standard" selected>TikTok Beta Chuẩn Quỹ (>1 Phút, 9:16 Blur,
                                         Speed
                                         1.03x)</option>
-                                    <option value="shorts-fast">TikTok Shorts Nhanh (30s-60s, 9:16 Center Crop)</option>
+                                    <option value="shorts-fast">TikTok Shorts Nhanh (30s-60s, 9:16)</option>
                                     <option value="custom">Tùy chỉnh thông số thủ công...</option>
                                 </select>
                             </div>
@@ -1767,7 +1808,7 @@
                                     <label><i class="fa-solid fa-crop-simple"></i> Khung Hình Dọc:</label>
                                     <select id="studioAspectRatio" class="input-field">
                                         <option value="9:16_blur" selected>9:16 Dọc Nền Mờ (Phóng to viền)</option>
-                                        <option value="9:16_crop">9:16 Cắt Chính Giữa (Center Crop)</option>
+                                        <option value="9:16_crop">9:16 Cắt Chính Giữa</option>
                                         <option value="original">Giữ Nguyên Khung Hình Gốc</option>
                                     </select>
                                 </div>
@@ -1827,11 +1868,11 @@
                                 <div class="studio-algo-switches">
                                     <label>
                                         <input type="checkbox" id="studioFlipHorizontal" checked style="flex-shrink:0;">
-                                        <span>Lật ngang khung hình (Horizontal Flip)</span>
+                                        <span>Lật ngang khung hình</span>
                                     </label>
                                     <label>
                                         <input type="checkbox" id="studioSpeedFactor" checked style="flex-shrink:0;">
-                                        <span>Tăng tốc nhẹ 1.03x (Pitch preserving)</span>
+                                        <span>Tăng tốc nhẹ 1.03x</span>
                                     </label>
                                     <label id="studioAddPartLabelWrap">
                                         <input type="checkbox" id="studioAddPartLabel" checked style="flex-shrink:0;">
@@ -1851,12 +1892,10 @@
                                 <div
                                     style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                                     <label
-                                        style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
+                                        style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;">
                                         <input type="checkbox" id="studioUseAiImages"
                                             onchange="document.getElementById('studioAiStoryWrap').style.display = this.checked ? 'flex' : 'none';">
-                                        <span><i class="fa-solid fa-wand-magic-sparkles" style="color:#ec4899;"></i> Chế
-                                            Độ
-                                            AI Storytelling (Tạo Video 100% Mới Từ AI)</span>
+                                        <span><i class="fa-solid fa-wand-magic-sparkles" style="color:#ec4899;"></i> Chế Độ AI Storytelling</span>
                                     </label>
                                     <span class="badge"
                                         style="background:rgba(236,72,153,0.2); color:#f472b6; font-size:10px; font-weight:700;">100%
@@ -1883,8 +1922,8 @@
                                                 onchange="handleVisualSourceChange(this, 'studioStockWrap');">
                                                 <option value="ai_video">🎥 100% Video AI (LTX / Wan 2.1 / Kling)
                                                 </option>
-                                                <option value="ai" selected>🤖 100% Ảnh AI (AI Generated)</option>
-                                                <option value="stock">🎥 100% Cảnh quay thật (Pexels / Pixabay)</option>
+                                                <option value="ai" selected>🤖 100% Ảnh AI</option>
+                                                <option value="stock">🎥 100% Cảnh quay thật</option>
                                                 <option value="mixed">✨ Mix Kết Hợp (50% Thật + 50% AI)</option>
                                             </select>
                                         </div>
@@ -1912,7 +1951,7 @@
                                                 <option value="fal_ltx" selected>⚡ LTX-Video (Fal.ai - Siêu tốc 5s)
                                                 </option>
                                                 <option value="fal_wan">🎬 Wan 2.1 (Fal.ai - Cinema Grade 14B)</option>
-                                                <option value="kling">🔥 Kling 1.5 Video (Kling AI)</option>
+                                                <option value="kling">🔥 Kling 1.5 Video</option>
                                             </select>
                                         </div>
                                         <div>
@@ -1921,11 +1960,11 @@
                                                 cách ảnh AI:</label>
                                             <select id="studioImageStyle" class="custom-select"
                                                 style="font-size:11.5px; height:36px; width:100%;">
-                                                <option value="cinematic" selected>🎬 Điện Ảnh 8K (Cinematic)</option>
+                                                <option value="cinematic" selected>🎬 Điện Ảnh 8K</option>
                                                 <option value="photorealistic">📸 Ảnh Chụp Chân Thực</option>
                                                 <option value="anime">🌸 Anime Nhật Bản</option>
                                                 <option value="cyberpunk">⚡ Tương Lai Cyberpunk</option>
-                                                <option value="dark_fantasy">🏰 Kỳ Ảo U Tối (Dark Fantasy)</option>
+                                                <option value="dark_fantasy">🏰 Kỳ Ảo U Tối</option>
                                                 <option value="3d_render">🎨 Hoạt Hình 3D Pixar</option>
                                                 <option value="comic">💥 Truyện Tranh Comic</option>
                                             </select>
@@ -1975,9 +2014,7 @@
                                         style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                         <input type="checkbox" id="studioNarrationSwitch" checked
                                             onchange="document.getElementById('studioNarrationWrap').style.display = this.checked ? 'flex' : 'none';">
-                                        <span><i class="fa-solid fa-microphone-lines" style="color:#c084fc;"></i> Bật
-                                            Lồng
-                                            Tiếng AI (Text-To-Speech Narration)</span>
+                                        <span><i class="fa-solid fa-microphone-lines" style="color:#c084fc;"></i> Bật Lồng Tiếng AI</span>
                                     </label>
                                     <span class="badge"
                                         style="background:rgba(192,132,252,0.2); color:#c084fc; font-size:10px; font-weight:700;">AI
@@ -1997,8 +2034,7 @@
                                         style="background:rgba(0,0,0,0.25); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
                                         <label
                                             style="font-size:11.5px; font-weight:700; color:#fff; margin-bottom:6px; display:block;">
-                                            <i class="fa-solid fa-bolt text-cyan"></i> Chọn Bộ Máy Sinh Giọng (TTS
-                                            Engine):
+                                            <i class="fa-solid fa-bolt text-cyan"></i> Chọn Bộ Máy Sinh Giọng:
                                         </label>
                                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                                             <label
@@ -2007,7 +2043,7 @@
                                                     onchange="toggleStudioTtsEngine('edge-tts')"
                                                     style="accent-color:#c084fc;">
                                                 <div>
-                                                    <div style="font-weight:700; color:#fff;">⚡ Microsoft Edge-TTS</div>
+                                                    <div style="font-weight:700; color:var(--text-primary);">⚡ Microsoft Edge-TTS</div>
                                                     <div style="font-size:10.5px; color:var(--text-muted);">Miễn phí
                                                         100%,
                                                         tốc độ cao</div>
@@ -2054,8 +2090,8 @@
                                                 đọc Edge-TTS:</label>
                                             <select id="studioMpVoiceGender" class="custom-select"
                                                 style="font-size:11.5px; height:36px; width:100%;">
-                                                <option value="male" selected>👦 Giọng Nam Chuẩn (Auto)</option>
-                                                <option value="female">👧 Giọng Nữ Truyền Cảm (Auto)</option>
+                                                <option value="male" selected>👦 Giọng Nam Chuẩn</option>
+                                                <option value="female">👧 Giọng Nữ Truyền Cảm</option>
                                                 <option value="vi-VN-NamMinhNeural">Nam Minh (Phóng sự đại án)</option>
                                                 <option value="vi-VN-HoaiMyNeural">Hoài My (Truyền cảm tin tức)</option>
                                                 <option value="en-US-ChristopherNeural">Christopher (US Storytelling)
@@ -2114,7 +2150,7 @@
                                                 <option value="hai_huoc">😂 Hài hước dí dỏm</option>
                                                 <option value="chuyen_nghiep">🎙️ Kể chuyện điện ảnh, truyền cảm
                                                 </option>
-                                                <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh (Viral Shorts)
+                                                <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh
                                                 </option>
                                             </select>
                                         </div>
@@ -2142,10 +2178,7 @@
                                 style="background:rgba(168,85,247,0.06); padding:12px; border-radius:var(--radius-md); border:1px solid rgba(168,85,247,0.22); min-width:0;">
                                 <label
                                     style="font-weight:700; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
-                                    <span><i class="fa-solid fa-brain" style="color:#a855f7;"></i> Cấu Hình Trí Tuệ
-                                        Nhân
-                                        Tạo
-                                        (AI Engine):</span>
+                                    <span><i class="fa-solid fa-brain" style="color:#a855f7;"></i> Cấu Hình Trí Tuệ Nhân Tạo:</span>
                                     <span class="badge"
                                         style="background:rgba(168,85,247,0.2); color:#c084fc; font-size:10px;">Cloud
                                         &
@@ -2182,7 +2215,7 @@
                                                 style="accent-color:#a855f7;"
                                                 onchange="document.getElementById('studioSubtitleOptionsWrap').style.display = this.checked ? 'grid' : 'none';">
                                             <span><i class="fa-solid fa-closed-captioning" style="color:#eab308;"></i>
-                                                Tự Động Nhận Diện & Tạo Phụ Đề AI (Faster-Whisper)</span>
+                                                Tự Động Nhận Diện & Tạo Phụ Đề AI</span>
                                         </label>
 
                                         <!-- Phong cách & Vị trí phụ đề Studio (Giống Image 2) -->
@@ -2220,12 +2253,11 @@
                                         <div
                                             style="background:rgba(0,0,0,0.25); border:1px solid rgba(168,85,247,0.25); border-radius:6px; padding:10px 12px; margin-top:4px;">
                                             <label
-                                                style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:#fff; cursor:pointer; margin:0;"
+                                                style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;"
                                                 onchange="document.getElementById('studioAiCurateWrap').style.display = document.getElementById('studioSmartCurate').checked ? 'flex' : 'none';">
                                                 <input type="checkbox" id="studioSmartCurate" checked
                                                     style="accent-color:#a855f7;">
-                                                <span><i class="fa-solid fa-fire" style="color:#f97316;"></i> Trích
-                                                    Xuất Đoạn Kịch Tính Nhất (AI Viral Segment)</span>
+                                                <span><i class="fa-solid fa-fire" style="color:#f97316;"></i> Trích Xuất Đoạn Kịch Tính Nhất</span>
                                             </label>
 
                                             <div id="studioAiCurateWrap"
@@ -2237,14 +2269,14 @@
                                                         Độ Xuất Clip:</label>
                                                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
                                                         <label
-                                                            style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#fff; cursor:pointer; background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.08);">
+                                                            style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-primary); cursor:pointer; background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.08);">
                                                             <input type="radio" name="studioVariantMode" value="single"
                                                                 checked style="accent-color:#a855f7;"
                                                                 onchange="syncStudioVariantModeUI('single')">
                                                             <span>1 Clip Tốt Nhất</span>
                                                         </label>
                                                         <label
-                                                            style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#fff; cursor:pointer; background:rgba(168,85,247,0.1); padding:6px 8px; border-radius:4px; border:1px solid rgba(168,85,247,0.3);">
+                                                            style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-primary); cursor:pointer; background:rgba(168,85,247,0.1); padding:6px 8px; border-radius:4px; border:1px solid rgba(168,85,247,0.3);">
                                                             <input type="radio" name="studioVariantMode"
                                                                 value="variants" style="accent-color:#a855f7;"
                                                                 onchange="syncStudioVariantModeUI('variants')">
@@ -2269,8 +2301,7 @@
                                                 <!-- Chiến Lược Hook (Chỉ hiển thị khi chọn 1 Clip Tốt Nhất) -->
                                                 <div id="studioHookAngleWrap" style="display:block;">
                                                     <label
-                                                        style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;">Chiến
-                                                        Lược Hook Tâm Lý (Hook Strategy):</label>
+                                                        style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;">Chiến Lược Hook Tâm Lý:</label>
                                                     <select id="studioHookAngle" class="input-field"
                                                         style="font-size:11.5px; height:32px; width:100%;">
                                                         <option value="auto" selected>🎯 Tự Động (AI chọn đoạn kịch
@@ -2295,11 +2326,10 @@
                                 <div
                                     style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                                     <label
-                                        style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
+                                        style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;">
                                         <input type="checkbox" id="studioEnableBgm"
                                             onchange="document.getElementById('studioBgmOptionsWrap').style.display = this.checked ? 'flex' : 'none'; if(this.checked) ensureAudioCategoriesLoaded();">
-                                        <span><i class="fa-solid fa-music text-cyan"></i> Ghép Nhạc Nền (BGM
-                                            Playlist)</span>
+                                        <span><i class="fa-solid fa-music text-cyan"></i> Ghép Nhạc Nền</span>
                                     </label>
                                     <span class="badge badge-info" style="font-size:10px;">Audio Mixer</span>
                                 </div>
@@ -2347,8 +2377,7 @@
                 <div class="glass-panel mb-4">
                     <div class="panel-header">
                         <div>
-                            <h3><i class="fa-solid fa-list-check text-cyan"></i> Hàng Đợi Xử Lý 4 Công Đoạn (Kanban
-                                Pipeline Board)</h3>
+                            <h3><i class="fa-solid fa-list-check text-cyan"></i> Hàng Đợi Xử Lý 4 Công Đoạn</h3>
                             <p class="panel-sub">Theo dõi tiến trình của từng video qua các giai đoạn tự động hóa
                             </p>
                         </div>
@@ -2701,7 +2730,7 @@
                         <div>
                             <h3 style="display:flex; align-items:center; gap:10px;">
                                 <i class="fa-solid fa-brain" style="color:#a855f7;"></i>
-                                <span>Trung Tâm Giám Sát Chi Phí & Token AI (AI Cost Center)</span>
+                                <span>Trung Tâm Giám Sát Chi Phí & Token AI</span>
                             </h3>
                             <p class="panel-sub">Theo dõi chi tiết số lần gọi API, token tiêu thụ, độ trễ và chi phí ước
                                 tính (USD / VNĐ) của các mô hình AI.</p>
@@ -2733,36 +2762,31 @@
                             style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.2); border-radius:12px; padding:16px;">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                                 <span
-                                    style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.5px;">Tổng
-                                    Lượt Gọi AI</span>
+                                    style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Tổng Lượt Gọi AI</span>
                                 <i class="fa-solid fa-bolt" style="color:#38bdf8; font-size:18px;"></i>
                             </div>
                             <div style="font-size:26px; font-weight:800; color:#38bdf8; margin:8px 0 4px 0;"
                                 id="aiStatTotalCalls">0</div>
-                            <span style="font-size:11.5px; color:rgba(255,255,255,0.5);" id="aiStatTodayCalls">Hôm nay:
-                                0 lượt gọi</span>
+                            <span style="font-size:11.5px; color:var(--text-muted);" id="aiStatTodayCalls">Hôm nay: 0 lượt gọi</span>
                         </div>
 
                         <div
                             style="background:rgba(168,85,247,0.06); border:1px solid rgba(168,85,247,0.2); border-radius:12px; padding:16px;">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                                 <span
-                                    style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.5px;">Tổng
-                                    Token Tiêu Thụ</span>
+                                    style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Tổng Token Tiêu Thụ</span>
                                 <i class="fa-solid fa-microchip" style="color:#a855f7; font-size:18px;"></i>
                             </div>
                             <div style="font-size:26px; font-weight:800; color:#a855f7; margin:8px 0 4px 0;"
                                 id="aiStatTotalTokens">0</div>
-                            <span style="font-size:11.5px; color:rgba(255,255,255,0.5);" id="aiStatTodayTokens">Hôm nay:
-                                0 tokens</span>
+                            <span style="font-size:11.5px; color:var(--text-muted);" id="aiStatTodayTokens">Hôm nay: 0 tokens</span>
                         </div>
 
                         <div
                             style="background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2); border-radius:12px; padding:16px;">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                                 <span
-                                    style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.5px;">Chi
-                                    Phí Ước Tính ($ USD)</span>
+                                    style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Chi Phí Ước Tính ($ USD)</span>
                                 <i class="fa-solid fa-dollar-sign" style="color:#22c55e; font-size:18px;"></i>
                             </div>
                             <div style="font-size:26px; font-weight:800; color:#22c55e; margin:8px 0 4px 0;"
@@ -2775,8 +2799,7 @@
                             style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:12px; padding:16px;">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                                 <span
-                                    style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.5px;">Nhà
-                                    Cung Cấp Mặc Định</span>
+                                    style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Nhà Cung Cấp Mặc Định</span>
                                 <i class="fa-solid fa-robot" style="color:#f59e0b; font-size:18px;"></i>
                             </div>
                             <div style="font-size:20px; font-weight:800; color:#f59e0b; margin:10px 0 6px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
@@ -2847,12 +2870,12 @@
                                             <select id="aiFilterDateSelect" class="custom-select sort-select"
                                                 onchange="handleAiDateFilterChange(this.value)">
                                                 <option value="all">Tất cả thời gian</option>
-                                                <option value="today">Hôm nay (Today)</option>
-                                                <option value="wtd">Tuần này (Week to date)</option>
-                                                <option value="mtd">Tháng này (Month to date)</option>
-                                                <option value="7d" selected>7 ngày qua (Last 7 days)</option>
-                                                <option value="14d">14 ngày qua (Last 14 days)</option>
-                                                <option value="30d">30 ngày qua (Last 30 days)</option>
+                                                <option value="today">Hôm nay</option>
+                                                <option value="wtd">Tuần này</option>
+                                                <option value="mtd">Tháng này</option>
+                                                <option value="7d" selected>7 ngày qua</option>
+                                                <option value="14d">14 ngày qua</option>
+                                                <option value="30d">30 ngày qua</option>
                                             </select>
                                         </div>
 
@@ -2862,7 +2885,7 @@
                                                     class="fa-solid fa-microchip text-purple"></i> Mô hình:</label>
                                             <select id="aiFilterModelSelect" class="custom-select sort-select"
                                                 onchange="handleAiModelFilterChange(this.value)">
-                                                <option value="all">Tất cả mô hình AI (All Models)</option>
+                                                <option value="all">Tất cả mô hình AI</option>
                                                 <optgroup label="🎬 Video AI Generation">
                                                     <option value="fal">Fal.ai (LTX-Video / Wan 2.1)</option>
                                                     <option value="ltx">LTX-Video (Fal.ai)</option>
@@ -2993,7 +3016,7 @@
                             <h3 style="margin: 0;"><i class="fa-solid fa-terminal text-accent"></i> Nhật Ký & Chẩn Đoán
                                 Hệ Thống</h3>
                             <div class="logs-subnav"
-                                style="display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                style="display: flex; gap: 6px; padding: 4px; border-radius: 8px;">
                                 <button type="button" class="btn btn-xs btn-subtab active" id="btnTabFileLogs"
                                     onclick="switchLogsSubTab('file')">
                                     <i class="fa-solid fa-file-code"></i> Debug File Log (app.log)
@@ -3044,11 +3067,11 @@
                                 <select id="fileLogLevelFilter" class="input-field"
                                     style="padding: 4px 10px; font-size: 12px; width: auto; height: 32px;"
                                     onchange="loadFileLogs()">
-                                    <option value="ALL">Tất Cả Mức (ALL)</option>
-                                    <option value="ERROR">Chỉ Lỗi (ERROR / CRITICAL)</option>
+                                    <option value="ALL">Tất Cả Mức</option>
+                                    <option value="ERROR">Chỉ Lỗi</option>
                                     <option value="WARNING">Cảnh Báo & Lỗi (WARN+ERR)</option>
                                     <option value="INFO">Thông Tin (INFO+)</option>
-                                    <option value="DEBUG">Chi Tiết Debug (DEBUG)</option>
+                                    <option value="DEBUG">Chi Tiết Debug</option>
                                 </select>
                             </div>
 
@@ -3124,6 +3147,52 @@
                                 class="fa-solid fa-rotate"></i> Làm Mới</button>
                     </div>
 
+                    <!-- Giao Diện & Ngôn Ngữ -->
+                    <div class="settings-section mt-3"
+                        style="background: rgba(2, 132, 199, 0.04); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 12px; padding: 18px 20px;">
+                        <div class="settings-section-header"
+                            style="justify-content: space-between; align-items: center; display: flex; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fa-solid fa-palette" style="color: #0284c7; font-size: 22px;"></i>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 15px; font-weight: 700;"
+                                        data-i18n="settings_appearance_title">Giao Diện & Ngôn Ngữ</h4>
+                                    <p class="panel-sub" style="margin: 2px 0 0 0;" data-i18n="settings_appearance_sub">
+                                        Tùy chỉnh giao diện sáng/tối và lựa chọn ngôn ngữ làm việc theo ý muốn.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px;">
+                            <div>
+                                <label
+                                    style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;"
+                                    data-i18n="settings_theme_label">
+                                    Chế Độ Giao Diện:
+                                </label>
+                                <select id="settingAppTheme" class="custom-select" style="width: 100%; height: 42px;"
+                                    onchange="window.setAppTheme(this.value)">
+                                    <option value="dark" data-i18n="settings_theme_dark">🌙 Giao diện Tối</option>
+                                    <option value="light" data-i18n="settings_theme_light">☀️ Giao diện Sáng</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;"
+                                    data-i18n="settings_lang_label">
+                                    Ngôn Ngữ Hệ Thống:
+                                </label>
+                                <select id="settingAppLanguage" class="custom-select" style="width: 100%; height: 42px;"
+                                    onchange="window.setAppLanguage(this.value)">
+                                    <option value="vi" data-i18n="settings_lang_vi">VI - Tiếng Việt</option>
+                                    <option value="en" data-i18n="settings_lang_en">EN - English</option>
+                                    <option value="zh" data-i18n="settings_lang_zh">ZH - 简体中文</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- BẢN QUYỀN PHẦN MỀM & HWID -->
                     <div class="settings-section mt-3"
                         style="background: rgba(244, 63, 94, 0.03); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 12px; padding: 18px 20px;">
@@ -3132,8 +3201,7 @@
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <i class="fa-solid fa-shield-halved" style="color: #F43F5E; font-size: 22px;"></i>
                                 <div>
-                                    <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #fff;">Bản Quyền
-                                        Phần Mềm & Thiết Bị (License Key)</h4>
+                                    <h4 style="margin: 0; font-size: 15px; font-weight: 700;">Bản Quyền Phần Mềm & Thiết Bị</h4>
                                     <p class="panel-sub" style="margin: 2px 0 0 0;">Kiểm soát số máy tính sử dụng theo
                                         từng gói (1 PC / 3 PCs / 5 PCs - Vĩnh Viễn) qua mã phần cứng HWID.</p>
                                 </div>
@@ -3176,8 +3244,7 @@
                                     style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
                                     <span style="font-size: 11px; color: var(--text-muted); display: block;">Thời hạn sử
                                         dụng:</span>
-                                    <strong style="color: #fff; font-size: 13.5px;"
-                                        id="settingLicenseExpires">—</strong>
+                                    <strong style="font-size: 13.5px;" id="settingLicenseExpires">—</strong>
                                 </div>
                                 <div
                                     style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
@@ -3190,8 +3257,7 @@
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                                 <div style="font-size: 12px; color: var(--text-muted);">
-                                    Mã key hiện tại: <code
-                                        style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;"
+                                    Mã key hiện tại: <code style="padding: 2px 6px; border-radius: 4px;"
                                         id="settingLicenseCurrentKey">SS-***</code>
                                 </div>
                                 <div style="display: flex; gap: 8px;">
@@ -3241,10 +3307,10 @@
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <i class="fa-solid fa-cloud-arrow-down" style="color: #38bdf8; font-size: 20px;"></i>
                                 <div>
-                                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #fff;">Cập Nhật
-                                        Phiên Bản (App Version & Updates)</h4>
+                                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 700;">Cập Nhật Phiên Bản</h4>
                                     <p class="panel-sub" style="margin: 2px 0 0 0;">Phiên bản hiện tại: <strong
-                                            style="color: #38bdf8;">v1.0.0</strong> — Luôn cập nhật để nhận các tính
+                                            style="color: #38bdf8;" id="appCurrentVersionText">v1.0.1</strong> — Luôn
+                                        cập nhật để nhận các tính
                                         năng lách bản quyền & bypass mới nhất.</p>
                                 </div>
                             </div>
@@ -3496,8 +3562,7 @@
                             <div class="full-width"
                                 style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
                                 <div class="form-group">
-                                    <label><i class="fa-solid fa-sliders"></i> Ưu tiên nhà cung cấp AI
-                                        (Provider):</label>
+                                    <label><i class="fa-solid fa-sliders"></i> Ưu tiên nhà cung cấp AI:</label>
                                     <select id="settingAiProvider" class="input-field">
                                         <option value="deepseek">DeepSeek (Cực rẻ & Tối ưu TikTok Reup)</option>
                                         <option value="gemini">Google Gemini (Tốc độ & Free Tier)</option>
@@ -3505,8 +3570,7 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label><i class="fa-solid fa-wave-square"></i> faster-whisper Model
-                                        (Speech-to-Text):</label>
+                                    <label><i class="fa-solid fa-wave-square"></i> faster-whisper Model:</label>
                                     <select id="settingWhisperModel" class="input-field">
                                         <option value="base">base (~145MB - Nhanh, chuẩn, nhẹ máy)</option>
                                         <option value="tiny">tiny (~75MB - Siêu nhẹ cho máy yếu)</option>
@@ -3539,8 +3603,7 @@
                             </label>
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px;">
                                 <input type="checkbox" id="settingAntiDetect" checked style="accent-color:#0070f3;">
-                                <span><i class="fa-solid fa-shield-halved" style="color:#22c55e;"></i> Bật bộ lọc chống
-                                    quét bản quyền (Anti-Detection SaaS)</span>
+                                <span><i class="fa-solid fa-shield-halved" style="color:#22c55e;"></i> Bật bộ lọc chống quét bản quyền</span>
                             </label>
                         </div>
 
@@ -3698,32 +3761,41 @@
                                 style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
                                 <!-- GPMLogin -->
                                 <div>
-                                    <div class="rounded border border-slate-800 bg-slate-900/60"
-                                        style="padding:16px 16px 10px 16px;">
-                                        <div class="d-flex align-items-center gap-2" style="margin-bottom: 12px;">
+                                    <div class="rounded border"
+                                        style="padding:16px 16px 12px 16px; border-radius:10px; background:rgba(255,255,255,0.02); border-color:var(--border-color);">
+                                        <div class="d-flex align-items-center gap-2"
+                                            style="margin-bottom: 12px; display:flex; gap:8px;">
                                             <i class="fa-solid fa-cube text-primary"></i>
-                                            <span class="fw-bold text-white text-xs">GPMLogin Local API:</span>
+                                            <span
+                                                style="font-weight:700; font-size:12px; color:var(--text-primary);">GPMLogin
+                                                Local API:</span>
                                         </div>
-                                        <input type="text" id="settingGpmUrl"
-                                            class="input-field form-control form-control-sm bg-slate-800 text-white border-slate-700 font-monospace text-xs"
+                                        <input type="text" id="settingGpmUrl" class="input-field font-monospace text-xs"
                                             placeholder="http://127.0.0.1:19995 hoặc 9495">
-                                        <small class="text-muted d-block mt-1" style="font-size: 11px;">Mặc định: Tự
+                                        <small class="text-muted d-block mt-1"
+                                            style="font-size: 11px; display:block; margin-top:4px; color:var(--text-muted);">Mặc
+                                            định: Tự
                                             động dò qua cổng 9495, 19995...</small>
                                     </div>
                                 </div>
 
                                 <!-- GenLogin -->
                                 <div>
-                                    <div class="rounded border border-slate-800 bg-slate-900/60"
-                                        style="padding:16px 16px 10px 16px;">
-                                        <div class="d-flex align-items-center gap-2" style="margin-bottom: 12px;">
+                                    <div class="rounded border"
+                                        style="padding:16px 16px 12px 16px; border-radius:10px; background:rgba(255,255,255,0.02); border-color:var(--border-color);">
+                                        <div class="d-flex align-items-center gap-2"
+                                            style="margin-bottom: 12px; display:flex; gap:8px;">
                                             <i class="fa-solid fa-window-maximize text-success"></i>
-                                            <span class="fw-bold text-white text-xs">GenLogin Local API:</span>
+                                            <span
+                                                style="font-weight:700; font-size:12px; color:var(--text-primary);">GenLogin
+                                                Local API:</span>
                                         </div>
                                         <input type="text" id="settingGenLoginUrl"
-                                            class="input-field form-control form-control-sm bg-slate-800 text-white border-slate-700 font-monospace text-xs"
+                                            class="input-field font-monospace text-xs"
                                             placeholder="http://localhost:55550">
-                                        <small class="text-muted d-block mt-1" style="font-size: 11px;">Mặc định:
+                                        <small class="text-muted d-block mt-1"
+                                            style="font-size: 11px; display:block; margin-top:4px; color:var(--text-muted);">Mặc
+                                            định:
                                             http://localhost:55550</small>
                                     </div>
                                 </div>
@@ -3736,12 +3808,12 @@
 
                         <hr class="settings-divider" style="margin-top: 14px;">
 
-                        <!-- Chính Sách Tự Động Dọn Dẹp File Video (Auto Disk Cleanup) -->
+                        <!-- Chính Sách Tự Động Dọn Dẹp File Video -->
                         <div class="settings-section">
                             <div class="settings-section-header">
                                 <i class="fa-solid fa-hard-drive text-cyan"></i>
                                 <div>
-                                    <h4>Chính Sách Tự Động Dọn Dẹp File Video (Auto Disk Cleanup)</h4>
+                                    <h4>Chính Sách Tự Động Dọn Dẹp File Video</h4>
                                     <p class="panel-sub">Tự động xóa các file MP4 vật lý sau khi video đã được đăng
                                         thành
                                         công lên TikTok để giải phóng ổ cứng. Bản ghi database, lịch sử và chống trùng
@@ -3843,7 +3915,7 @@
                             <div class="settings-section-header">
                                 <i class="fa-solid fa-desktop" style="color:#38bdf8;"></i>
                                 <div>
-                                    <h4>Khởi Động Cùng Windows & Khay Hệ Thống (System Tray)</h4>
+                                    <h4>Khởi Động Cùng Windows & Khay Hệ Thống</h4>
                                     <p class="panel-sub">Tự động khởi động ngầm khi bật máy tính và thu nhỏ xuống khay
                                         hệ
                                         thống.</p>
@@ -3860,7 +3932,7 @@
                                         <span class="slider"></span>
                                     </label>
                                     <span>
-                                        <strong style="color:#fff;">Khởi động cùng Windows</strong>
+                                        <strong>Khởi động cùng Windows</strong>
                                         <span
                                             style="color:var(--text-muted); font-size:12px; display:block; margin-top:2px;">(Tự
                                             động mở ứng dụng ngầm khi bật máy tính)</span>
@@ -3875,7 +3947,7 @@
                                         <span class="slider"></span>
                                     </label>
                                     <span>
-                                        <strong style="color:#fff;">Thu nhỏ vào Khay Hệ Thống</strong>
+                                        <strong>Thu nhỏ vào Khay Hệ Thống</strong>
                                         <span
                                             style="color:var(--text-muted); font-size:12px; display:block; margin-top:2px;">(Khi
                                             bấm đóng X hoặc thu nhỏ, ứng dụng tiếp tục chạy ngầm trong System
@@ -4011,8 +4083,7 @@
                                 onchange="toggleDailyTimeRow(this.checked)">
                             <div>
                                 <span
-                                    style="font-weight:600; font-size:12.5px; color:var(--text-primary); display:block;">📊
-                                    Báo cáo tổng kết ngày (Daily Report)</span>
+                                    style="font-weight:600; font-size:12.5px; color:var(--text-primary); display:block;">📊 Báo cáo tổng kết ngày</span>
                                 <span style="font-size:11px; color:var(--text-muted); display:block;">Báo cáo danh sách
                                     video đã đăng lên nick nào (thành công/thất bại) & thống kê chi phí AI</span>
                             </div>
@@ -4157,7 +4228,7 @@
                 <!-- Advanced Options Grid -->
                 <div class="modal-form-grid">
                     <div class="form-group">
-                        <label><i class="fa-solid fa-list-check text-purple"></i> Kiểm Tra Giờ Đăng (Upload):</label>
+                        <label><i class="fa-solid fa-list-check text-purple"></i> Kiểm Tra Giờ Đăng:</label>
                         <div style="display:flex; gap:8px; align-items:center;">
                             <input type="number" id="modalUploadInterval" class="input-field" min="10" max="3600"
                                 value="60" style="font-weight:600;">
@@ -4271,8 +4342,7 @@
                     <label
                         style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;">
                         <div>
-                            <div style="font-weight:600; font-size:13px; color:#fff;">Tự Động Tải Video Mới
-                                (Auto-Download)</div>
+                            <div style="font-weight:600; font-size:13px; color:#fff;">Tự Động Tải Video Mới:</div>
                             <div style="font-size:11px; color:var(--text-muted);">Tự động kéo MP4 chất lượng cao về máy
                                 khi phát hiện video mới qua RSS</div>
                         </div>
@@ -4285,7 +4355,7 @@
                     <label
                         style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;">
                         <div>
-                            <div style="font-weight:600; font-size:13px; color:#fff;">Tự Động Render 9:16 (Auto-Render)
+                            <div style="font-weight:600; font-size:13px; color:#fff;">Tự Động Render 9:16
                             </div>
                             <div style="font-size:11px; color:var(--text-muted);">Đưa video vừa tải vào hàng đợi AI
                                 Transformer tự động cắt ghép, biến đổi dọc</div>
@@ -4319,8 +4389,7 @@
                         style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;">
                         <div>
                             <div style="font-weight:600; font-size:13px; color:#fff;"><i
-                                    class="fa-solid fa-arrows-rotate text-emerald"></i> Tự Động Thử Lại Thông Minh
-                                (Smart Auto-Retry)</div>
+                                    class="fa-solid fa-arrows-rotate text-emerald"></i> Tự Động Thử Lại Thông Minh</div>
                             <div style="font-size:11px; color:var(--text-muted);">Tự động xếp lịch thử lại khi gặp lỗi
                                 tạm thời (mạng, proxy, browser timeout, kết nối GPM). An toàn: không thử lại khi vi
                                 phạm, captcha hoặc văng phiên.</div>
@@ -4359,8 +4428,7 @@
                         style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06); cursor:pointer; margin-top: 6px;">
                         <div>
                             <div style="font-weight:600; font-size:13px; color:#fff;"><i
-                                    class="fa-solid fa-shield-dog text-gold"></i> Watchdog Chống Treo Task (Stuck
-                                Recovery)</div>
+                                    class="fa-solid fa-shield-dog text-gold"></i> Watchdog Chống Treo Task</div>
                             <div style="font-size:11px; color:var(--text-muted);">Tự động giải phóng profile và phục hồi
                                 các task bị dở dang (processing) khi khởi động lại máy hoặc treo quá thời gian cho phép.
                             </div>
@@ -4372,8 +4440,7 @@
                     </label>
 
                     <div class="form-group" style="margin-top: 4px;">
-                        <label><i class="fa-solid fa-stopwatch text-gold"></i> Thời Gian Coi Là Bị Treo
-                            (Timeout):</label>
+                        <label><i class="fa-solid fa-stopwatch text-gold"></i> Thời Gian Coi Là Bị Treo:</label>
                         <div style="display:flex; gap:8px; align-items:center;">
                             <input type="number" id="modalStuckTimeout" class="input-field" min="5" max="180" value="15"
                                 style="width:130px; font-weight:600;">
@@ -4418,7 +4485,7 @@
                     <input type="text" id="modalVideoPath" class="input-field" readonly>
                 </div>
                 <div class="form-group">
-                    <label>Tiêu đề (AI Title):</label>
+                    <label>Tiêu đề:</label>
                     <input type="text" id="modalVideoTitle" class="input-field">
                 </div>
                 <div class="form-group">
@@ -4563,14 +4630,14 @@
                     <!-- Right: Tags & Topics -->
                     <div class="detail-card detail-tags-card">
                         <div class="detail-card-header">
-                            <h4><i class="fa-solid fa-tags text-cyan"></i> Thẻ Từ Khóa (Tags / Keywords)</h4>
+                            <h4><i class="fa-solid fa-tags text-cyan"></i> Thẻ Từ Khóa</h4>
                         </div>
                         <div class="detail-tags-wrap" id="detailKeywordsList">
                             <span class="detail-no-data">Không có thẻ từ khóa nào</span>
                         </div>
 
                         <div class="detail-card-header mt-3">
-                            <h4><i class="fa-solid fa-layer-group text-purple"></i> Phân Loại Chủ Đề (Topic Categories)
+                            <h4><i class="fa-solid fa-layer-group text-purple"></i> Phân Loại Chủ Đề
                             </h4>
                         </div>
                         <div class="detail-tags-wrap" id="detailTopicsList">
@@ -4647,7 +4714,7 @@
 
                 <div class="modal-form-grid">
                     <div class="form-group full-width">
-                        <label><i class="fa-solid fa-tag"></i> Gắn Tên Hiển Thị (Display Name / Alias):</label>
+                        <label><i class="fa-solid fa-tag"></i> Gắn Tên Hiển Thị:</label>
                         <input type="text" id="settingDisplayName" class="input-field"
                             placeholder="Ví dụ: Kênh Podcast US #01 (Chủ đề Tài chính)...">
                         <small class="form-hint">Đặt tên gợi nhớ để phân loại thay vì tên gốc của kênh.</small>
@@ -4696,8 +4763,7 @@
                         <div
                             style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                             <label style="font-weight:700; font-size:13px; margin:0;"><i
-                                    class="fa-solid fa-cloud-arrow-down text-primary"></i> Giới Hạn Video Tải Khi Quét
-                                Thủ Công (Manual Scan Limit):</label>
+                                    class="fa-solid fa-cloud-arrow-down text-primary"></i> Giới Hạn Video Tải Khi Quét Thủ Công:</label>
                             <span id="settingMaxManualVideosBadge" class="badge badge-primary"
                                 style="font-size:12px; font-weight:700;">5 video/lần</span>
                         </div>
@@ -4717,11 +4783,11 @@
                     </div>
 
                     <div class="form-group full-width">
-                        <label><i class="fa-solid fa-music text-cyan"></i> Thể Loại Nhạc Nền (BGM Playlist):</label>
+                        <label><i class="fa-solid fa-music text-cyan"></i> Thể Loại Nhạc Nền:</label>
                         <select id="settingBgmFolder" class="custom-select mt-1"
                             style="width:100%; font-size:13.5px; padding:10px 14px;">
                             <option value="inherit" selected>-- 🔗 Kế Thừa Từ Cài Đặt Chiến Dịch (Mặc Định) --</option>
-                            <option value="auto">🤖 Tự Động Chọn Theo Nội Dung (AI Smart Mood)</option>
+                            <option value="auto">🤖 Tự Động Chọn Theo Nội Dung</option>
                             <option value="none">-- 🚫 Tắt Nhạc Nền Riêng Cho Kênh Này --</option>
                             <!-- Dynamically loaded from /api/audio/categories -->
                         </select>
@@ -4731,7 +4797,7 @@
 
                     <div class="form-group full-width">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <label><i class="fa-solid fa-volume-high text-cyan"></i> Âm Lượng Nhạc Nền (BGM):</label>
+                            <label><i class="fa-solid fa-volume-high text-cyan"></i> Âm Lượng Nhạc Nền:</label>
                             <span id="settingBgmVolumeVal" class="badge badge-info" style="font-weight:700;">15%</span>
                         </div>
                         <input type="range" id="settingBgmVolume" class="mt-2" min="0.05" max="0.30" step="0.01"
@@ -4802,9 +4868,9 @@
                         <div class="form-group full-width p-3 mt-3"
                             style="grid-column: 1 / -1; width: 100%; background:rgba(168, 85, 247, 0.05); border-radius:var(--radius-sm); border:1px solid rgba(168, 85, 247, 0.25); padding:14px 16px; margin-bottom:12px;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <label style="font-size:13px; font-weight:700; color:#fff; margin:0;">
+                                <label style="font-size:13px; font-weight:700; color:var(--text-primary); margin:0;">
                                     <i class="fa-solid fa-bolt text-purple" style="color:#c084fc;"></i> Chế Độ Xuất Clip
-                                    &amp; Chiến Lược Hook Tâm Lý (Hook Strategy)
+                                    &amp; Chiến Lược Hook Tâm Lý:
                                 </label>
                                 <span class="badge"
                                     style="background:rgba(168,85,247,0.2); color:#c084fc; font-size:10px; font-weight:700;">Ưu
@@ -4834,8 +4900,7 @@
                                 <div id="settingChannelHookAngleWrap">
                                     <label
                                         style="font-size:11.5px; color:var(--text-secondary); display:block; margin-bottom:3px;">
-                                        <i class="fa-solid fa-bullseye text-cyan"></i> Chiến Lược Hook Tâm Lý (Winning
-                                        Angle):
+                                        <i class="fa-solid fa-bullseye text-cyan"></i> Chiến Lược Hook Tâm Lý:
                                     </label>
                                     <select id="settingChannelHookAngle" class="custom-select"
                                         style="width:100%; height:38px;">
@@ -4868,11 +4933,10 @@
                             <div
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                                 <label
-                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
+                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;">
                                     <input type="checkbox" id="settingChannelUseAiImages"
                                         onchange="toggleAiStoryCard('settingChannel', this.checked);">
-                                    <span><i class="fa-solid fa-wand-magic-sparkles" style="color:#ec4899;"></i> Chế Độ
-                                        AI Storytelling (Tạo Video 100% Mới Từ AI)</span>
+                                    <span><i class="fa-solid fa-wand-magic-sparkles" style="color:#ec4899;"></i> Chế Độ AI Storytelling</span>
                                 </label>
                                 <span class="badge"
                                     style="background:rgba(236,72,153,0.2); color:#f472b6; font-size:10px; font-weight:700;">100%
@@ -4896,8 +4960,8 @@
                                             style="font-size:11.5px; height:36px; width:100%;"
                                             onchange="handleVisualSourceChange(this, 'settingChannelStockWrap');">
                                             <option value="ai_video">🎥 100% Video AI (LTX / Wan 2.1 / Kling)</option>
-                                            <option value="ai" selected>🤖 100% Ảnh AI (AI Generated)</option>
-                                            <option value="stock">🎥 100% Cảnh quay thật (Pexels / Pixabay)</option>
+                                            <option value="ai" selected>🤖 100% Ảnh AI</option>
+                                            <option value="stock">🎥 100% Cảnh quay thật</option>
                                             <option value="mixed">✨ Mix Kết Hợp (50% Thật + 50% AI)</option>
                                         </select>
                                     </div>
@@ -4923,7 +4987,7 @@
                                             style="font-size:11.5px; height:36px; width:100%;">
                                             <option value="fal_ltx" selected>⚡ LTX-Video (Fal.ai - Siêu tốc 5s)</option>
                                             <option value="fal_wan">🎬 Wan 2.1 (Fal.ai - Cinema Grade 14B)</option>
-                                            <option value="kling">🔥 Kling 1.5 Video (Kling AI)</option>
+                                            <option value="kling">🔥 Kling 1.5 Video</option>
                                         </select>
                                     </div>
                                     <div>
@@ -4932,11 +4996,11 @@
                                             cách ảnh AI:</label>
                                         <select id="settingChannelImageStyle" class="custom-select"
                                             style="font-size:11.5px; height:36px; width:100%;">
-                                            <option value="cinematic" selected>🎬 Điện Ảnh 8K (Cinematic)</option>
+                                            <option value="cinematic" selected>🎬 Điện Ảnh 8K</option>
                                             <option value="photorealistic">📸 Ảnh Chụp Chân Thực</option>
                                             <option value="anime">🌸 Anime Nhật Bản</option>
                                             <option value="cyberpunk">⚡ Tương Lai Cyberpunk</option>
-                                            <option value="dark_fantasy">🏰 Kỳ Ảo U Tối (Dark Fantasy)</option>
+                                            <option value="dark_fantasy">🏰 Kỳ Ảo U Tối</option>
                                             <option value="3d_render">🎨 Hoạt Hình 3D Pixar</option>
                                             <option value="comic">💥 Truyện Tranh Comic</option>
                                         </select>
@@ -4981,11 +5045,10 @@
                             <div
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                                 <label
-                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
+                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;">
                                     <input type="checkbox" id="settingChannelNarrationSwitch"
                                         onchange="document.getElementById('settingChannelNarrationWrap').style.display = this.checked ? 'flex' : 'none';">
-                                    <span><i class="fa-solid fa-microphone-lines" style="color:#c084fc;"></i> Bật Lồng
-                                        Tiếng AI (Text-To-Speech Narration)</span>
+                                    <span><i class="fa-solid fa-microphone-lines" style="color:#c084fc;"></i> Bật Lồng Tiếng AI</span>
                                 </label>
                                 <span class="badge"
                                     style="background:rgba(192,132,252,0.2); color:#c084fc; font-size:10px; font-weight:700;">AI
@@ -5003,8 +5066,8 @@
                                 <div
                                     style="background:rgba(0,0,0,0.25); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
                                     <label
-                                        style="font-size:11.5px; font-weight:700; color:#fff; margin-bottom:6px; display:block;">
-                                        <i class="fa-solid fa-bolt text-cyan"></i> Chọn Bộ Máy Sinh Giọng (TTS Engine):
+                                        style="font-size:11.5px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;">
+                                        <i class="fa-solid fa-bolt text-cyan"></i> Chọn Bộ Máy Sinh Giọng:
                                     </label>
                                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                                         <label
@@ -5013,7 +5076,7 @@
                                                 onchange="toggleChannelTtsEngine('edge-tts')"
                                                 style="accent-color:#c084fc;">
                                             <div>
-                                                <div style="font-weight:700; color:#fff;">⚡ Microsoft Edge-TTS</div>
+                                                <div style="font-weight:700; color:var(--text-primary);">⚡ Microsoft Edge-TTS</div>
                                                 <div style="font-size:10.5px; color:var(--text-muted);">Miễn phí 100%,
                                                     tốc độ cao</div>
                                             </div>
@@ -5061,8 +5124,8 @@
                                         <div style="display:flex; gap:6px;">
                                             <select id="settingChannelVoiceGender" class="custom-select"
                                                 style="font-size:11.5px; height:36px; flex:1;">
-                                                <option value="male" selected>👦 Giọng Nam Chuẩn (Auto)</option>
-                                                <option value="female">👧 Giọng Nữ Truyền Cảm (Auto)</option>
+                                                <option value="male" selected>👦 Giọng Nam Chuẩn</option>
+                                                <option value="female">👧 Giọng Nữ Truyền Cảm</option>
                                                 <option value="vi-VN-NamMinhNeural">Nam Minh (Phóng sự đại án)</option>
                                                 <option value="vi-VN-HoaiMyNeural">Hoài My (Truyền cảm tin tức)</option>
                                                 <option value="en-US-ChristopherNeural">Christopher (US Storytelling)
@@ -5125,7 +5188,7 @@
                                             </option>
                                             <option value="hai_huoc">😂 Hài hước dí dỏm</option>
                                             <option value="chuyen_nghiep">🎙️ Kể chuyện điện ảnh, truyền cảm</option>
-                                            <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh (Viral Shorts)</option>
+                                            <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh</option>
                                         </select>
                                     </div>
                                 </div>
@@ -5155,8 +5218,7 @@
                                     <input type="checkbox" id="settingChannelSubtitleSwitch" checked
                                         onchange="document.getElementById('settingChannelSubtitleSettingsWrap').style.display = this.checked ? '' : 'none'; if(this.checked){ document.getElementById('settingChannelDisableSubtitleForShorts').checked=true; } else { document.getElementById('settingChannelDisableSubtitleForShorts').checked=false; }">
                                     <span><i class="fa-solid fa-closed-captioning"
-                                            style="color:var(--accent-gold);"></i> Tự Động Nhận Diện &amp; Tạo Phụ Đề AI
-                                        (Faster-Whisper)</span>
+                                            style="color:var(--accent-gold);"></i> Tự Động Nhận Diện &amp; Tạo Phụ Đề AI</span>
                                 </label>
                                 <span class="badge badge-gold" style="font-size:10px;">Tăng Retention</span>
                             </div>
@@ -5206,8 +5268,7 @@
                     <div class="form-group full-width settings-toggles-card">
                         <div class="toggle-item">
                             <div class="toggle-info">
-                                <span class="toggle-label"><i class="fa-solid fa-power-off"></i> Trạng Thái Hoạt Động
-                                    (Active / Inactive)</span>
+                                <span class="toggle-label"><i class="fa-solid fa-power-off"></i> Trạng Thái Hoạt Động</span>
                                 <span class="toggle-desc">
                                     <strong>Hoạt động:</strong> Tự động lấy video & render video từ kênh này.<br>
                                     <strong>Không hoạt động:</strong> Dừng hoàn toàn, không lấy video và không render từ
@@ -5222,8 +5283,7 @@
 
                         <div class="toggle-item">
                             <div class="toggle-info">
-                                <span class="toggle-label"><i class="fa-solid fa-cloud-arrow-down"></i> Tự Động Tải
-                                    Video Mới (Auto-Download)</span>
+                                <span class="toggle-label"><i class="fa-solid fa-cloud-arrow-down"></i> Tự Động Tải Video Mới:</span>
                                 <span class="toggle-desc">Khi phát hiện video mới qua RSS, tự động tải MP4 về thư
                                     mục.</span>
                             </div>
@@ -5235,8 +5295,7 @@
 
                         <div class="toggle-item">
                             <div class="toggle-info">
-                                <span class="toggle-label"><i class="fa-solid fa-scissors"></i> Tự Động Render AI Sau
-                                    Khi Tải (Auto-Render)</span>
+                                <span class="toggle-label"><i class="fa-solid fa-scissors"></i> Tự Động Render AI</span>
                                 <span class="toggle-desc">Tự động lật hình, đổi tốc độ và cắt chuẩn TikTok 9:16 ngay khi
                                     tải xong.</span>
                             </div>
@@ -5349,13 +5408,13 @@
         </div>
     </div>
 
-    <!-- MODAL: TẠO CHIẾN DỊCH TỰ ĐỘNG HÓA (AUTO-PILOT CAMPAIGN) -->
+    <!-- MODAL: Tạo Chiến Dịch Tự Động Hóa -->
     <div class="modal" id="newCampaignModal">
         <div class="modal-content glass-panel modal-lg"
             style="max-width: 900px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
             <div class="modal-header" style="flex-shrink:0;">
                 <div>
-                    <h3><i class="fa-solid fa-bolt text-accent"></i> Tạo Chiến Dịch Tự Động Hóa (Auto-Pilot Campaign)
+                    <h3><i class="fa-solid fa-bolt text-accent"></i> Tạo Chiến Dịch Tự Động Hóa
                     </h3>
                     <p class="modal-sub">Liên kết: Kênh YouTube Nguồn (1, 2, 3...) &rarr; Thư Mục &amp; Edit Phụ Đề
                         &rarr; Dàn Profile (A, B, C...)</p>
@@ -5408,10 +5467,9 @@
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                 <label
                                     style="font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:8px; margin:0;">
-                                    <i class="fa-solid fa-layer-group"></i> Chế Độ Thu Thập Video (Source Mode):
+                                    <i class="fa-solid fa-layer-group"></i> Chế Độ Thu Thập Video:
                                 </label>
-                                <span class="badge badge-info" id="campaignSourceModeBadge">Chế độ: Tự Động Kết Hợp
-                                    (Hybrid)</span>
+                                <span class="badge badge-info" id="campaignSourceModeBadge">Chế Độ: Tự Động Kết Hợp</span>
                             </div>
                             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
                                 <label
@@ -5420,7 +5478,7 @@
                                         onchange="updateCampaignSourceModeUI('new', this.value)"
                                         style="accent-color:var(--accent-cyan);">
                                     <div>
-                                        <div style="font-size:12px; font-weight:700; color:#fff;">✨ Kết Hợp (Hybrid)
+                                        <div style="font-size:12px; font-weight:700; color:#fff;">✨ Kết Hợp
                                         </div>
                                         <div style="font-size:11px; color:var(--text-muted);">Quét RSS + Video máy</div>
                                     </div>
@@ -5490,8 +5548,7 @@
                             style="background:rgba(255,255,255,0.02); padding:16px; border-radius:var(--radius-md); border:1px solid rgba(245,158,11,0.25);">
                             <label
                                 style="font-weight:700; color:var(--accent-gold); display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                <i class="fa-solid fa-folder-open"></i> Thư Mục Video Cục Bộ Trên Máy Tính (Local
-                                Ingestion):
+                                <i class="fa-solid fa-folder-open"></i> Thư Mục Video Cục Bộ Trên Máy Tính:
                             </label>
                             <div style="display:flex; gap:8px;">
                                 <input type="text" id="campaignLocalFolderInput" class="input-field"
@@ -5589,13 +5646,13 @@
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                                 <div>
                                     <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-crop"></i>
-                                        Định dạng khung hình (Aspect Ratio):</label>
+                                        Định Dạng Khung Hình:</label>
                                     <select id="campaignAspectRatio" class="custom-select mt-1"
                                         style="width:100%; height:40px;">
-                                        <option value="9:16_blur" selected>9:16 Dọc Nền Mờ (Blur Canvas) - Chuẩn TikTok
+                                        <option value="9:16_blur" selected>9:16 Dọc Nền Mờ - Chuẩn TikTok
                                         </option>
-                                        <option value="9:16_crop">9:16 Dọc Cắt Giữa (Center Crop)</option>
-                                        <option value="9:16_split">9:16 Split Screen Ghép 2 Tầng (Game/Relax)</option>
+                                        <option value="9:16_crop">9:16 Dọc Cắt Giữa</option>
+                                        <option value="9:16_split">9:16 Split Screen Ghép 2 Tầng</option>
                                     </select>
                                 </div>
                                 <div>
@@ -5659,7 +5716,7 @@
                                     style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-secondary); cursor:pointer;">
                                     <input type="checkbox" id="campaignFlipSwitch" checked
                                         style="width:16px; height:16px; accent-color:var(--accent-cyan);">
-                                    <span>Lật hình ngang (Anti-fingerprint)</span>
+                                    <span>Lật hình ngang</span>
                                 </label>
                                 <label
                                     style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-secondary); cursor:pointer;">
@@ -5679,8 +5736,7 @@
                                     <input type="checkbox" id="campaignSubtitleSwitch" checked
                                         onchange="document.getElementById('campaignSubtitleSettingsWrap').style.display = this.checked ? '' : 'none';">
                                     <span><i class="fa-solid fa-closed-captioning"
-                                            style="color:var(--accent-gold);"></i> Tự Động Nhận Diện &amp; Tạo Phụ Đề AI
-                                        (Faster-Whisper)</span>
+                                            style="color:var(--accent-gold);"></i> Tự Động Nhận Diện &amp; Tạo Phụ Đề AI</span>
                                 </label>
                                 <span class="badge badge-gold" style="font-size:10px;">Tăng Retention</span>
                             </div>
@@ -5730,8 +5786,7 @@
                                     style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                     <input type="checkbox" id="campaignBgmSwitch"
                                         onchange="document.getElementById('campaignBgmSettingsWrap').style.display = this.checked ? 'grid' : 'none';">
-                                    <span><i class="fa-solid fa-music text-cyan"></i> Ghép Nhạc Nền Tự Động (BGM Audio
-                                        Mixer)</span>
+                                    <span><i class="fa-solid fa-music text-cyan"></i> Ghép Nhạc Nền Tự Động</span>
                                 </label>
                                 <span class="badge badge-info" style="font-size:10px;">Audio Mixer</span>
                             </div>
@@ -5792,11 +5847,10 @@
                             <div
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                                 <label
-                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
+                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;">
                                     <input type="checkbox" id="campaignUseAiImages"
                                         onchange="toggleAiStoryCard('campaign', this.checked);">
-                                    <span><i class="fa-solid fa-wand-magic-sparkles" style="color:#ec4899;"></i> Chế Độ
-                                        AI Storytelling (Tạo Video 100% Mới Từ AI)</span>
+                                    <span><i class="fa-solid fa-wand-magic-sparkles" style="color:#ec4899;"></i> Chế Độ AI Storytelling</span>
                                 </label>
                                 <span class="badge"
                                     style="background:rgba(236,72,153,0.2); color:#f472b6; font-size:10px; font-weight:700;">100%
@@ -5820,8 +5874,8 @@
                                             style="font-size:11.5px; height:36px; width:100%;"
                                             onchange="handleVisualSourceChange(this, 'campaignStockWrap');">
                                             <option value="ai_video">🎥 100% Video AI (LTX / Wan 2.1 / Kling)</option>
-                                            <option value="ai" selected>🤖 100% Ảnh AI (AI Generated)</option>
-                                            <option value="stock">🎥 100% Cảnh quay thật (Pexels / Pixabay)</option>
+                                            <option value="ai" selected>🤖 100% Ảnh AI</option>
+                                            <option value="stock">🎥 100% Cảnh quay thật</option>
                                             <option value="mixed">✨ Mix Kết Hợp (50% Thật + 50% AI)</option>
                                         </select>
                                     </div>
@@ -5847,7 +5901,7 @@
                                             style="font-size:11.5px; height:36px; width:100%;">
                                             <option value="fal_ltx" selected>⚡ LTX-Video (Fal.ai - Siêu tốc 5s)</option>
                                             <option value="fal_wan">🎬 Wan 2.1 (Fal.ai - Cinema Grade 14B)</option>
-                                            <option value="kling">🔥 Kling 1.5 Video (Kling AI)</option>
+                                            <option value="kling">🔥 Kling 1.5 Video</option>
                                         </select>
                                     </div>
                                     <div>
@@ -5856,11 +5910,11 @@
                                             cách ảnh AI:</label>
                                         <select id="campaignImageStyle" class="custom-select"
                                             style="font-size:11.5px; height:36px; width:100%;">
-                                            <option value="cinematic" selected>🎬 Điện Ảnh 8K (Cinematic)</option>
+                                            <option value="cinematic" selected>🎬 Điện Ảnh 8K</option>
                                             <option value="photorealistic">📸 Ảnh Chụp Chân Thực</option>
                                             <option value="anime">🌸 Anime Nhật Bản</option>
                                             <option value="cyberpunk">⚡ Tương Lai Cyberpunk</option>
-                                            <option value="dark_fantasy">🏰 Kỳ Ảo U Tối (Dark Fantasy)</option>
+                                            <option value="dark_fantasy">🏰 Kỳ Ảo U Tối</option>
                                             <option value="3d_render">🎨 Hoạt Hình 3D Pixar</option>
                                             <option value="comic">💥 Truyện Tranh Comic</option>
                                         </select>
@@ -5906,11 +5960,10 @@
                             <div
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                                 <label
-                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
+                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;">
                                     <input type="checkbox" id="campaignNarrationSwitch"
                                         onchange="toggleCampaignNarration('new', this.checked);">
-                                    <span><i class="fa-solid fa-microphone-lines" style="color:#c084fc;"></i> Bật Lồng
-                                        Tiếng AI (Text-To-Speech Narration)</span>
+                                    <span><i class="fa-solid fa-microphone-lines" style="color:#c084fc;"></i> Bật Lồng Tiếng AI</span>
                                 </label>
                                 <span class="badge"
                                     style="background:rgba(192,132,252,0.2); color:#c084fc; font-size:10px; font-weight:700;">AI
@@ -5928,8 +5981,8 @@
                                 <div
                                     style="background:rgba(0,0,0,0.25); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
                                     <label
-                                        style="font-size:11.5px; font-weight:700; color:#fff; margin-bottom:6px; display:block;">
-                                        <i class="fa-solid fa-bolt text-cyan"></i> Chọn Bộ Máy Sinh Giọng (TTS Engine):
+                                        style="font-size:11.5px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;">
+                                        <i class="fa-solid fa-bolt text-cyan"></i> Chọn Bộ Máy Sinh Giọng:
                                     </label>
                                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                                         <label
@@ -5938,7 +5991,7 @@
                                                 onchange="toggleCampaignTtsEngine('new', 'edge-tts')"
                                                 style="accent-color:#c084fc;">
                                             <div>
-                                                <div style="font-weight:700; color:#fff;">⚡ Microsoft Edge-TTS</div>
+                                                <div style="font-weight:700; color:var(--text-primary);">⚡ Microsoft Edge-TTS</div>
                                                 <div style="font-size:10.5px; color:var(--text-muted);">Miễn phí 100%,
                                                     tốc độ cao</div>
                                             </div>
@@ -6040,7 +6093,7 @@
                                             </option>
                                             <option value="hai_huoc">😂 Hài hước dí dỏm</option>
                                             <option value="chuyen_nghiep">🎙️ Kể chuyện điện ảnh, truyền cảm</option>
-                                            <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh (Viral Shorts)</option>
+                                            <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh</option>
                                         </select>
                                     </div>
                                 </div>
@@ -6069,7 +6122,7 @@
                             style="background:rgba(255,255,255,0.02); padding:14px; border-radius:var(--radius-md); border:1px solid rgba(245,158,11,0.25);">
                             <label
                                 style="font-weight:700; color:var(--accent-gold); display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                <i class="fa-solid fa-share-nodes"></i> Nền Tảng Đăng Bài Mục Tiêu (Target Platforms):
+                                <i class="fa-solid fa-share-nodes"></i> Nền Tảng Đăng Bài Mục Tiêu:
                             </label>
                             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
                                 <label
@@ -6115,8 +6168,7 @@
                                     style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                     <input type="checkbox" id="campaignAutoUploadSwitch" checked
                                         onchange="toggleCampaignAutoUpload('new', this.checked)">
-                                    <span><i class="fa-solid fa-cloud-arrow-up text-cyan"></i> Tự Động Đăng Bài Lên Nick
-                                        (Auto Upload)</span>
+                                    <span><i class="fa-solid fa-cloud-arrow-up text-cyan"></i> Tự Động Đăng Bài Lên Nick</span>
                                 </label>
                                 <span class="badge badge-success" style="font-size:10px;">Khuyên dùng</span>
                             </div>
@@ -6163,10 +6215,9 @@
                                     chế phân phối video vào các nick:</label>
                                 <select id="campaignDistributionMode" class="custom-select"
                                     style="width:100%; height:38px;">
-                                    <option value="round_robin" selected>Xoay Vòng Đều (Round-Robin) - Mỗi nick nhận đều
-                                        1 clip</option>
+                                    <option value="round_robin" selected>Xoay Vòng Đều - Mỗi nick nhận đều 1 clip</option>
                                     <option value="single_best">Ưu Tiên Nick Điểm Uy Tín Cao Nhất</option>
-                                    <option value="random">Ngẫu Nhiên (Random Distribution)</option>
+                                    <option value="random">Ngẫu Nhiên</option>
                                 </select>
                             </div>
                         </div>
@@ -6273,7 +6324,7 @@
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px;">
                                 <div>
                                     <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-shuffle"></i>
-                                        Độ trễ ngẫu nhiên (Jitter):</label>
+                                        Độ Trễ Ngẫu Nhiên:</label>
                                     <select id="campaignRandomDelaySelect" class="custom-select mt-1"
                                         style="width:100%; height:40px;">
                                         <option value="0">Đúng giờ chính xác (Không trễ)</option>
@@ -6326,8 +6377,7 @@
                                     style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                     <input type="checkbox" id="campaignAutoEngagementSwitch"
                                         onchange="toggleCampaignAutoEngagement('new', this.checked)">
-                                    <span><i class="fa-solid fa-comments text-emerald"></i> Giao Thức Tương Tác 30 Phút
-                                        Vàng (Golden 30-Minute Engagement)</span>
+                                    <span><i class="fa-solid fa-comments text-emerald"></i> Giao Thức Tương Tác 30 Phút Vàng</span>
                                 </label>
                                 <span class="badge badge-success" style="font-size:10px;">Tăng Viral</span>
                             </div>
@@ -6347,8 +6397,7 @@
                                             style="display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                             <input type="checkbox" id="campaignAutoPinComment" checked
                                                 style="width:15px; height:15px; accent-color:#10b981;">
-                                            <span><i class="fa-solid fa-thumbtack text-warning"></i> Tự Động Viết &amp;
-                                                Ghim Comment Gợi Mở (Seed Comment)</span>
+                                            <span><i class="fa-solid fa-thumbtack text-warning"></i> Tự Động Viết &amp; Ghim Comment Gợi Mở</span>
                                         </label>
                                         <span class="badge badge-warning" style="font-size:9.5px;">Auto Pin</span>
                                     </div>
@@ -6380,8 +6429,7 @@
                                             style="display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                             <input type="checkbox" id="campaignAutoReplyComments" checked
                                                 style="width:15px; height:15px; accent-color:#10b981;">
-                                            <span><i class="fa-solid fa-reply text-cyan"></i> Tự Động Trả Lời Bình Luận
-                                                Của Khán Giả (AI Reply)</span>
+                                            <span><i class="fa-solid fa-reply text-cyan"></i> Tự Động Trả Lời Bình Luận Của Khán Giả</span>
                                         </label>
                                         <span class="badge badge-cyan" style="font-size:9.5px;">AI Reply</span>
                                     </div>
@@ -6476,10 +6524,9 @@
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                 <label
                                     style="font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:8px; margin:0;">
-                                    <i class="fa-solid fa-layer-group"></i> Chế Độ Thu Thập Video (Source Mode):
+                                    <i class="fa-solid fa-layer-group"></i> Chế Độ Thu Thập Video:
                                 </label>
-                                <span class="badge badge-info" id="editCampaignSourceModeBadge">Chế độ: Tự Động Kết Hợp
-                                    (Hybrid)</span>
+                                <span class="badge badge-info" id="editCampaignSourceModeBadge">Chế Độ: Tự Động Kết Hợp</span>
                             </div>
                             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
                                 <label
@@ -6488,7 +6535,7 @@
                                         onchange="updateCampaignSourceModeUI('edit', this.value)"
                                         style="accent-color:var(--accent-cyan);">
                                     <div>
-                                        <div style="font-size:12px; font-weight:700; color:#fff;">✨ Kết Hợp (Hybrid)
+                                        <div style="font-size:12px; font-weight:700; color:#fff;">✨ Kết Hợp
                                         </div>
                                         <div style="font-size:11px; color:var(--text-muted);">Quét RSS + Video máy</div>
                                     </div>
@@ -6558,8 +6605,7 @@
                             style="background:rgba(255,255,255,0.02); padding:16px; border-radius:var(--radius-md); border:1px solid rgba(245,158,11,0.25);">
                             <label
                                 style="font-weight:700; color:var(--accent-gold); display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                <i class="fa-solid fa-folder-open"></i> Thư Mục Video Cục Bộ Trên Máy Tính (Local
-                                Ingestion):
+                                <i class="fa-solid fa-folder-open"></i> Thư Mục Video Cục Bộ Trên Máy Tính:
                             </label>
                             <div style="display:flex; gap:8px;">
                                 <input type="text" id="editCampaignLocalFolderInput" class="input-field"
@@ -6657,15 +6703,15 @@
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                                 <div>
                                     <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-crop"></i>
-                                        Định dạng khung hình (Aspect Ratio):</label>
+                                        Định Dạng Khung Hình:</label>
                                     <select id="editCampaignAsp
 ... [truncated for diff preview]
                                     <select id=" editCampaignAspectRatio" class="custom-select mt-1"
                                         style="width:100%; height:40px;">
-                                        <option value="9:16_blur" selected>9:16 Dọc Nền Mờ (Blur Canvas) - Chuẩn TikTok
+                                        <option value="9:16_blur" selected>9:16 Dọc Nền Mờ - Chuẩn TikTok
                                         </option>
-                                        <option value="9:16_crop">9:16 Dọc Cắt Giữa (Center Crop)</option>
-                                        <option value="9:16_split">9:16 Split Screen Ghép 2 Tầng (Game/Relax)</option>
+                                        <option value="9:16_crop">9:16 Dọc Cắt Giữa</option>
+                                        <option value="9:16_split">9:16 Split Screen Ghép 2 Tầng</option>
                                     </select>
                                 </div>
                                 <div>
@@ -6729,7 +6775,7 @@
                                     style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-secondary); cursor:pointer;">
                                     <input type="checkbox" id="editCampaignFlipSwitch" checked
                                         style="width:16px; height:16px; accent-color:var(--accent-cyan);">
-                                    <span>Lật hình ngang (Anti-fingerprint)</span>
+                                    <span>Lật hình ngang</span>
                                 </label>
                                 <label
                                     style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-secondary); cursor:pointer;">
@@ -6749,8 +6795,7 @@
                                     <input type="checkbox" id="editCampaignSubtitleSwitch" checked
                                         onchange="document.getElementById('editCampaignSubtitleSettingsWrap').style.display = this.checked ? '' : 'none';">
                                     <span><i class="fa-solid fa-closed-captioning"
-                                            style="color:var(--accent-gold);"></i> Tự Động Nhận Diện &amp; Tạo Phụ Đề AI
-                                        (Faster-Whisper)</span>
+                                            style="color:var(--accent-gold);"></i> Tự Động Nhận Diện &amp; Tạo Phụ Đề AI</span>
                                 </label>
                                 <span class="badge badge-gold" style="font-size:10px;">Tăng Retention</span>
                             </div>
@@ -6800,8 +6845,7 @@
                                     style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                     <input type="checkbox" id="editCampaignBgmSwitch"
                                         onchange="document.getElementById('editCampaignBgmSettingsWrap').style.display = this.checked ? 'grid' : 'none';">
-                                    <span><i class="fa-solid fa-music text-cyan"></i> Ghép Nhạc Nền Tự Động (BGM Audio
-                                        Mixer)</span>
+                                    <span><i class="fa-solid fa-music text-cyan"></i> Ghép Nhạc Nền Tự Động</span>
                                 </label>
                                 <span class="badge badge-info" style="font-size:10px;">Audio Mixer</span>
                             </div>
@@ -6862,11 +6906,10 @@
                             <div
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                                 <label
-                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
+                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;">
                                     <input type="checkbox" id="editCampaignUseAiImages"
                                         onchange="toggleAiStoryCard('editCampaign', this.checked);">
-                                    <span><i class="fa-solid fa-wand-magic-sparkles" style="color:#ec4899;"></i> Chế Độ
-                                        AI Storytelling (Tạo Video 100% Mới Từ AI)</span>
+                                    <span><i class="fa-solid fa-wand-magic-sparkles" style="color:#ec4899;"></i> Chế Độ AI Storytelling</span>
                                 </label>
                                 <span class="badge"
                                     style="background:rgba(236,72,153,0.2); color:#f472b6; font-size:10px; font-weight:700;">100%
@@ -6890,8 +6933,8 @@
                                             style="font-size:11.5px; height:36px; width:100%;"
                                             onchange="handleVisualSourceChange(this, 'editCampaignStockWrap');">
                                             <option value="ai_video">🎥 100% Video AI (LTX / Wan 2.1 / Kling)</option>
-                                            <option value="ai" selected>🤖 100% Ảnh AI (AI Generated)</option>
-                                            <option value="stock">🎥 100% Cảnh quay thật (Pexels / Pixabay)</option>
+                                            <option value="ai" selected>🤖 100% Ảnh AI</option>
+                                            <option value="stock">🎥 100% Cảnh quay thật</option>
                                             <option value="mixed">✨ Mix Kết Hợp (50% Thật + 50% AI)</option>
                                         </select>
                                     </div>
@@ -6917,7 +6960,7 @@
                                             style="font-size:11.5px; height:36px; width:100%;">
                                             <option value="fal_ltx" selected>⚡ LTX-Video (Fal.ai - Siêu tốc 5s)</option>
                                             <option value="fal_wan">🎬 Wan 2.1 (Fal.ai - Cinema Grade 14B)</option>
-                                            <option value="kling">🔥 Kling 1.5 Video (Kling AI)</option>
+                                            <option value="kling">🔥 Kling 1.5 Video</option>
                                         </select>
                                     </div>
                                     <div>
@@ -6926,11 +6969,11 @@
                                             cách ảnh AI:</label>
                                         <select id="editCampaignImageStyle" class="custom-select"
                                             style="font-size:11.5px; height:36px; width:100%;">
-                                            <option value="cinematic" selected>🎬 Điện Ảnh 8K (Cinematic)</option>
+                                            <option value="cinematic" selected>🎬 Điện Ảnh 8K</option>
                                             <option value="photorealistic">📸 Ảnh Chụp Chân Thực</option>
                                             <option value="anime">🌸 Anime Nhật Bản</option>
                                             <option value="cyberpunk">⚡ Tương Lai Cyberpunk</option>
-                                            <option value="dark_fantasy">🏰 Kỳ Ảo U Tối (Dark Fantasy)</option>
+                                            <option value="dark_fantasy">🏰 Kỳ Ảo U Tối</option>
                                             <option value="3d_render">🎨 Hoạt Hình 3D Pixar</option>
                                             <option value="comic">💥 Truyện Tranh Comic</option>
                                         </select>
@@ -6976,11 +7019,10 @@
                             <div
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                                 <label
-                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
+                                    style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;">
                                     <input type="checkbox" id="editCampaignNarrationSwitch"
                                         onchange="toggleCampaignNarration('edit', this.checked);">
-                                    <span><i class="fa-solid fa-microphone-lines" style="color:#c084fc;"></i> Bật Lồng
-                                        Tiếng AI (Text-To-Speech Narration)</span>
+                                    <span><i class="fa-solid fa-microphone-lines" style="color:#c084fc;"></i> Bật Lồng Tiếng AI</span>
                                 </label>
                                 <span class="badge"
                                     style="background:rgba(192,132,252,0.2); color:#c084fc; font-size:10px; font-weight:700;">AI
@@ -6998,8 +7040,8 @@
                                 <div
                                     style="background:rgba(0,0,0,0.25); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
                                     <label
-                                        style="font-size:11.5px; font-weight:700; color:#fff; margin-bottom:6px; display:block;">
-                                        <i class="fa-solid fa-bolt text-cyan"></i> Chọn Bộ Máy Sinh Giọng (TTS Engine):
+                                        style="font-size:11.5px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;">
+                                        <i class="fa-solid fa-bolt text-cyan"></i> Chọn Bộ Máy Sinh Giọng:
                                     </label>
                                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                                         <label
@@ -7008,7 +7050,7 @@
                                                 checked onchange="toggleCampaignTtsEngine('edit', 'edge-tts')"
                                                 style="accent-color:#c084fc;">
                                             <div>
-                                                <div style="font-weight:700; color:#fff;">⚡ Microsoft Edge-TTS</div>
+                                                <div style="font-weight:700; color:var(--text-primary);">⚡ Microsoft Edge-TTS</div>
                                                 <div style="font-size:10.5px; color:var(--text-muted);">Miễn phí 100%,
                                                     tốc độ cao</div>
                                             </div>
@@ -7110,7 +7152,7 @@
                                             </option>
                                             <option value="hai_huoc">😂 Hài hước dí dỏm</option>
                                             <option value="chuyen_nghiep">🎙️ Kể chuyện điện ảnh, truyền cảm</option>
-                                            <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh (Viral Shorts)</option>
+                                            <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh</option>
                                         </select>
                                     </div>
                                 </div>
@@ -7139,7 +7181,7 @@
                             style="background:rgba(255,255,255,0.02); padding:14px; border-radius:var(--radius-md); border:1px solid rgba(245,158,11,0.25);">
                             <label
                                 style="font-weight:700; color:var(--accent-gold); display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                <i class="fa-solid fa-share-nodes"></i> Nền Tảng Đăng Bài Mục Tiêu (Target Platforms):
+                                <i class="fa-solid fa-share-nodes"></i> Nền Tảng Đăng Bài Mục Tiêu:
                             </label>
                             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
                                 <label
@@ -7185,8 +7227,7 @@
                                     style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                     <input type="checkbox" id="editCampaignAutoUploadSwitch" checked
                                         onchange="toggleCampaignAutoUpload('edit', this.checked)">
-                                    <span><i class="fa-solid fa-cloud-arrow-up text-cyan"></i> Tự Động Đăng Bài Lên Nick
-                                        (Auto Upload)</span>
+                                    <span><i class="fa-solid fa-cloud-arrow-up text-cyan"></i> Tự Động Đăng Bài Lên Nick</span>
                                 </label>
                                 <span class="badge badge-success" style="font-size:10px;">Khuyên dùng</span>
                             </div>
@@ -7233,10 +7274,9 @@
                                     chế phân phối video vào các nick:</label>
                                 <select id="editCampaignDistributionMode" class="custom-select"
                                     style="width:100%; height:38px;">
-                                    <option value="round_robin" selected>Xoay Vòng Đều (Round-Robin) - Mỗi nick nhận đều
-                                        1 clip</option>
+                                    <option value="round_robin" selected>Xoay Vòng Đều - Mỗi nick nhận đều 1 clip</option>
                                     <option value="single_best">Ưu Tiên Nick Điểm Uy Tín Cao Nhất</option>
-                                    <option value="random">Ngẫu Nhiên (Random Distribution)</option>
+                                    <option value="random">Ngẫu Nhiên</option>
                                 </select>
                             </div>
                         </div>
@@ -7343,7 +7383,7 @@
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px;">
                                 <div>
                                     <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-shuffle"></i>
-                                        Độ trễ ngẫu nhiên (Jitter):</label>
+                                        Độ Trễ Ngẫu Nhiên:</label>
                                     <select id="editCampaignRandomDelaySelect" class="custom-select mt-1"
                                         style="width:100%; height:40px;">
                                         <option value="0">Đúng giờ chính xác (Không trễ)</option>
@@ -7396,8 +7436,7 @@
                                     style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                     <input type="checkbox" id="editCampaignAutoEngagementSwitch"
                                         onchange="toggleCampaignAutoEngagement('edit', this.checked)">
-                                    <span><i class="fa-solid fa-comments text-emerald"></i> Giao Thức Tương Tác 30 Phút
-                                        Vàng (Golden 30-Minute Engagement)</span>
+                                    <span><i class="fa-solid fa-comments text-emerald"></i> Giao Thức Tương Tác 30 Phút Vàng</span>
                                 </label>
                                 <span class="badge badge-success" style="font-size:10px;">Tăng Viral</span>
                             </div>
@@ -7417,8 +7456,7 @@
                                             style="display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                             <input type="checkbox" id="editCampaignAutoPinComment" checked
                                                 style="width:15px; height:15px; accent-color:#10b981;">
-                                            <span><i class="fa-solid fa-thumbtack text-warning"></i> Tự Động Viết &amp;
-                                                Ghim Comment Gợi Mở (Seed Comment)</span>
+                                            <span><i class="fa-solid fa-thumbtack text-warning"></i> Tự Động Viết &amp; Ghim Comment Gợi Mở</span>
                                         </label>
                                         <span class="badge badge-warning" style="font-size:9.5px;">Auto Pin</span>
                                     </div>
@@ -7450,8 +7488,7 @@
                                             style="display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:#fff; cursor:pointer; margin:0;">
                                             <input type="checkbox" id="editCampaignAutoReplyComments" checked
                                                 style="width:15px; height:15px; accent-color:#10b981;">
-                                            <span><i class="fa-solid fa-reply text-cyan"></i> Tự Động Trả Lời Bình Luận
-                                                Của Khán Giả (AI Reply)</span>
+                                            <span><i class="fa-solid fa-reply text-cyan"></i> Tự Động Trả Lời Bình Luận Của Khán Giả</span>
                                         </label>
                                         <span class="badge badge-cyan" style="font-size:9.5px;">AI Reply</span>
                                     </div>
@@ -7615,8 +7652,7 @@
                     <div
                         style="padding:10px 16px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
                         <span style="font-size:12.5px; font-weight:700; color:#fff;"><i
-                                class="fa-solid fa-terminal text-cyan"></i> Dòng Nhật Ký Sự Kiện Thời Gian Thực
-                            (Activity Log)</span>
+                                class="fa-solid fa-terminal text-cyan"></i> Dòng Nhật Ký Sự Kiện Thời Gian Thực</span>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span class="badge badge-info" style="font-size:10px; font-family:monospace;"
                                 id="campLogCountText">0 sự kiện ghi nhận</span>
@@ -7758,7 +7794,7 @@
                         <li><strong>Ưu tiên ZeroRAM (Không mở trình duyệt):</strong> Đọc trực tiếp cookie từ ổ đĩa và
                             gọi API TikTok thần tốc (~0.5s/nick), không tốn RAM và không mở cửa sổ trình duyệt. Chỉ mở
                             app/trình duyệt làm dự phòng khi cookie hết hạn.</li>
-                        <li><strong>Chống xung đột (Locking):</strong> Profile nào đang bận upload bài sẽ được tự động
+                        <li><strong>Chống Xung Đột:</strong> Profile nào đang bận upload bài sẽ được tự động
                             bỏ qua và quét lại sau, tuyệt đối không làm gián đoạn việc đăng video.</li>
                         <li><strong>Cảnh báo 10K:</strong> Khi phát hiện nick đạt đủ 10.000 Follower, hệ thống sẽ gửi
                             tin nhắn Telegram tới tất cả các kênh đang kích hoạt.</li>
@@ -7799,7 +7835,7 @@
                     <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Tên Profile
                         :</label>
                     <input type="text" id="editProfileName" class="input-field" disabled
-                        style="background: rgba(255,255,255,0.05); color: #fff;">
+                        style="background: rgba(255,255,255,0.05); color: var(--text-primary);">
                 </div>
                 <div style="display:grid; grid-template-columns:1fr; gap:10px;">
                     <!-- Trình duyệt (Preserved in DOM for future development) -->
@@ -7825,7 +7861,7 @@
                 </div>
                 <div class="form-group">
                     <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
-                        <i class="fa-brands fa-tiktok"></i> TikTok Username (Handle):
+                        <i class="fa-brands fa-tiktok"></i> TikTok Username:
                     </label>
                     <div style="position: relative;">
                         <span
@@ -7840,7 +7876,7 @@
                 </div>
                 <div class="form-group">
                     <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
-                        <i class="fa-solid fa-id-badge"></i> Tên Kênh TikTok (Profile Display Name):
+                        <i class="fa-solid fa-id-badge"></i> Tên Kênh TikTok:
                     </label>
                     <input type="text" id="editProfileNickname" class="input-field"
                         placeholder="Ví dụ: Hoàng Minh, Iamcooked...">
@@ -7852,23 +7888,10 @@
                     <input type="number" id="editProfileFollowers" class="input-field" placeholder="0">
                 </div>
             </div>
-            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn btn-warning" id="btnScanFromEditModal"
-                        onclick="scanCurrentEditProfile(this)">
-                        <i class="fa-solid fa-magnifying-glass-chart"></i> Quét Tự Động Ngay
-                    </button>
-                    <button type="button" class="btn btn-danger" onclick="deleteCurrentEditProfile(this)"
-                        title="Xóa profile khỏi Farm">
-                        <i class="fa-solid fa-trash"></i> Xóa Kênh
-                    </button>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeEditUsernameModal()">Đóng</button>
-                    <button type="button" class="btn btn-primary" onclick="saveProfileUsernameFromModal(this)">
-                        <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
-                    </button>
-                </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+                <button type="button" class="btn btn-primary" onclick="saveProfileUsernameFromModal(this)" style="min-width: 140px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+                </button>
             </div>
         </div>
     </div>
@@ -8004,7 +8027,7 @@
             <div class="modal-body" style="padding: 20px 24px;">
                 <div class="form-group mb-3">
                     <label class="form-label" style="font-weight:600;"><i class="fa-solid fa-folder-open text-cyan"></i>
-                        Thư Mục Lưu Trữ Nhạc Nền (Storage Path):</label>
+                        Thư Mục Lưu Trữ Nhạc Nền:</label>
                     <input type="text" id="settingAudioMusicDir" class="input-field" placeholder="data/music">
                     <small class="text-muted" style="font-size:11.5px; margin-top:3px; display:block;">Đường dẫn thư mục
                         chứa toàn bộ playlist và bài hát nền trên máy tính.</small>
@@ -8080,7 +8103,7 @@
                     <i id="globalConfirmIcon" class="fa-solid fa-triangle-exclamation text-danger"
                         style="font-size:18px; flex-shrink:0;"></i>
                     <h3 id="globalConfirmTitle"
-                        style="margin:0; font-size:15.5px; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        style="margin:0; font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-primary);">
                         Xác Nhận Hành Động</h3>
                 </div>
                 <button type="button" class="modal-corner-close" id="btnGlobalConfirmClose" title="Đóng"
@@ -8091,7 +8114,7 @@
             <div class="modal-body"
                 style="padding: 18px 22px; word-break: break-word; overflow-wrap: anywhere; max-width: 100%;">
                 <p id="globalConfirmMessage"
-                    style="font-size:13.5px; color:#f8fafc; line-height:1.55; margin:0 0 8px 0; font-weight:600; word-break: break-word; overflow-wrap: anywhere; max-width: 100%;">
+                    style="font-size:13.5px; line-height:1.55; margin:0 0 8px 0; font-weight:600; color:var(--text-primary); word-break: break-word; overflow-wrap: anywhere; max-width: 100%;">
                     Bạn có chắc chắn muốn thực hiện thao tác này?
                 </p>
                 <p id="globalConfirmDetails"
@@ -8240,7 +8263,8 @@
 
     <div id="toast" class="toast"></div>
 
-    <script src="/static/js/app.js?v=20261028_32"></script>
+    <script src="/static/js/i18n.js?v=20261107_12"></script>
+    <script src="/static/js/app.js?v=20261107_01"></script>
     <script src="/static/js/video_manager.js?v=20261103_02"></script>
 
     <script>
@@ -8304,9 +8328,9 @@
         }
     </script>
 
-    <script src="/static/js/elevenlabs_studio.js?v=20261103_01"></script>
+    <script src="/static/js/elevenlabs_studio.js?v=20261107_02"></script>
 
-    <!-- Modal Kích Hoạt Bản Quyền (License Key) -->
+    <!-- Modal Kích Hoạt Bản Quyền -->
     <div class="modal" id="licenseActivationModal"
         onclick="if(event.target === this) window.LicenseManager.closeLicenseModal()" style="display: none;">
         <div class="modal-content glass-panel"
@@ -8319,7 +8343,7 @@
                         <i class="fa-solid fa-key" style="color: #fff; font-size: 18px;"></i>
                     </div>
                     <div>
-                        <h3 style="margin:0; font-size:16px; font-weight:700; color:#fff;">Kích Hoạt Bản Quyền
+                        <h3 style="margin:0; font-size:16px; font-weight:700;">Kích Hoạt Bản Quyền
                             ShortsStack</h3>
                         <p class="panel-sub" style="margin:2px 0 0 0; font-size:12px;">Mở khóa toàn bộ tính năng nuôi
                             kênh & render video AI</p>
@@ -8352,8 +8376,7 @@
                 </div>
 
                 <div class="form-group mb-3">
-                    <label style="font-weight:600; display:block; margin-bottom:6px; font-size: 13px;">Mã Bản Quyền
-                        (License Key):</label>
+                    <label style="font-weight:600; display:block; margin-bottom:6px; font-size: 13px;">Mã Bản Quyền:</label>
                     <input type="text" id="modalLicenseKeyInput" class="input-field" placeholder="SS-PRO-XXXX-XXXXXXXX"
                         style="font-family: monospace; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 14px;"
                         onkeydown="if(event.key==='Enter') window.LicenseManager.activate(document.getElementById('btnModalActivateSubmit'), 'modalLicenseKeyInput')">
@@ -8390,7 +8413,7 @@
                         <i class="fa-solid fa-arrow-right-from-bracket" style="color: #f43f5e; font-size: 16px;"></i>
                     </div>
                     <div>
-                        <h3 style="margin:0; font-size:15px; font-weight:700; color:#fff;">Đổi Mã License Key Khác</h3>
+                        <h3 style="margin:0; font-size:15px; font-weight:700;">Đổi Mã License Key Khác</h3>
                         <p class="panel-sub" style="margin:2px 0 0 0; font-size:11.5px;">Xác nhận hủy liên kết bản quyền
                             hiện tại</p>
                     </div>
@@ -8404,7 +8427,7 @@
                 </button>
             </div>
             <div class="modal-body" style="padding: 22px;">
-                <p style="font-size: 13.5px; color: #e2e8f0; margin: 0 0 14px 0; line-height: 1.6;">
+                <p style="font-size: 13.5px; margin: 0 0 14px 0; line-height: 1.6;">
                     Bạn có chắc chắn muốn hủy liên kết bản quyền trên máy tính này không?
                 </p>
                 <div
@@ -8423,7 +8446,8 @@
                     </button>
                     <button type="button" class="btn" onclick="window.LicenseManager.confirmDeactivateNow()"
                         style="background: linear-gradient(135deg, #ef4444, #dc2626); color: #ffffff !important; border: none; padding: 9px 20px; cursor: pointer; font-weight: 700; border-radius: 8px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);">
-                        <i class="fa-solid fa-check" style="color: #ffffff !important; margin-right: 6px;"></i><span style="color: #ffffff !important;">Xác Nhận Đổi Key</span>
+                        <i class="fa-solid fa-check" style="color: #ffffff !important; margin-right: 6px;"></i><span
+                            style="color: #ffffff !important;">Xác Nhận Đổi Key</span>
                     </button>
                 </div>
             </div>
@@ -8443,7 +8467,7 @@
                         <i class="fa-solid fa-cloud-arrow-down" style="color: #38bdf8; font-size: 16px;"></i>
                     </div>
                     <div>
-                        <h3 style="margin:0; font-size:15px; font-weight:700; color:#fff;" id="updateModalVersionText">
+                        <h3 style="margin:0; font-size:15px; font-weight:700;" id="updateModalVersionText">
                             Cập Nhật Phiên Bản Mới</h3>
                         <p class="panel-sub" style="margin:2px 0 0 0; font-size:11.5px;">ShortsStack Desktop Release</p>
                     </div>

@@ -135,24 +135,26 @@ window.LicenseManager = {
 
         if (topbarBadge && topbarText) {
             if (info.is_active) {
-                topbarBadge.className = 'btn btn-sm btn-success has-tooltip tooltip-left';
+                topbarBadge.className = 'sidebar-license-btn has-tooltip tooltip-top btn-license-active';
                 if (topbarIcon) {
                     topbarIcon.className = 'fa-solid fa-circle-check';
-                    topbarIcon.style.color = '#ffffff';
+                    topbarIcon.style.color = '#10b981';
                 }
-                topbarText.textContent = (info.plan === 'agency_5pc' || info.plan === 'lifetime')
+                const planName = (info.plan === 'agency_5pc' || info.plan === 'lifetime')
                     ? 'Agency (5 PCs)'
                     : ((info.plan === 'studio_3pc' || info.plan === 'yearly')
                         ? 'Studio (3 PCs)'
                         : 'Pro (1 PC)');
+                topbarText.textContent = planName;
                 topbarBadge.setAttribute('data-tooltip', `Bản quyền trọn đời | Hạn: ${info.expires_display} | Tối đa: ${info.max_devices} PC`);
             } else {
-                topbarBadge.className = 'btn btn-sm btn-warning has-tooltip tooltip-left';
+                topbarBadge.className = 'sidebar-license-btn has-tooltip tooltip-top btn-license-warning';
                 if (topbarIcon) {
                     topbarIcon.className = 'fa-solid fa-triangle-exclamation';
-                    topbarIcon.style.color = '#ffffff';
+                    topbarIcon.style.color = '#f59e0b';
                 }
-                topbarText.textContent = 'Chưa Kích Hoạt';
+                const unactivatedText = (window.t ? window.t('status_not_activated', 'Chưa Kích Hoạt') : 'Chưa Kích Hoạt');
+                topbarText.textContent = unactivatedText;
                 topbarBadge.setAttribute('data-tooltip', 'Nhấp để nhập License Key mở khóa toàn bộ tính năng');
             }
         }
@@ -343,11 +345,20 @@ window.LicenseManager = {
             const data = await res.json();
             this.updateInfo = data;
 
+            if (data.current_version) {
+                const curVerEl = document.getElementById('appCurrentVersionText');
+                if (curVerEl) curVerEl.textContent = `v${data.current_version}`;
+                const sidebarVerEl = document.getElementById('sidebarAppVersionBadge');
+                if (sidebarVerEl) sidebarVerEl.textContent = `v${data.current_version}`;
+            }
+
             if (data.update_available) {
                 // Hiện thông báo ở Topbar
                 if (topbarUpdateBtn && topbarUpdateText) {
                     topbarUpdateBtn.style.display = 'inline-flex';
-                    topbarUpdateText.textContent = `v${data.latest_version} Mới`;
+                    const suffix = (window.t ? window.t('topbar_update_new', 'Mới') : 'Mới');
+                    topbarUpdateText.textContent = `v${data.latest_version} ${suffix}`;
+                    topbarUpdateText.dataset.latestVersion = data.latest_version;
                 }
 
                 // Hiện thẻ cập nhật trong Tab Settings
@@ -445,7 +456,23 @@ window.LicenseManager = {
 
 // Khởi chạy khi tài liệu tải xong
 if (document.readyState === 'loading') {
-    window.addEventListener('DOMContentLoaded', () => window.LicenseManager.init());
+    window.addEventListener('DOMContentLoaded', () => {
+        window.LicenseManager.init();
+        document.addEventListener('appLanguageChanged', () => {
+            const topbarUpdateText = document.getElementById('updateBadgeText');
+            if (topbarUpdateText && topbarUpdateText.dataset.latestVersion) {
+                const suffix = (window.t ? window.t('topbar_update_new', 'Mới') : 'Mới');
+                topbarUpdateText.textContent = `v${topbarUpdateText.dataset.latestVersion} ${suffix}`;
+            }
+        });
+    });
 } else {
     window.LicenseManager.init();
+    document.addEventListener('appLanguageChanged', () => {
+        const topbarUpdateText = document.getElementById('updateBadgeText');
+        if (topbarUpdateText && topbarUpdateText.dataset.latestVersion) {
+            const suffix = (window.t ? window.t('topbar_update_new', 'Mới') : 'Mới');
+            topbarUpdateText.textContent = `v${topbarUpdateText.dataset.latestVersion} ${suffix}`;
+        }
+    });
 }

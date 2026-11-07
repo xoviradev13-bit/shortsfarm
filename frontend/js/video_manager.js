@@ -373,7 +373,7 @@ async function loadVideoLibraryTable() {
                 <tr>
                     <td style="color:var(--text-muted); font-family:monospace; font-size:12px;">#${v.id}</td>
                     <td>
-                        <div style="font-weight:600; color:white; max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(v.title || '')}">${escapeHtml(v.title || 'Video #' + v.id)}</div>
+                        <div style="font-weight:600; color:var(--text-primary); max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(v.title || '')}">${escapeHtml(v.title || 'Video #' + v.id)}</div>
                         <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${escapeHtml(v.yt_video_id || '')}</span>
                     </td>
                     <td>${sourceBadge}</td>

@@ -4007,6 +4007,8 @@ def get_ui_preferences():
     rows = dict(cursor.fetchall())
     conn.close()
     return {
+        "status": "success",
+        "success": True,
         "language": rows.get("APP_LANGUAGE") or os.getenv("APP_LANGUAGE", "vi"),
         "theme": rows.get("APP_THEME") or os.getenv("APP_THEME", "dark")
     }
@@ -4021,7 +4023,7 @@ def set_ui_preferences(req: UIPreferencesRequest):
         cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('APP_THEME', ?)", (req.theme,))
     conn.commit()
     conn.close()
-    return {"status": "success"}
+    return {"status": "success", "success": True}
 
 class UpdateSchedulerSettingsRequest(BaseModel):
     interval_minutes: int = 15

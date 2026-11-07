@@ -483,12 +483,215 @@ body.light-mode .modal {
     backdrop-filter: blur(8px) !important;
 }
 
-body.light-mode .modal-content,
+body.light-mode .modal-content {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* --- Modal Chi Tiết Kênh Light Mode Overrides --- */
 body.light-mode .modal-channel-detail {
     background: #ffffff !important;
     color: #0f172a !important;
     border: 1px solid #cbd5e1 !important;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-mode .channel-detail-hero {
+    background: linear-gradient(135deg, rgba(254, 44, 85, 0.07) 0%, rgba(0, 242, 254, 0.05) 50%, #f8fafc 100%) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .channel-hero-title {
+    color: #0f172a !important;
+}
+
+body.light-mode .channel-hero-avatar {
+    border-color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
+}
+
+body.light-mode .channel-hero-avatar-fallback {
+    background: #e2e8f0 !important;
+    border-color: #cbd5e1 !important;
+    color: #64748b !important;
+}
+
+body.light-mode .channel-hero-handle {
+    color: #0284c7 !important;
+}
+
+body.light-mode .channel-id-chip {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+body.light-mode .channel-id-chip button {
+    color: #64748b !important;
+}
+
+body.light-mode .channel-id-chip button:hover {
+    color: #0284c7 !important;
+}
+
+body.light-mode .channel-country-pill {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+body.light-mode .channel-joined-pill {
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    color: #334155 !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
+}
+
+body.light-mode .channel-detail-body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .detail-kpi-card {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .detail-kpi-card:hover {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-mode .detail-kpi-label {
+    color: #64748b !important;
+    font-weight: 600 !important;
+}
+
+body.light-mode .detail-kpi-val {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+}
+
+body.light-mode #detailStatus.is-active,
+body.light-mode #detailStatus.is-active * {
+    color: #059669 !important;
+}
+
+body.light-mode #detailStatus.is-inactive,
+body.light-mode #detailStatus.is-inactive * {
+    color: #64748b !important;
+}
+
+body.light-mode .detail-card {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .detail-card-header h4 {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+body.light-mode .detail-card-header .panel-sub {
+    color: #64748b !important;
+}
+
+body.light-mode .detail-description-box {
+    color: #334155 !important;
+    line-height: 1.65 !important;
+}
+
+body.light-mode .detail-tag-chip {
+    background: #e0f2fe !important;
+    border: 1px solid #bae6fd !important;
+    color: #0369a1 !important;
+}
+
+body.light-mode .detail-tag-chip:hover {
+    background: #bae6fd !important;
+    color: #0284c7 !important;
+}
+
+body.light-mode .detail-topic-chip {
+    background: #f3e8ff !important;
+    border: 1px solid #e9d5ff !important;
+    color: #7e22ce !important;
+}
+
+body.light-mode .detail-topic-chip:hover {
+    background: #e9d5ff !important;
+    color: #6b21a8 !important;
+}
+
+body.light-mode .detail-no-data {
+    color: #94a3b8 !important;
+}
+
+body.light-mode .detail-video-item {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-mode .detail-video-item:hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #0284c7 !important;
+}
+
+body.light-mode .detail-video-item-title {
+    color: #1e293b !important;
+    font-weight: 500 !important;
+}
+
+body.light-mode .detail-video-item:hover .detail-video-item-title {
+    color: #0284c7 !important;
+}
+
+body.light-mode .detail-video-link-icon {
+    color: #94a3b8 !important;
+}
+
+body.light-mode .similar-channel-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .similar-channel-card:hover {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-mode .similar-avatar {
+    border-color: #e2e8f0 !important;
+}
+
+body.light-mode .similar-title {
+    color: #0f172a !important;
+}
+
+body.light-mode .similar-title:hover {
+    color: #0284c7 !important;
+}
+
+body.light-mode .similar-handle {
+    color: #64748b !important;
+}
+
+body.light-mode .similar-stat-chip {
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #475569 !important;
 }
 
 body.light-mode .modal-header {

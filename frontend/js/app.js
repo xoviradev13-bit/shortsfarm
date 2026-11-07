@@ -218,6 +218,21 @@ function showToast(message, type = 'info') {
         displayMsg = String(message || '');
     }
 
+    // Auto-translate toast content if active language is not Vietnamese
+    if (window.i18n && typeof window.i18n.translateTextString === 'function' && window.i18n.currentLang !== 'vi') {
+        let cleanMsg = displayMsg.trim();
+        let prefix = '';
+        const iconMatch = cleanMsg.match(/^([✅❌⚠️ℹ️🔥⚡💡🛑🎉🚀\s]+)(.*)$/);
+        if (iconMatch) {
+            prefix = iconMatch[1];
+            cleanMsg = iconMatch[2].trim();
+        }
+        const trans = window.i18n.translateTextString(cleanMsg, window.i18n.currentLang);
+        if (trans) {
+            displayMsg = prefix + trans;
+        }
+    }
+
     // Icons per type
     let iconHtml = '<i class="fa-solid fa-circle-info toast-icon"></i>';
     if (normalizedType === 'error') {
@@ -1895,6 +1910,9 @@ function toggleActionMenu(e, id) {
         }
 
         menu.classList.add('show');
+        if (window.i18n && typeof window.i18n.translateDOM === 'function' && window.i18n.currentLang !== 'vi') {
+            window.i18n.translateDOM(menu);
+        }
     }
 }
 
@@ -2033,8 +2051,11 @@ async function openChannelDetailModal(target) {
                     dStr = dt.toLocaleDateString('vi-VN');
                 }
             } catch (e) { }
-            elJoined.innerHTML = `<i class="fa-regular fa-calendar"></i> Tham gia: ${dStr}`;
+            elJoined.innerHTML = `<i class="fa-regular fa-calendar"></i> <span data-i18n="Tham gia:">Tham gia:</span> ${dStr}`;
             elJoined.style.display = 'inline-flex';
+            if (window.i18n && typeof window.i18n.translateDOM === 'function') {
+                window.i18n.translateDOM(elJoined);
+            }
         } else {
             elJoined.style.display = 'none';
         }
@@ -2084,12 +2105,25 @@ async function openChannelDetailModal(target) {
     if (elLastUpload) {
         const days = ch.days_since_last_upload !== undefined && ch.days_since_last_upload !== null ? `${ch.days_since_last_upload} ngày trước` : '';
         elLastUpload.textContent = ch.last_upload_date ? `${ch.last_upload_date} ${days ? `(${days})` : ''}` : 'N/A';
+        if (window.i18n && typeof window.i18n.translateDOM === 'function') {
+            window.i18n.translateDOM(elLastUpload);
+        }
     }
 
     const elStatus = document.getElementById('detailStatus');
     if (elStatus) {
-        elStatus.textContent = ch.is_active ? '🟢 Hoạt động' : '⚪ Ít hoạt động';
-        elStatus.style.color = ch.is_active ? '#34d399' : '#94a3b8';
+        if (ch.is_active) {
+            elStatus.className = 'detail-kpi-val is-active';
+            elStatus.innerHTML = '<i class="fa-solid fa-circle-check" style="font-size: 13px; margin-right: 5px;"></i><span data-i18n="Hoạt động">Hoạt động</span>';
+            elStatus.style.color = '#059669';
+        } else {
+            elStatus.className = 'detail-kpi-val is-inactive';
+            elStatus.innerHTML = '<i class="fa-solid fa-circle-pause" style="font-size: 13px; margin-right: 5px;"></i><span data-i18n="Tạm ngưng">Tạm ngưng</span>';
+            elStatus.style.color = '#64748b';
+        }
+        if (window.i18n && typeof window.i18n.translateDOM === 'function') {
+            window.i18n.translateDOM(elStatus);
+        }
     }
 
     // Description
@@ -8526,10 +8560,18 @@ async function loadApiKeySettings() {
         if (data.app_language) {
             const langEl = document.getElementById('settingAppLanguage');
             if (langEl) langEl.value = data.app_language;
+            const topLangEl = document.getElementById('selectAppLanguage');
+            if (topLangEl) topLangEl.value = data.app_language;
+            if (typeof window.setAppLanguage === 'function' && window.i18n && window.i18n.getLanguage() !== data.app_language) {
+                window.setAppLanguage(data.app_language, false);
+            }
         }
         if (data.app_theme) {
             const themeEl = document.getElementById('settingAppTheme');
             if (themeEl) themeEl.value = data.app_theme;
+            if (typeof window.setAppTheme === 'function') {
+                window.setAppTheme(data.app_theme, false);
+            }
         }
 
         // Render key pool status table
@@ -9930,7 +9972,9 @@ function openAddTelegramChannelModal() {
     if (nameEl) nameEl.value = '';
     if (chatEl) chatEl.value = '';
     if (activeEl) activeEl.checked = true;
-    if (titleEl) titleEl.innerHTML = '<i class="fa-brands fa-telegram text-cyan"></i> Thêm Kênh Telegram Mới';
+    const iconEl = document.getElementById('teleModalIcon');
+    if (iconEl) iconEl.innerHTML = '<i class="fa-brands fa-telegram"></i>';
+    if (titleEl) titleEl.textContent = 'Thêm Kênh Telegram Mới';
 
     if (n10k) n10k.checked = true;
     if (nIssues) nIssues.checked = true;
@@ -9963,7 +10007,9 @@ function openEditTelegramChannelModal(channel) {
     if (nameEl) nameEl.value = channel.name || '';
     if (chatEl) chatEl.value = channel.chat_id || '';
     if (activeEl) activeEl.checked = (channel.is_active !== 0 && channel.is_active !== false);
-    if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-pen-to-square text-cyan"></i> Chỉnh Sửa Kênh Telegram';
+    const iconEl = document.getElementById('teleModalIcon');
+    if (iconEl) iconEl.innerHTML = '<i class="fa-solid fa-pen-to-square"></i>';
+    if (titleEl) titleEl.textContent = 'Chỉnh Sửa Kênh Telegram';
 
     if (n10k) n10k.checked = channel.notify_10k !== 0;
     if (nIssues) nIssues.checked = channel.notify_issues !== 0;
@@ -10373,14 +10419,11 @@ async function downloadLogFile() {
                 const writable = await handle.createWritable();
                 await writable.write(blob);
                 await writable.close();
-                showToast(`✅ Đã lưu file log thành công vào "${handle.name || defaultFilename}"!`);
+                showToast(`✅ Đã tải file log thành công (${(blob.size / 1024).toFixed(1)} KB)!`);
                 return;
-            } catch (err) {
-                if (err.name === 'AbortError') {
-                    // Người dùng bấm Hủy (Cancel) trên hộp thoại chọn thư mục
-                    return;
-                }
-                console.warn('showSaveFilePicker không khả dụng hoặc bị từ chối:', err);
+            } catch (pickerErr) {
+                if (pickerErr.name === 'AbortError') return;
+                console.warn('showSaveFilePicker failed, falling back to blob download:', pickerErr);
             }
         }
 

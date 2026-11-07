@@ -2955,6 +2955,16 @@ tr.row-dropdown-open .action-dropdown-wrap {
     color: var(--text-muted);
 }
 
+#detailStatus.is-active,
+#detailStatus.is-active i {
+    color: #34d399 !important;
+}
+
+#detailStatus.is-inactive,
+#detailStatus.is-inactive i {
+    color: #94a3b8 !important;
+}
+
 .channel-hero-actions {
     display: flex;
     align-items: center;

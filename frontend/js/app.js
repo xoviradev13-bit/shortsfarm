@@ -10214,24 +10214,48 @@ function switchLogsSubTab(subtab) {
 async function loadFileLogs() {
     const terminal = document.getElementById('fileLogTerminal');
     const metaInfo = document.getElementById('fileLogMetaInfo');
+    const dateSelect = document.getElementById('fileLogDateSelect');
     const level = document.getElementById('fileLogLevelFilter')?.value || 'ALL';
     const limit = document.getElementById('fileLogLimitSelect')?.value || '500';
     const search = (document.getElementById('fileLogSearchInput')?.value || '').trim();
+    const selectedFile = dateSelect?.value || 'today';
 
     if (!terminal) return;
 
     try {
-        const url = `/api/system/logs/file?limit=${limit}&level=${level}&search=${encodeURIComponent(search)}`;
+        const url = `/api/system/logs/file?limit=${limit}&level=${level}&search=${encodeURIComponent(search)}&file=${encodeURIComponent(selectedFile)}`;
         const res = await fetch(url);
         const data = await res.json();
 
+        // Tự động đồng bộ danh sách file log theo ngày và file tổng
+        if (dateSelect && Array.isArray(data.available_files) && data.available_files.length > 0) {
+            const currentVal = dateSelect.value || selectedFile;
+            const newHtml = data.available_files.map(f => {
+                const icon = f.is_all ? '📚' : (f.is_today ? '📅' : '🗓️');
+                return `<option value="${escapeHtml(f.name)}">${icon} ${escapeHtml(f.label)} (${escapeHtml(f.size_formatted)})</option>`;
+            }).join('');
+
+            const hashKey = String(data.available_files.length) + '_' + (data.available_files[0]?.size_formatted || '');
+            if (dateSelect.dataset.optionsHash !== hashKey) {
+                dateSelect.innerHTML = newHtml;
+                dateSelect.dataset.optionsHash = hashKey;
+                if (currentVal && Array.from(dateSelect.options).some(o => o.value === currentVal)) {
+                    dateSelect.value = currentVal;
+                } else {
+                    const todayOpt = data.available_files.find(f => f.is_today);
+                    if (todayOpt) dateSelect.value = todayOpt.name;
+                }
+            }
+        }
+
         if (metaInfo && data.file_info) {
-            metaInfo.textContent = `app.log (${data.file_info.size_formatted}) • Cập nhật: ${data.file_info.modified_time || 'N/A'}`;
+            const fname = data.file_info.filename || 'app.log';
+            metaInfo.textContent = `${fname} (${data.file_info.size_formatted}) • Cập nhật: ${data.file_info.modified_time || 'N/A'}`;
         }
 
         if (!data.logs || data.logs.length === 0) {
             terminal.innerHTML = `<div class="enhanced-log-entry" style="color:var(--text-muted); justify-content:center; padding: 30px;">
-                <i class="fa-solid fa-file-circle-question"></i> Không có dòng log nào phù hợp với bộ lọc (Mức: ${level}, Tìm: "${escapeHtml(search)}")
+                <i class="fa-solid fa-file-circle-question"></i> Không có dòng log nào phù hợp với bộ lọc (Mức: ${escapeHtml(level)}, Tìm: "${escapeHtml(search)}")
             </div>`;
             return;
         }
@@ -10274,16 +10298,24 @@ function handleFileLogSearch(e) {
 }
 
 async function confirmClearFileLog() {
+    const dateSelect = document.getElementById('fileLogDateSelect');
+    const selectedFile = dateSelect?.value || 'today';
+    const selectedText = dateSelect?.options[dateSelect.selectedIndex]?.text || selectedFile;
+
     const ok = await showConfirmDialog({
         title: 'Làm Sạch File Log',
-        message: 'Bạn có chắc chắn muốn làm sạch toàn bộ nội dung file log trên đĩa (app.log)?',
-        details: 'Thao tác này hữu ích khi muốn xóa log cũ trước khi chạy test thử nghiệm mới.',
+        message: `Bạn có chắc chắn muốn làm sạch toàn bộ nội dung file log:\n"${selectedText}"?`,
+        details: 'Thao tác này sẽ xóa trắng nội dung của tệp nhật ký đã chọn trên ổ đĩa.',
         confirmText: 'Làm Sạch Log',
         confirmClass: 'btn-danger'
     });
     if (!ok) return;
     try {
-        const res = await fetch('/api/system/logs/clear', { method: 'POST' });
+        const res = await fetch('/api/system/logs/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file: selectedFile })
+        });
         const data = await res.json();
         if (data.status === 'success') {
             showToast('✅ Đã làm sạch file log thành công!');
@@ -10298,8 +10330,11 @@ async function confirmClearFileLog() {
 
 async function downloadLogFile() {
     try {
+        const dateSelect = document.getElementById('fileLogDateSelect');
+        const selectedFile = dateSelect?.value || 'today';
+
         showToast('Đang tải dữ liệu file log hệ thống...');
-        const res = await fetch('/api/system/logs/download');
+        const res = await fetch(`/api/system/logs/download?file=${encodeURIComponent(selectedFile)}`);
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             showToast('Lỗi tải file log: ' + (err.detail || 'Không tìm thấy file log trên hệ thống!'), true);
@@ -10311,8 +10346,13 @@ async function downloadLogFile() {
             return;
         }
 
-        const dateStr = new Date().toISOString().split('T')[0];
-        const defaultFilename = `shortsstack_debug_${dateStr}.log`;
+        let defaultFilename = selectedFile;
+        if (!defaultFilename || defaultFilename === 'today') {
+            const dateStr = new Date().toISOString().split('T')[0];
+            defaultFilename = `app_${dateStr}.log`;
+        } else if (!defaultFilename.endsWith('.log')) {
+            defaultFilename = `${defaultFilename}.log`;
+        }
 
         // 1. Mở cửa sổ "Save As" (chọn thư mục lưu) của Windows tương tự chức năng Xuất CSV (Excel)
         if (typeof window.showSaveFilePicker === 'function') {

@@ -385,11 +385,16 @@ class BackgroundScheduler:
         last_cleanup_check = 0
         while self.is_running:
             now = time.time()
-            # 1. Tự động kiểm tra dọn dẹp file MP4 đã đăng quá hạn (mỗi 1 giờ)
+            # 1. Tự động kiểm tra dọn dẹp file MP4 đã đăng quá hạn và file log cũ > 30 ngày (mỗi 1 giờ)
             if now - last_cleanup_check > 3600:
                 try:
                     from backend.app import cleanup_uploaded_files
                     cleanup_uploaded_files()
+                except Exception:
+                    pass
+                try:
+                    from backend.logger import cleanup_old_daily_logs
+                    cleanup_old_daily_logs(retention_days=30)
                 except Exception:
                     pass
                 last_cleanup_check = time.time()

@@ -31,7 +31,8 @@ from backend.modules.gpm_profile_reader import is_gpm_reader_available, fetch_ac
 from backend.scheduler import scheduler
 from backend.config import LOG_FILE_PATH
 from backend.logger import (
-    get_logger, get_recent_log_lines, get_log_file_info, clear_log_file
+    get_logger, get_recent_log_lines, get_log_file_info, clear_log_file,
+    list_available_log_files, resolve_log_file
 )
 from backend.modules.diagnostics import run_environment_diagnostics
 
@@ -1580,6 +1581,13 @@ def cleanup_uploaded_files(retention_mode=None, custom_days=None):
     mb_freed = round(bytes_freed / (1024 * 1024), 2)
     if files_deleted > 0:
         log_event("INFO", f"[CLEANUP] Đã giải phóng {mb_freed} MB ({files_deleted} file mp4) từ {len(cleaned_video_ids)} video đã đăng (> {target_days} ngày).")
+
+    # Dọn dẹp log theo ngày cũ hơn 30 ngày
+    try:
+        from backend.logger import cleanup_old_daily_logs
+        cleanup_old_daily_logs(retention_days=30)
+    except Exception:
+        pass
 
     return {
         "status": "success",
@@ -4377,41 +4385,64 @@ def get_system_diagnostics():
     """Kiểm tra toàn diện môi trường runtime, FFmpeg, Node.js, Playwright, GPM và các API Keys"""
     return run_environment_diagnostics()
 
+@app.get("/api/system/logs/files")
+def get_log_files_list():
+    """Lấy danh sách các file log theo ngày và file tổng app.log"""
+    return {
+        "status": "success",
+        "files": list_available_log_files()
+    }
+
 @app.get("/api/system/logs/file")
-def get_file_logs(limit: int = 300, level: str = "ALL", search: str = ""):
-    """Đọc các dòng log thực tế được ghi vào file data/logs/app.log với bộ lọc và giới hạn tài nguyên"""
+def get_file_logs(
+    limit: int = 300,
+    level: str = "ALL",
+    search: str = "",
+    file: Optional[str] = None,
+    date: Optional[str] = None
+):
+    """Đọc các dòng log thực tế được ghi vào file log (theo ngày hoặc app.log) với bộ lọc và giới hạn tài nguyên"""
     limit = max(1, min(limit, 2000))
     search = (search or "").strip()[:100]
     level = (level or "ALL").upper()[:20]
-    logs = get_recent_log_lines(limit=limit, level_filter=level, search_query=search)
-    file_info = get_log_file_info()
+    logs = get_recent_log_lines(limit=limit, level_filter=level, search_query=search, target_file=file, target_date=date)
+    file_info = get_log_file_info(target_file=file, target_date=date)
+    available_files = list_available_log_files()
     return {
         "status": "success",
         "file_info": file_info,
+        "available_files": available_files,
         "count": len(logs),
         "logs": logs
     }
 
 @app.get("/api/system/logs/info")
-def get_log_info():
+def get_log_info(file: Optional[str] = None, date: Optional[str] = None):
     """Lấy kích thước và tình trạng file log trên ổ cứng"""
-    return get_log_file_info()
+    return get_log_file_info(target_file=file, target_date=date)
 
 @app.get("/api/system/logs/download")
-def download_log_file():
-    """Cho phép tải trực tiếp file app.log về máy tính để gửi hỗ trợ hoặc debug"""
-    if not LOG_FILE_PATH.exists():
+def download_log_file(file: Optional[str] = None, date: Optional[str] = None):
+    """Cho phép tải trực tiếp file log theo ngày hoặc app.log về máy tính để gửi hỗ trợ hoặc debug"""
+    path = resolve_log_file(target_file=file, target_date=date)
+    if not path.exists():
         raise HTTPException(status_code=404, detail="File log chưa được tạo")
     return FileResponse(
-        path=str(LOG_FILE_PATH),
-        filename="shortsstack_debug.log",
+        path=str(path),
+        filename=path.name,
         media_type="text/plain"
     )
 
+class ClearLogRequest(BaseModel):
+    file: Optional[str] = None
+    date: Optional[str] = None
+
 @app.post("/api/system/logs/clear")
-def clear_system_logs():
+def clear_system_logs(req: Optional[ClearLogRequest] = None):
     """Làm sạch file log trên đĩa"""
-    ok = clear_log_file()
+    target_file = req.file if req else None
+    target_date = req.date if req else None
+    ok = clear_log_file(target_file=target_file, target_date=target_date)
     return {"status": "success" if ok else "error"}
 
 @app.post("/api/system/logs/open-folder")

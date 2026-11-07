@@ -3062,6 +3062,17 @@
                         <div class="log-filter-bar"
                             style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-color);">
                             <div style="display: flex; align-items: center; gap: 6px;">
+                                <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;"><i
+                                        class="fa-regular fa-calendar-days text-accent"></i> Ngày / File:</label>
+                                <select id="fileLogDateSelect" class="input-field"
+                                    style="padding: 4px 10px; font-size: 12px; width: auto; height: 32px; font-weight: 600;"
+                                    onchange="loadFileLogs()">
+                                    <option value="today" selected>Hôm nay (Theo ngày)</option>
+                                    <option value="all">Toàn bộ (app.log)</option>
+                                </select>
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 6px;">
                                 <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Mức
                                     Log:</label>
                                 <select id="fileLogLevelFilter" class="input-field"

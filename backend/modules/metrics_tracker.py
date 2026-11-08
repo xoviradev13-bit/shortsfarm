@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from backend.database import get_connection, log_event
 from backend.modules.notifier import notifier
 
@@ -13,7 +13,8 @@ class MetricsTracker:
         nickname: str = "",
         tiktok_uid: str = "",
         sec_uid: str = "",
-        min_followers_threshold: int = 10000,
+        platform: str = "tiktok",
+        min_followers_threshold: Optional[int] = None,
         min_views_threshold: int = 100000,
         require_views: bool = False
     ) -> Dict[str, Any]:
@@ -24,6 +25,16 @@ class MetricsTracker:
         """
         conn = get_connection()
         cursor = conn.cursor()
+
+        # Nạp ngưỡng follower/sub theo cấu hình nếu không truyền vào cụ thể
+        plat = (platform or "tiktok").lower()
+        if min_followers_threshold is None:
+            try:
+                from backend.database import get_follower_thresholds
+                thresholds = get_follower_thresholds()
+                min_followers_threshold = thresholds.get(plat, thresholds.get("tiktok", 10000))
+            except Exception:
+                min_followers_threshold = 10000
         
         # Kiểm tra trạng thái cũ
         cursor.execute("SELECT name, followers_count, eligible_10k, COALESCE(notify_status, 'tracking') AS notify_status FROM gpm_profiles WHERE gpm_id = ?", (gpm_id,))
@@ -89,8 +100,15 @@ class MetricsTracker:
 
         # Bắn thông báo Telegram khi đạt điều kiện theo dõi
         if should_send_alert:
-            log_event("INFO", f"🎉 Tài khoản {profile_name} đã cán mốc {followers:,} followers! Gửi cảnh báo Telegram...")
-            notifier.send_10k_alert(profile_name, clean_user, followers, total_views)
+            log_event("INFO", f"🎉 Tài khoản [{plat.upper()}] {profile_name} đã cán mốc {followers:,} (ngưỡng {min_followers_threshold:,})! Gửi cảnh báo Telegram...")
+            notifier.send_threshold_alert(
+                profile_name=profile_name,
+                username=clean_user,
+                followers=followers,
+                platform=plat,
+                threshold=min_followers_threshold,
+                views=total_views
+            )
 
         return {
             "gpm_id": gpm_id,

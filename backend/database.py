@@ -194,10 +194,16 @@ def init_db():
         channel_name TEXT DEFAULT '',
         channel_url TEXT DEFAULT '',
         is_default INTEGER DEFAULT 0,
+        followers_count INTEGER DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(gpm_id, platform, channel_id)
     )
     ''')
+
+    try:
+        cursor.execute("ALTER TABLE profile_channels ADD COLUMN followers_count INTEGER DEFAULT 0")
+    except Exception:
+        pass
 
     # Bảng Lịch trình đăng bài (Upload Tasks)
     cursor.execute('''
@@ -570,6 +576,53 @@ def set_setting(key: str, value: str):
         conn.close()
     except Exception as e:
         pass
+
+def get_follower_thresholds() -> Dict[str, int]:
+    """Lấy cấu hình ngưỡng follower/sub để gửi cảnh báo và đánh dấu chuẩn điều kiện cho từng nền tảng"""
+    try:
+        t_tiktok = int(get_setting("follower_threshold_tiktok", "10000") or 10000)
+    except Exception:
+        t_tiktok = 10000
+    try:
+        t_youtube = int(get_setting("follower_threshold_youtube", "1000") or 1000)
+    except Exception:
+        t_youtube = 1000
+    try:
+        t_facebook = int(get_setting("follower_threshold_facebook", "1000") or 1000)
+    except Exception:
+        t_facebook = 1000
+
+    return {
+        "tiktok": max(1, t_tiktok),
+        "youtube": max(1, t_youtube),
+        "facebook": max(1, t_facebook),
+    }
+
+def recalculate_profiles_eligibility():
+    """Cập nhật lại cờ eligible_10k cho tất cả profiles theo cấu hình ngưỡng hiện tại"""
+    try:
+        thresholds = get_follower_thresholds()
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, gpm_id, platform, followers_count FROM gpm_profiles")
+        profiles = cursor.fetchall()
+        for p in profiles:
+            plat = (p["platform"] or "tiktok").lower()
+            th = thresholds.get(plat, thresholds.get("tiktok", 10000))
+            f_count = p["followers_count"] or 0
+            
+            # Kiểm tra xem có kênh/trang con nào thuộc profile này đạt ngưỡng không
+            cursor.execute("SELECT MAX(followers_count) as max_f FROM profile_channels WHERE gpm_id = ?", (p["gpm_id"],))
+            ch_row = cursor.fetchone()
+            max_ch_f = (ch_row["max_f"] if ch_row and ch_row["max_f"] is not None else 0)
+            
+            effective_f = max(f_count, max_ch_f)
+            is_eligible = 1 if effective_f >= th else 0
+            cursor.execute("UPDATE gpm_profiles SET eligible_10k = ? WHERE id = ?", (is_eligible, p["id"]))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        log_event("WARNING", f"Lỗi recalculate_profiles_eligibility: {e}")
 
 def record_ai_usage(
     provider: str,

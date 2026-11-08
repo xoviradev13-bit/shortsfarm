@@ -522,168 +522,364 @@ def fetch_account_info_from_gpm(profile_id: str, storage_path_hint: Optional[str
 
 
 
+def get_profile_resources(profile_id: str):
+    """
+    Tìm cookies và file History của một profile (hỗ trợ cả GPMLogin và GenLogin).
+    Trả về: (cookies: list, hist_file: Optional[str])
+    """
+    import glob
+    from backend.config import DATA_DIR
+
+    cookies = []
+    hist_file = None
+
+    # 1. GPMLogin
+    gpm_storage = get_gpm_storage_path()
+    if gpm_storage:
+        c_path = os.path.join(gpm_storage, profile_id, "Default", "GPMSoft", "Exporter", "ExportCookies.json")
+        if os.path.isfile(c_path):
+            try:
+                with open(c_path, "r", encoding="utf-8") as f:
+                    cookies = json.load(f)
+            except Exception:
+                pass
+        h_path = os.path.join(gpm_storage, profile_id, "Default", "History")
+        if os.path.isfile(h_path):
+            hist_file = h_path
+
+    # 2. GenLogin Cookies Cache
+    if not cookies:
+        gl_cache = os.path.join(DATA_DIR, "genlogin_cookies", f"{profile_id}.json")
+        if os.path.isfile(gl_cache):
+            try:
+                with open(gl_cache, "r", encoding="utf-8") as f:
+                    cookies = json.load(f)
+            except Exception:
+                pass
+
+    # 3. GenLogin History
+    if not hist_file:
+        gl_storage = os.path.expanduser("~/.genlogin/profiles")
+        if os.path.isdir(gl_storage):
+            candidates = glob.glob(os.path.join(gl_storage, "**", "History"), recursive=True)
+            for c in candidates:
+                if profile_id in c:
+                    hist_file = c
+                    break
+            if not hist_file and candidates:
+                hist_file = candidates[0]
+
+    return cookies, hist_file
+
+
+def parse_yt_sub_count(text: str) -> int:
+    """Chuyển đổi chuỗi text sub (VD: '30,7 Tr người đăng ký', '504K subscribers', '1 sub') thành số nguyên int"""
+    if not text:
+        return 0
+    t = text.lower().replace('\xa0', ' ').strip()
+    m = re.search(r'([\d.,]+)\s*(tr|triệu|m|million|k|nghìn|ngàn|b|tỷ)?', t)
+    if not m:
+        return 0
+    num_str = m.group(1).replace(',', '.')
+    if num_str.count('.') > 1:
+        num_str = num_str.replace('.', '')
+    try:
+        val = float(num_str)
+    except Exception:
+        return 0
+    unit = (m.group(2) or '').lower()
+    if unit in ['tr', 'triệu', 'm', 'million']:
+        val *= 1_000_000
+    elif unit in ['k', 'nghìn', 'ngàn']:
+        val *= 1_000
+    elif unit in ['b', 'tỷ']:
+        val *= 1_000_000_000
+    return int(val)
+
+
 def enumerate_youtube_channels(profile_id: str) -> list:
     """
-    Liệt kê TẤT CẢ kênh YouTube mà tài khoản Google trong profile GPM đang quản lý.
-    Trả về danh sách dict: [{channel_id, channel_name, channel_url, is_default}, ...]
+    Liệt kê TẤT CẢ kênh YouTube mà tài khoản Google trong profile GPM / GenLogin đang quản lý.
+    Tổng hợp từ: Database hiện tại, YouTube Studio, Cookies, và Chrome History.
+    Trả về danh sách dict: [{channel_id, channel_name, channel_url, is_default, followers_count}, ...]
     """
-    storage_path = get_gpm_storage_path()
-    if not storage_path:
-        return []
+    import sqlite3
+    import shutil
+    from backend.database import get_connection
 
-    export_file = os.path.join(storage_path, profile_id, "Default", "GPMSoft", "Exporter", "ExportCookies.json")
-    if not os.path.isfile(export_file):
-        return []
-
-    try:
-        with open(export_file, "r", encoding="utf-8") as f:
-            all_cookies = json.load(f)
-    except Exception:
-        return []
-
-    yt_cookies = [
-        c for c in all_cookies
-        if isinstance(c, dict) and ("youtube" in c.get("domain", "") or "google" in c.get("domain", ""))
-    ]
-    has_yt_auth = any(c.get("name") in ["SAPISID", "SSID", "LOGIN_INFO"] for c in yt_cookies)
-    if not has_yt_auth:
-        return []
-
-    sess = requests.Session()
-    sess.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
-    })
-    for c in yt_cookies:
-        sess.cookies.set(c.get('name'), c.get('value'), domain=c.get('domain', '.youtube.com'))
+    all_cookies, hist_file = get_profile_resources(profile_id)
 
     channels = []
     seen_ids = set()
+    existing_map = {}
 
+    # 1. Kênh đã lưu trong DB trước đó
     try:
-        # Bước 1: Lấy HTML YouTube Studio — tìm TẤT CẢ channelId
-        r = sess.get("https://studio.youtube.com", timeout=10)
-        if r.status_code == 200:
-            # Tìm tất cả channelId duy nhất (bắt đầu bằng UC)
-            all_ids = re.findall(r'"channelId"\s*:\s*"(UC[a-zA-Z0-9_-]+)"', r.text)
-            unique_ids = []
-            for cid in all_ids:
-                if cid not in seen_ids:
-                    seen_ids.add(cid)
-                    unique_ids.append(cid)
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT channel_id, channel_name, channel_url, is_default, followers_count FROM profile_channels WHERE gpm_id = ? AND platform = 'youtube'", (profile_id,))
+        for r in cur.fetchall():
+            cid = str(r["channel_id"])
+            if cid not in seen_ids:
+                seen_ids.add(cid)
+                ch_obj = {
+                    "channel_id": cid,
+                    "channel_name": r["channel_name"],
+                    "channel_url": r["channel_url"],
+                    "is_default": r["is_default"],
+                    "followers_count": r["followers_count"] or 0
+                }
+                channels.append(ch_obj)
+                existing_map[cid] = ch_obj
+        conn.close()
+    except Exception as e:
+        log_event("WARNING", f"[GPMProfileReader] Lỗi đọc kênh YT từ DB cho {profile_id}: {e}")
 
-            # Bước 2: Lấy tên kênh cho từng channelId
-            for idx, cid in enumerate(unique_ids):
-                ch_name = cid  # fallback
+    # 2. Quét từ YouTube Studio HTML
+    if any('youtube' in c.get('domain', '') or 'google' in c.get('domain', '') for c in all_cookies if isinstance(c, dict)):
+        try:
+            sess_yt = requests.Session()
+            sess_yt.headers.update({
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+            })
+            for c in all_cookies:
+                if isinstance(c, dict) and ('youtube' in c.get('domain', '') or 'google' in c.get('domain', '')):
+                    domain = c.get('domain', '')
+                    d = domain if domain.startswith('.') or '.' in domain else f".{domain}"
+                    sess_yt.cookies.set(c.get('name'), c.get('value'), domain=d, path=c.get('path', '/'))
+
+            r = sess_yt.get("https://studio.youtube.com", timeout=10)
+            if r.status_code == 200:
+                found_cids = re.findall(r'"channelId"\s*:\s*"(UC[a-zA-Z0-9_-]{22})"', r.text)
+                for cid in found_cids:
+                    seen_ids.add(cid)
+        except Exception as e:
+            log_event("WARNING", f"[GPMProfileReader] Lỗi request YouTube Studio cho {profile_id}: {e}")
+
+    # 3. Quét từ Chrome History (các kênh / Studio đã truy cập)
+    if hist_file and os.path.exists(hist_file):
+        import tempfile
+        tmp_dir = tempfile.gettempdir()
+        tmp_hist = os.path.join(tmp_dir, f"hist_yt_{profile_id}.sqlite")
+        try:
+            shutil.copyfile(hist_file, tmp_hist)
+            h_conn = sqlite3.connect(tmp_hist)
+            h_cur = h_conn.cursor()
+            h_cur.execute("SELECT url, title FROM urls WHERE url LIKE '%youtube.com%' ORDER BY last_visit_time DESC LIMIT 200")
+            for url, title in h_cur.fetchall():
+                m_cid = re.search(r'channel/(UC[a-zA-Z0-9_-]{22})', url)
+                if m_cid:
+                    seen_ids.add(m_cid.group(1))
+            h_conn.close()
+        except Exception as e:
+            log_event("WARNING", f"[GPMProfileReader] Lỗi đọc History YouTube cho {profile_id}: {e}")
+        finally:
+            if os.path.exists(tmp_hist):
                 try:
-                    r_ch = requests.get(
-                        f"https://www.youtube.com/channel/{cid}",
-                        headers=sess.headers, timeout=8
-                    )
-                    if r_ch.status_code == 200:
-                        m = re.search(r'<meta property="og:title" content="([^"]+)">', r_ch.text)
-                        if m:
-                            ch_name = m.group(1)
+                    os.remove(tmp_hist)
                 except Exception:
                     pass
 
-                handle = f"@{ch_name}" if not ch_name.startswith("@") else ch_name
-                channels.append({
-                    "channel_id": cid,
-                    "channel_name": ch_name,
-                    "channel_url": handle,
-                    "is_default": 1 if idx == 0 else 0
-                })
-    except Exception as e:
-        log_event("WARNING", f"[GPMProfileReader] Lỗi liệt kê kênh YouTube cho {profile_id}: {e}")
+    # 4. Truy vấn thông tin tên kênh & số lượng người đăng ký (subscribers) từ YouTube
+    public_headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
 
-    return channels
+    final_list = []
+    has_default = any(c.get("is_default") for c in existing_map.values())
+
+    for idx, cid in enumerate(seen_ids):
+        if cid in existing_map and existing_map[cid].get("channel_name") and existing_map[cid]["channel_name"] != cid:
+            final_list.append(existing_map[cid])
+            continue
+
+        ch_name = cid
+        handle = f"@{cid}"
+        sub_count = 0
+        try:
+            r_ch = requests.get(f"https://www.youtube.com/channel/{cid}", headers=public_headers, timeout=8)
+            if r_ch.status_code == 200:
+                m_t = re.search(r'<meta property="og:title" content="([^"]+)">', r_ch.text)
+                if m_t:
+                    ch_name = m_t.group(1)
+                m_u = re.search(r'<meta property="og:url" content="([^"]+)">', r_ch.text)
+                if m_u:
+                    handle_candidate = m_u.group(1).split('/')[-1]
+                    if handle_candidate.startswith('@'):
+                        handle = handle_candidate
+                    else:
+                        handle = f"@{ch_name}"
+                # Trích xuất số lượng người đăng ký (subscriber count)
+                m_sub = re.search(r'"subscriberCountText":\{.*?"simpleText":"([^"]+)"', r_ch.text)
+                if not m_sub:
+                    m_sub = re.search(r'"subscriberCountText":\{.*?"label":"([^"]+)"', r_ch.text)
+                if m_sub:
+                    sub_count = parse_yt_sub_count(m_sub.group(1))
+        except Exception:
+            pass
+
+        is_def = 1 if (not has_default and idx == 0) else existing_map.get(cid, {}).get("is_default", 0)
+        final_list.append({
+            "channel_id": cid,
+            "channel_name": ch_name,
+            "channel_url": handle if handle.startswith('@') else f"@{ch_name}",
+            "is_default": is_def,
+            "followers_count": sub_count
+        })
+
+    # Đảm bảo ít nhất 1 kênh là mặc định nếu có kênh
+    if final_list and not any(c.get("is_default") for c in final_list):
+        final_list[0]["is_default"] = 1
+
+    return final_list
 
 
 def enumerate_facebook_pages(profile_id: str) -> list:
     """
-    Liệt kê tài khoản cá nhân + TẤT CẢ trang Facebook mà tài khoản trong profile GPM đang quản lý.
+    Liệt kê tài khoản cá nhân + TẤT CẢ trang Facebook (Fanpages) mà tài khoản trong profile GPM / GenLogin quản lý.
+    Tổng hợp từ: Database hiện tại, Cookies (c_user & i_user), Chrome History, và Facebook Web.
     Trả về danh sách dict: [{channel_id, channel_name, channel_url, is_default}, ...]
     """
-    storage_path = get_gpm_storage_path()
-    if not storage_path:
-        return []
+    import sqlite3
+    import shutil
+    from backend.database import get_connection
 
-    export_file = os.path.join(storage_path, profile_id, "Default", "GPMSoft", "Exporter", "ExportCookies.json")
-    if not os.path.isfile(export_file):
-        return []
-
-    try:
-        with open(export_file, "r", encoding="utf-8") as f:
-            all_cookies = json.load(f)
-    except Exception:
-        return []
-
-    fb_cookies = [
-        c for c in all_cookies
-        if isinstance(c, dict) and "facebook" in c.get("domain", "")
-    ]
-    c_user = next((c.get("value") for c in fb_cookies if c.get("name") == "c_user"), None)
-    has_fb_auth = bool(c_user and any(c.get("name") == "xs" for c in fb_cookies))
-    if not has_fb_auth:
-        return []
+    all_cookies, hist_file = get_profile_resources(profile_id)
 
     channels = []
+    seen_ids = set()
+    existing_map = {}
 
-    # 1. Tài khoản cá nhân (luôn là default)
-    personal_name = f"Facebook User ({c_user})"
-
-    # Thử lấy tên thật từ Facebook
-    sess = requests.Session()
-    sess.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
-    })
-    for c in fb_cookies:
-        sess.cookies.set(c.get('name'), c.get('value'), domain=c.get('domain', '.facebook.com'))
-
+    # 1. Kênh đã lưu trong DB trước đó
     try:
-        r = sess.get(f"https://www.facebook.com/profile.php?id={c_user}", timeout=8, allow_redirects=True)
-        if r.status_code == 200:
-            m = re.search(r'<meta property="og:title" content="([^"]+)"', r.text)
-            if m:
-                personal_name = m.group(1)
-    except Exception:
-        pass
-
-    channels.append({
-        "channel_id": c_user,
-        "channel_name": personal_name,
-        "channel_url": f"/profile/{c_user}",
-        "is_default": 1
-    })
-
-    # 2. Thử lấy danh sách Facebook Pages đang quản lý
-    try:
-        r_pages = sess.get("https://www.facebook.com/pages/?category=your_pages", timeout=10)
-        if r_pages.status_code == 200:
-            # Tìm page IDs và tên từ HTML (pattern: pageID + pageName trong JSON payload)
-            page_matches = re.findall(
-                r'"pageID"\s*:\s*"(\d+)"[^}]*"name"\s*:\s*"([^"]+)"',
-                r_pages.text
-            )
-            if not page_matches:
-                # Fallback pattern: tìm trong các link /page/
-                page_matches_alt = re.findall(
-                    r'href="/([^"]+)"[^>]*>\s*<[^>]*>\s*<[^>]*>([^<]+)',
-                    r_pages.text
-                )
-
-            for page_id, page_name in page_matches:
-                if page_id != c_user:
-                    channels.append({
-                        "channel_id": page_id,
-                        "channel_name": page_name,
-                        "channel_url": f"/{page_name.replace(' ', '-')}",
-                        "is_default": 0
-                    })
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT channel_id, channel_name, channel_url, is_default FROM profile_channels WHERE gpm_id = ? AND platform = 'facebook'", (profile_id,))
+        for r in cur.fetchall():
+            cid = str(r["channel_id"])
+            if cid not in seen_ids:
+                seen_ids.add(cid)
+                ch_obj = {
+                    "channel_id": cid,
+                    "channel_name": r["channel_name"],
+                    "channel_url": r["channel_url"],
+                    "is_default": r["is_default"]
+                }
+                channels.append(ch_obj)
+                existing_map[cid] = ch_obj
+        conn.close()
     except Exception as e:
-        log_event("WARNING", f"[GPMProfileReader] Lỗi liệt kê trang Facebook cho {profile_id}: {e}")
+        log_event("WARNING", f"[GPMProfileReader] Lỗi đọc Facebook từ DB cho {profile_id}: {e}")
+
+    # 2. Đọc cookies để lấy c_user và i_user
+    fb_cookies = [c for c in all_cookies if isinstance(c, dict) and "facebook" in c.get("domain", "")]
+    c_user = next((c.get("value") for c in fb_cookies if c.get("name") == "c_user"), None)
+    i_user = next((c.get("value") for c in fb_cookies if c.get("name") == "i_user"), None)
+
+    cookie_header = "; ".join([f"{c['name']}={c['value']}" for c in fb_cookies if 'name' in c and 'value' in c])
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Cookie": cookie_header,
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1"
+    }
+
+    def resolve_fb_name(uid):
+        try:
+            r = requests.get(f"https://www.facebook.com/profile.php?id={uid}", headers=headers, timeout=8)
+            if r.status_code == 200:
+                m = re.search(r'<meta property="og:title" content="([^"]+)"', r.text)
+                if m:
+                    return m.group(1)
+                m_t = re.search(r'<title>([^<]+)</title>', r.text)
+                if m_t:
+                    clean = re.sub(r'^\(\d+\)\s*', '', m_t.group(1))
+                    clean = re.sub(r'\s*\|\s*Facebook.*$', '', clean).strip()
+                    if clean and clean.lower() != "facebook":
+                        return clean
+        except Exception:
+            pass
+        return None
+
+    # Thêm tài khoản cá nhân (c_user)
+    if c_user:
+        name = existing_map.get(c_user, {}).get("channel_name")
+        if not name or name == f"Facebook User ({c_user})":
+            fetched = resolve_fb_name(c_user)
+            if fetched:
+                name = fetched
+        if not name:
+            name = f"Facebook User ({c_user})"
+        if c_user not in seen_ids:
+            seen_ids.add(c_user)
+            channels.append({
+                "channel_id": c_user,
+                "channel_name": name,
+                "channel_url": f"/profile/{c_user}",
+                "is_default": 1 if not any(c.get("is_default") for c in channels) else 0
+            })
+        else:
+            for ch in channels:
+                if ch["channel_id"] == c_user and ch["channel_name"] == f"Facebook User ({c_user})" and name != f"Facebook User ({c_user})":
+                    ch["channel_name"] = name
+
+    # Thêm Fanpage đang hoạt động từ cookie (i_user)
+    if i_user and i_user != c_user:
+        if i_user not in seen_ids:
+            seen_ids.add(i_user)
+            pname = resolve_fb_name(i_user) or f"Fanpage ({i_user})"
+            channels.append({
+                "channel_id": i_user,
+                "channel_name": pname,
+                "channel_url": f"https://www.facebook.com/profile.php?id={i_user}",
+                "is_default": 0
+            })
+
+    # 3. Quét Chrome History để tìm thêm Fanpage đã quản lý / truy cập
+    if hist_file and os.path.exists(hist_file):
+        import tempfile
+        tmp_dir = tempfile.gettempdir()
+        tmp_hist = os.path.join(tmp_dir, f"hist_fb_{profile_id}.sqlite")
+        try:
+            shutil.copyfile(hist_file, tmp_hist)
+            h_conn = sqlite3.connect(tmp_hist)
+            h_cur = h_conn.cursor()
+            h_cur.execute("SELECT url, title FROM urls WHERE url LIKE '%facebook.com%' ORDER BY last_visit_time DESC LIMIT 200")
+            for url, title in h_cur.fetchall():
+                m_id = re.search(r'id=(\d+)', url)
+                if m_id:
+                    pid = m_id.group(1)
+                    if pid != c_user and pid not in seen_ids and len(pid) >= 10:
+                        clean = re.sub(r'^\(\d+\)\s*', '', title)
+                        clean = re.sub(r'\s*\|\s*Facebook.*$', '', clean).strip()
+                        pname = clean if (clean and clean.lower() != "facebook") else (resolve_fb_name(pid) or f"Fanpage ({pid})")
+                        seen_ids.add(pid)
+                        channels.append({
+                            "channel_id": pid,
+                            "channel_name": pname,
+                            "channel_url": f"https://www.facebook.com/profile.php?id={pid}",
+                            "is_default": 0
+                        })
+            h_conn.close()
+        except Exception as e:
+            log_event("WARNING", f"[GPMProfileReader] Lỗi đọc History Facebook cho {profile_id}: {e}")
+        finally:
+            if os.path.exists(tmp_hist):
+                try:
+                    os.remove(tmp_hist)
+                except Exception:
+                    pass
+
+    # Đảm bảo ít nhất 1 tài khoản/trang là mặc định nếu có danh sách
+    if channels and not any(c.get("is_default") for c in channels):
+        channels[0]["is_default"] = 1
 
     return channels
 
@@ -703,26 +899,85 @@ def sync_profile_channels(profile_id: str) -> dict:
 
     synced = 0
     for ch in yt_channels:
+        f_count = ch.get("followers_count", 0) or 0
         cursor.execute("""
-            INSERT INTO profile_channels (gpm_id, platform, channel_id, channel_name, channel_url, is_default)
-            VALUES (?, 'youtube', ?, ?, ?, ?)
+            INSERT INTO profile_channels (gpm_id, platform, channel_id, channel_name, channel_url, is_default, followers_count)
+            VALUES (?, 'youtube', ?, ?, ?, ?, ?)
             ON CONFLICT(gpm_id, platform, channel_id) DO UPDATE SET
                 channel_name = excluded.channel_name,
                 channel_url = excluded.channel_url,
-                is_default = excluded.is_default
-        """, (profile_id, ch["channel_id"], ch["channel_name"], ch["channel_url"], ch["is_default"]))
+                followers_count = excluded.followers_count
+        """, (profile_id, ch["channel_id"], ch["channel_name"], ch["channel_url"], ch["is_default"], f_count))
         synced += 1
 
     for pg in fb_pages:
+        f_count = pg.get("followers_count", 0) or 0
         cursor.execute("""
-            INSERT INTO profile_channels (gpm_id, platform, channel_id, channel_name, channel_url, is_default)
-            VALUES (?, 'facebook', ?, ?, ?, ?)
+            INSERT INTO profile_channels (gpm_id, platform, channel_id, channel_name, channel_url, is_default, followers_count)
+            VALUES (?, 'facebook', ?, ?, ?, ?, ?)
             ON CONFLICT(gpm_id, platform, channel_id) DO UPDATE SET
                 channel_name = excluded.channel_name,
                 channel_url = excluded.channel_url,
-                is_default = excluded.is_default
-        """, (profile_id, pg["channel_id"], pg["channel_name"], pg["channel_url"], pg["is_default"]))
+                followers_count = excluded.followers_count
+        """, (profile_id, pg["channel_id"], pg["channel_name"], pg["channel_url"], pg["is_default"], f_count))
         synced += 1
+
+    # Cập nhật số follower/sub của profile chính từ kênh mặc định và kiểm tra ngưỡng thông báo
+    cursor.execute("""
+        SELECT followers_count FROM profile_channels
+        WHERE gpm_id = ? AND is_default = 1
+        LIMIT 1
+    """, (profile_id,))
+    def_row = cursor.fetchone()
+    
+    # Lấy thông tin profile chính để kiểm tra ngưỡng
+    cursor.execute("SELECT name, platform, COALESCE(notify_status, 'tracking') as notify_status FROM gpm_profiles WHERE gpm_id = ?", (profile_id,))
+    p_row = cursor.fetchone()
+    
+    if p_row:
+        from backend.database import get_follower_thresholds
+        from backend.modules.notifier import notifier
+        thresholds = get_follower_thresholds()
+        
+        p_name = p_row["name"] or profile_id
+        p_plat = (p_row["platform"] or "youtube").lower()
+        curr_notify = (p_row["notify_status"] or "tracking").lower()
+        target_th = thresholds.get(p_plat, 1000)
+
+        cursor.execute("SELECT MAX(followers_count) as max_f FROM profile_channels WHERE gpm_id = ?", (profile_id,))
+        max_f_row = cursor.fetchone()
+        max_f = max_f_row["max_f"] if max_f_row and max_f_row["max_f"] is not None else 0
+        def_f = def_row[0] if def_row and def_row[0] is not None else max_f
+
+        effective_f = max(def_f, max_f)
+        is_eligible = 1 if effective_f >= target_th else 0
+        
+        new_notify = curr_notify
+        should_alert = False
+        if is_eligible == 1 and curr_notify == "tracking":
+            should_alert = True
+            new_notify = "sent"
+
+        cursor.execute("""
+            UPDATE gpm_profiles 
+            SET followers_count = ?, eligible_10k = ?, notify_status = ? 
+            WHERE gpm_id = ?
+        """, (def_f, is_eligible, new_notify, profile_id))
+
+        if should_alert:
+            log_event("INFO", f"🎉 [ProfileChannels] Kênh/Trang của {p_name} ({p_plat}) đạt {effective_f:,} (ngưỡng {target_th:,})! Gửi cảnh báo Telegram...")
+            cursor.execute("SELECT channel_name, channel_url FROM profile_channels WHERE gpm_id = ? ORDER BY followers_count DESC LIMIT 1", (profile_id,))
+            top_ch = cursor.fetchone()
+            top_username = (top_ch["channel_url"] or top_ch["channel_name"]) if top_ch else p_name
+            notifier.send_threshold_alert(
+                profile_name=p_name,
+                username=top_username,
+                followers=effective_f,
+                platform=p_plat,
+                threshold=target_th
+            )
+    elif def_row and def_row[0] is not None:
+        cursor.execute("UPDATE gpm_profiles SET followers_count = ? WHERE gpm_id = ?", (def_row[0], profile_id))
 
     conn.commit()
     conn.close()

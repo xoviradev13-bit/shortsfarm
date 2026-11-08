@@ -940,7 +940,7 @@ tr.row-saved td:first-child::after {
     gap: 24px;
 }
 
-.dashboard-row > .glass-panel.col-8 {
+.dashboard-row>.glass-panel.col-8 {
     display: flex;
     flex-direction: column;
 }
@@ -7097,4 +7097,96 @@ select.input-invalid:focus {
 
 .modal-tab-pane.active {
     display: flex;
+}
+
+/* ============================================================
+   SUB-CHANNEL ACCORDION / EXPANDABLE ROWS (OPTION A)
+   ============================================================ */
+.btn-subchannel-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-subchannel-toggle:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-subchannel-toggle i {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-subchannel-toggle.expanded i {
+    transform: rotate(90deg);
+    color: var(--accent-cyan);
+}
+
+tr.sub-channel-row {
+    background: rgba(15, 23, 42, 0.5) !important;
+    transition: background 0.15s ease;
+}
+
+tr.sub-channel-row:hover {
+    background: rgba(30, 41, 59, 0.65) !important;
+}
+
+tr.sub-channel-row td {
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+tr.sub-channel-row td:first-child {
+    border-left: 3px solid var(--accent-cyan) !important;
+}
+
+tr.sub-channel-row.youtube-channel td:first-child {
+    border-left: 3px solid #ef4444 !important;
+}
+
+tr.sub-channel-row.facebook-page td:first-child {
+    border-left: 3px solid #3b82f6 !important;
+}
+
+.btn-subchannel-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.18s ease;
+}
+
+.btn-subchannel-action:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-subchannel-action.primary-action {
+    border-color: rgba(234, 179, 8, 0.35);
+    background: rgba(234, 179, 8, 0.1);
+    color: #fbbf24;
+}
+
+.btn-subchannel-action.primary-action:hover {
+    background: rgba(234, 179, 8, 0.2);
+    color: #fde047;
+    border-color: rgba(234, 179, 8, 0.5);
 }

@@ -223,6 +223,56 @@
 
     // ─── MASTER PHRASE MAP (Static Phrases) ──────────────────────────────────
     const phraseMap = {
+        "Telegram Bot & Cảnh Báo Tăng Trưởng": { en: "Telegram Bot & Growth Milestone Alerts", zh: "Telegram 机器人与增长预警" },
+        "Cấu hình Bot, quản lý kênh nhận cảnh báo và ngưỡng số lượng người theo dõi/đăng ký để kích hoạt thông báo.": { en: "Configure Bot, manage alert channels, and set follower/subscriber thresholds to trigger notifications.", zh: "配置机器人，管理预警频道，并设置触发通知的粉丝/订阅数阈值。" },
+        "Lưu ý:": { en: "Note:", zh: "注意：" },
+        "Lưu ý": { en: "Note", zh: "注意" },
+        "Khi bấm lưu, hệ thống tự động tính lại nhãn Đạt Chỉ Tiêu cho toàn bộ danh sách profile và gửi thông báo Telegram tức thì khi có kênh/profile đạt mốc trong các lần quét.": { en: "Saving will automatically recalculate eligibility across all profiles and trigger instant Telegram alerts when any profile/channel reaches the threshold during scans.", zh: "保存后系统将自动重新计算所有环境的达标状态，并在巡检中一旦达到设定阈值立即发送 Telegram 预警通知。" },
+        "Gửi thử Báo cáo hoạt động ngày tới các kênh đã bật nhận báo cáo": { en: "Test daily activity report to enabled channels", zh: "向已启用的频道发送每日活动报告测试" },
+        "Gửi thử Cảnh báo sự cố kèm giải pháp tới các kênh đã bật nhận cảnh báo lỗi": { en: "Test error and issue alert with solutions to enabled channels", zh: "向已启用的频道发送故障与解决方案测试" },
+        "Gửi tin nhắn thử nghiệm đạt ngưỡng tới tất cả kênh đang bật nhận cảnh báo": { en: "Send milestone threshold test message to all alert-enabled channels", zh: "向所有接收警报的频道发送达标阈值测试消息" },
+        "Ngưỡng Thông Báo": { en: "Alert Thresholds", zh: "通知阈值" },
+        "Cài Đặt Ngưỡng Thông Báo Tăng Trưởng": { en: "Growth Notification Thresholds", zh: "增长通知阈值设置" },
+        "Thiết lập chỉ tiêu Follower / Subscriber theo từng nền tảng để gắn huy hiệu Đạt Chỉ Tiêu và tự động gửi cảnh báo Telegram": { en: "Configure follower/subscriber targets per platform to award eligibility badges and trigger automatic Telegram alerts", zh: "按平台设置粉丝/订阅者目标，自动点亮达标徽章并推送 Telegram 预警通知" },
+        "TikTok Creator Rewards / Beta": { en: "TikTok Creator Rewards / Beta", zh: "TikTok 创作者分成计划 / Beta" },
+        "Số follower cần đạt để mở kiếm tiền Beta": { en: "Follower count required to qualify for Beta monetization", zh: "开启创作者分成计划所需的粉丝数" },
+        "YouTube Shorts / Partner (YPP)": { en: "YouTube Shorts / Partner (YPP)", zh: "YouTube Shorts / 合作伙伴计划 (YPP)" },
+        "Số subscriber của kênh để gửi thông báo mốc": { en: "Channel subscriber count to trigger milestone alerts", zh: "触发里程碑通知所需的频道订阅数" },
+        "Facebook Reels / Fanpage Monetize": { en: "Facebook Reels / Fanpage Monetize", zh: "Facebook Reels / 粉丝页变现" },
+        "Số người theo dõi Fanpage / Nick cá nhân": { en: "Follower count of Fanpage / Personal profile", zh: "粉丝页 / 个人主页关注者数" },
+        "Lưu ý: Khi bấm lưu, hệ thống tự động tính lại nhãn Đạt Chỉ Tiêu cho toàn bộ danh sách profile và gửi thông báo Telegram tức thì khi có kênh/profile đạt mốc trong các lần quét.": { en: "Note: Saving will automatically recalculate eligibility across all profiles and trigger instant Telegram alerts when any profile/channel reaches the threshold during scans.", zh: "注意：保存后系统将自动重新计算所有环境的达标状态，并在巡检中一旦达到设定阈值立即发送 Telegram 预警通知。" },
+        "Lưu Cài Đặt Ngưỡng": { en: "Save Thresholds", zh: "保存阈值设置" },
+        "Đạt Chỉ Tiêu": { en: "Eligibility", zh: "达标状态" },
+        "Đạt Chỉ Tiêu:": { en: "Eligibility:", zh: "达标状态：" },
+        "Đạt Chỉ Tiêu / Beta": { en: "Eligibility / Beta", zh: "达标状态 / Beta" },
+        "🏆 Đã Đạt Chỉ Tiêu": { en: "🏆 Reached Target", zh: "🏆 已达标" },
+        "Đã Đạt Chỉ Tiêu": { en: "Reached Target", zh: "已达标" },
+        "🌱 Đang Nuôi (Chưa Đạt)": { en: "🌱 Growing (Unreached)", zh: "🌱 养成中 (未达标)" },
+        "Đang Nuôi (Chưa Đạt)": { en: "Growing (Unreached)", zh: "养成中 (未达标)" },
+        "Đang Nuôi": { en: "Growing", zh: "养成中" },
+        "Nick Đạt Chỉ Tiêu": { en: "Profiles Reaching Target", zh: "达标账号" },
+        "Ngưỡng Gửi Thông Báo Tăng Trưởng (Tùy Chỉnh Theo Nền Tảng)": { en: "Growth Notification Thresholds (Customizable per Platform)", zh: "增长通知阈值 (按平台自定义)" },
+        "Khi nick TikTok, kênh YouTube hoặc trang Facebook đạt mốc số lượng bên dưới, hệ thống sẽ tự động gắn cờ Đạt Chỉ Tiêu và gửi thông báo qua Telegram.": { en: "When a TikTok profile, YouTube channel, or Facebook page reaches the targets below, the system automatically flags it as eligible and dispatches a Telegram alert.", zh: "当 TikTok 账号、YouTube 频道或 Facebook 主页达到下方目标时，系统将自动标记达标并通过 Telegram 发送预警通知。" },
+        "Lưu nhanh cài đặt ngưỡng": { en: "Quickly save threshold settings", zh: "快速保存阈值设置" },
+        "Lưu Ngưỡng": { en: "Save Thresholds", zh: "保存阈值" },
+        "TikTok Follower:": { en: "TikTok Followers:", zh: "TikTok 粉丝数：" },
+        "Gửi cảnh báo khi nick đạt ≥ 10,000 (Quỹ Sáng Tạo Beta).": { en: "Sends alert when profile reaches ≥ 10,000 (Creator Rewards Beta).", zh: "账号达到 ≥ 10,000 时发送警报 (创作者基金 Beta)。" },
+        "YouTube Subs:": { en: "YouTube Subs:", zh: "YouTube 订阅数：" },
+        "Gửi cảnh báo khi kênh đạt ≥ 1,000 người đăng ký (YPP).": { en: "Sends alert when channel reaches ≥ 1,000 subscribers (YPP).", zh: "频道达到 ≥ 1,000 订阅时发送警报 (YPP 合作伙伴)。" },
+        "Facebook Followers:": { en: "Facebook Followers:", zh: "Facebook 关注者：" },
+        "Gửi cảnh báo khi trang/nick đạt ≥ 1,000 người theo dõi.": { en: "Sends alert when page/profile reaches ≥ 1,000 followers.", zh: "主页/个人号达到 ≥ 1,000 关注者时发送警报。" },
+        "Reels & Sao": { en: "Reels & Stars", zh: "Reels 与星赏" },
+        "Test Cảnh Báo Đạt Mốc": { en: "Test Milestone Alert", zh: "测试里程碑警报" },
+        "Ngưỡng Gửi Thông Báo Tăng Trưởng (Follower / Subscribers)": { en: "Growth Notification Thresholds (Followers / Subscribers)", zh: "增长通知阈值设置 (粉丝 / 订阅)" },
+        "Tùy chỉnh số lượng Follower / Subscriber tối thiểu để hệ thống tự động gắn huy hiệu Đạt Chỉ Tiêu và bắn tin nhắn Telegram.": { en: "Customize minimum followers/subscribers required to award eligibility badges and send Telegram alerts.", zh: "自定义各平台最低粉丝/订阅数阈值，自动点亮达标徽章并发送 Telegram 预警消息。" },
+        "Lưu Ngưỡng Thông Báo": { en: "Save Notification Thresholds", zh: "保存通知阈值" },
+        "Ngưỡng Gửi Cảnh Báo Telegram:": { en: "Telegram Alert Thresholds:", zh: "Telegram 预警阈值：" },
+        "Đạt mốc sẽ gửi cảnh báo": { en: "Alert triggers upon reaching target", zh: "达到目标时推送提醒" },
+        "Cài đặt ngưỡng gửi thông báo tăng trưởng & chuẩn đạt chỉ tiêu": { en: "Configure growth notification thresholds & eligibility criteria", zh: "设置增长通知阈值与达标标准" },
+        "Cài đặt ngưỡng gửi thông báo & đạt chỉ tiêu": { en: "Configure notification thresholds & eligibility criteria", zh: "设置通知阈值与达标标准" },
+        "Bấm để cài đặt ngưỡng thông báo và đạt chỉ tiêu": { en: "Click to configure notification and eligibility thresholds", zh: "点击设置通知与达标阈值" },
+        "Cảnh báo Đạt Chỉ Tiêu:": { en: "Milestone Reached Alerts:", zh: "达标里程碑预警：" },
+        "Khi phát hiện nick/kênh đạt ngưỡng cài đặt (TikTok, YouTube, Facebook), hệ thống sẽ gửi tin nhắn Telegram tới tất cả các kênh đang kích hoạt.": { en: "When accounts/channels reach configured thresholds (TikTok, YouTube, Facebook), instant Telegram alerts are sent to all active channels.", zh: "当检测到账号/频道达到设定阈值 (TikTok, YouTube, Facebook) 时，系统将自动向所有已启用的频道推送 Telegram 通知。" },
         "$0.0000": { en: "$0.0000", zh: "0.0000 美元" },
         "(1 tháng)": { en: "(1 month)", zh: "(1 月)" },
         "(2 tuần)": { en: "(2 weeks)", zh: "(2周缓冲)" },
@@ -2942,6 +2992,18 @@
         "🧪 3 Biến Thể A/B/C (A/B Testing Độc Lập)": { en: "🧪 3 Bien The A/B/C (A/B Testing doc Lap)", zh: "🧪 3 Bien The A/B/C (A/B Testing doc Lap)" }
     };
     const patternRules = [
+        {
+            regex: /^ĐỦ\s+([0-9.]+[KM]?)\s+BETA!$/i,
+            render: (m, lang) => lang === 'en' ? `MET ${m[1]} BETA!` : (lang === 'zh' ? `达标 ${m[1]} BETA!` : `ĐỦ ${m[1]} BETA!`)
+        },
+        {
+            regex: /^ĐỦ\s+([0-9.]+[KM]?)\s+SUBS!$/i,
+            render: (m, lang) => lang === 'en' ? `MET ${m[1]} SUBS!` : (lang === 'zh' ? `达标 ${m[1]} 订阅!` : `ĐỦ ${m[1]} SUBS!`)
+        },
+        {
+            regex: /^ĐỦ\s+([0-9.]+[KM]?)\s+FLW!$/i,
+            render: (m, lang) => lang === 'en' ? `MET ${m[1]} FLW!` : (lang === 'zh' ? `达标 ${m[1]} 关注!` : `ĐỦ ${m[1]} FLW!`)
+        },
         {
             regex: /^Tham gia:\s*(.+)$/i,
             render: (m, lang) => lang === 'en' ? `Joined: ${m[1]}` : (lang === 'zh' ? `入驻时间: ${m[1]}` : `Tham gia: ${m[1]}`)

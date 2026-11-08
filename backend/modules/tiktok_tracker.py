@@ -263,9 +263,42 @@ class TikTokTracker:
                 if session_result.get("found") and session_result.get("is_logged_in"):
                     plat = session_result.get("platform", "tiktok")
                     if plat != "tiktok":
-                        from backend.database import get_connection
+                        # Tự động quét và đồng bộ các kênh/trang con cùng số follower
+                        f_count = 0
+                        try:
+                            from backend.modules.gpm_profile_reader import sync_profile_channels
+                            ch_res = sync_profile_channels(gpm_id)
+                            all_chs = (ch_res.get("youtube") or []) + (ch_res.get("facebook") or [])
+                            def_ch = next((c for c in all_chs if c.get("is_default")), None) or (all_chs[0] if all_chs else None)
+                            if def_ch:
+                                f_count = def_ch.get("followers_count", 0)
+                        except Exception as e:
+                            log_event("WARNING", f"Lỗi sync_profile_channels khi quét profile {gpm_id}: {e}")
+
+                        from backend.database import get_connection, get_follower_thresholds
+                        from backend.modules.notifier import notifier
+                        thresholds = get_follower_thresholds()
+                        target_th = thresholds.get(plat, 1000)
+
                         conn_p = get_connection()
                         cur_p = conn_p.cursor()
+                        cur_p.execute("SELECT name, COALESCE(notify_status, 'tracking') as notify_status FROM gpm_profiles WHERE gpm_id = ?", (gpm_id,))
+                        row_p = cur_p.fetchone()
+                        p_name = row_p["name"] if row_p else gpm_id
+                        curr_notify = (row_p["notify_status"] if row_p else "tracking").lower()
+
+                        cur_p.execute("SELECT MAX(followers_count) as max_f FROM profile_channels WHERE gpm_id = ?", (gpm_id,))
+                        max_f_row = cur_p.fetchone()
+                        max_ch_f = max_f_row["max_f"] if max_f_row and max_f_row["max_f"] is not None else 0
+                        effective_f = max(f_count, max_ch_f)
+
+                        is_eligible = 1 if effective_f >= target_th else 0
+                        new_notify = curr_notify
+                        should_alert = False
+                        if is_eligible == 1 and curr_notify == 'tracking':
+                            should_alert = True
+                            new_notify = 'sent'
+
                         cur_p.execute("""
                             UPDATE gpm_profiles SET
                                 platform = ?,
@@ -274,6 +307,10 @@ class TikTokTracker:
                                 tiktok_username = COALESCE(NULLIF(?, ''), tiktok_username),
                                 tiktok_nickname = COALESCE(NULLIF(?, ''), tiktok_nickname),
                                 tiktok_uid = COALESCE(NULLIF(?, ''), tiktok_uid),
+                                followers_count = ?,
+                                eligible_10k = ?,
+                                notify_status = ?,
+                                last_checked = datetime('now', 'localtime'),
                                 status = 'active',
                                 status_reason = ?
                             WHERE gpm_id = ?
@@ -284,11 +321,25 @@ class TikTokTracker:
                             session_result.get("username") or "",
                             session_result.get("nickname") or "",
                             session_result.get("user_id") or "",
+                            f_count,
+                            is_eligible,
+                            new_notify,
                             session_result.get("message") or "Đã kết nối phiên đăng nhập",
                             gpm_id
                         ))
                         conn_p.commit()
                         conn_p.close()
+
+                        if should_alert:
+                            log_event("INFO", f"🎉 [TIKTOK TRACKER] Profile [{plat.upper()}] {p_name} đạt {effective_f:,} (ngưỡng {target_th:,})! Gửi cảnh báo Telegram...")
+                            notifier.send_threshold_alert(
+                                profile_name=p_name,
+                                username=session_result.get("username") or p_name,
+                                followers=effective_f,
+                                platform=plat,
+                                threshold=target_th
+                            )
+
                         account_health.update_health_status(gpm_id, "active", "")
                         return {
                             "success": True,
@@ -297,8 +348,10 @@ class TikTokTracker:
                             "platform": plat,
                             "username": session_result.get("username"),
                             "nickname": session_result.get("nickname"),
+                            "followers": f_count,
+                            "eligible_10k": bool(is_eligible),
                             "scan_method": "gpm_profile_disk",
-                            "message": f"[{plat.upper()}] {session_result.get('username')}"
+                            "message": f"[{plat.upper()}] {session_result.get('username')} ({f_count:,} followers)"
                         }
 
                     # Profile TikTok hợp lệ → cập nhật DB và trả về
@@ -315,7 +368,8 @@ class TikTokTracker:
                         username=u_name,
                         nickname=n_name,
                         tiktok_uid=t_uid,
-                        sec_uid=s_uid
+                        sec_uid=s_uid,
+                        platform="tiktok"
                     )
                     log_event("INFO", f"✅ [ZeroRAM] {gpm_id}: @{u_name} ({n_name}, uid={t_uid}) - {f_count:,} followers ({v_7d:,} views 7d, KHÔNG MỞ BROWSER)")
                     return {
@@ -435,7 +489,8 @@ class TikTokTracker:
                     username=u_name,
                     nickname=n_name,
                     tiktok_uid=t_uid,
-                    sec_uid=s_uid
+                    sec_uid=s_uid,
+                    platform="tiktok"
                 )
                 account_health.update_health_status(gpm_id, "active", "")
                 log_event("INFO", f"✅ [Browser] Đã quét GPM profile {gpm_id}: @{u_name} ({n_name}, uid={t_uid}) - {f_count:,} followers (Đủ 10K: {update_res.get('eligible_10k')})")

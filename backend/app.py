@@ -256,6 +256,21 @@ class FollowerSchedulerRequest(BaseModel):
     mode: str = "daily_times"
     times: Optional[str] = "08:00, 20:00"
     interval_hours: Optional[int] = 6
+    follower_threshold_tiktok: Optional[int] = None
+    follower_threshold_youtube: Optional[int] = None
+    follower_threshold_facebook: Optional[int] = None
+
+class ThresholdSettingsRequest(BaseModel):
+    follower_threshold_tiktok: Optional[int] = 10000
+    follower_threshold_youtube: Optional[int] = 1000
+    follower_threshold_facebook: Optional[int] = 1000
+
+class TestTelegramAlertRequest(BaseModel):
+    platform: Optional[str] = "tiktok"
+    threshold: Optional[int] = None
+    profile_name: Optional[str] = None
+    username: Optional[str] = None
+    followers: Optional[int] = None
 
 class SearchAudioRequest(BaseModel):
     keyword: str
@@ -373,6 +388,9 @@ class SaveApiKeysRequest(BaseModel):
     genlogin_api_base_url: Optional[str] = ""
     app_language: Optional[str] = "vi"
     app_theme: Optional[str] = "dark"
+    follower_threshold_tiktok: Optional[int] = None
+    follower_threshold_youtube: Optional[int] = None
+    follower_threshold_facebook: Optional[int] = None
 
 class UIPreferencesRequest(BaseModel):
     language: Optional[str] = None
@@ -793,6 +811,19 @@ def list_gpm_profiles():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM gpm_profiles ORDER BY followers_count DESC, id DESC")
     rows = [dict(r) for r in cursor.fetchall()]
+    
+    try:
+        cursor.execute("SELECT * FROM profile_channels ORDER BY is_default DESC, id ASC")
+        ch_rows = [dict(r) for r in cursor.fetchall()]
+        ch_by_gpm = {}
+        for ch in ch_rows:
+            ch_by_gpm.setdefault(ch["gpm_id"], []).append(ch)
+        for r in rows:
+            r["channels"] = ch_by_gpm.get(r["gpm_id"], [])
+    except Exception:
+        for r in rows:
+            r["channels"] = []
+
     conn.close()
     return rows
 
@@ -844,6 +875,41 @@ def set_default_channel(gpm_id: str, channel_id: str):
     cursor.execute("UPDATE profile_channels SET is_default = 0 WHERE gpm_id = ?", (gpm_id,))
     # Set the selected one as default
     cursor.execute("UPDATE profile_channels SET is_default = 1 WHERE gpm_id = ? AND channel_id = ?", (gpm_id, channel_id))
+    
+    # Đồng bộ thông tin kênh được chọn làm mặc định lên gpm_profiles
+    cursor.execute("SELECT * FROM profile_channels WHERE gpm_id = ? AND channel_id = ?", (gpm_id, channel_id))
+    ch = cursor.fetchone()
+    if ch:
+        cursor.execute("SELECT platform FROM gpm_profiles WHERE gpm_id = ?", (gpm_id,))
+        p_row = cursor.fetchone()
+        plat = (p_row["platform"] if p_row and p_row["platform"] else "").lower()
+        f_count = ch["followers_count"] or 0
+        from backend.database import get_follower_thresholds
+        thresholds = get_follower_thresholds()
+        target_th = thresholds.get(plat, 1000)
+        is_10k = 1 if f_count >= target_th else 0
+        if plat == "youtube":
+            clean_handle = ch["channel_url"] or ch["channel_name"] or ch["channel_id"]
+            if not clean_handle.startswith("@") and not clean_handle.startswith("UC"):
+                clean_handle = "@" + clean_handle
+            cursor.execute("""
+                UPDATE gpm_profiles 
+                SET channel_handle = ?, tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
+                WHERE gpm_id = ?
+            """, (clean_handle, clean_handle, ch["channel_name"], f_count, is_10k, gpm_id))
+        elif plat == "facebook":
+            cursor.execute("""
+                UPDATE gpm_profiles 
+                SET fb_page_id = ?, tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
+                WHERE gpm_id = ?
+            """, (ch["channel_id"], ch["channel_id"], ch["channel_name"], f_count, is_10k, gpm_id))
+        else:
+            cursor.execute("""
+                UPDATE gpm_profiles 
+                SET tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
+                WHERE gpm_id = ?
+            """, (ch["channel_id"], ch["channel_name"], f_count, is_10k, gpm_id))
+
     conn.commit()
     conn.close()
     return {"status": "success", "message": f"Đã đặt kênh {channel_id} làm mặc định"}
@@ -3413,11 +3479,16 @@ def update_profile_notify_status(gpm_id: str, req: UpdateProfileNotifyStatusRequ
 
 @app.get("/api/settings/follower-scheduler")
 def get_follower_scheduler_settings():
+    from backend.database import get_follower_thresholds
+    thresholds = get_follower_thresholds()
     return {
         "enabled": scheduler.follower_scan_enabled,
         "mode": scheduler.follower_scan_mode,
         "times": scheduler.follower_scan_times,
         "interval_hours": scheduler.follower_scan_interval_hours,
+        "follower_threshold_tiktok": thresholds["tiktok"],
+        "follower_threshold_youtube": thresholds["youtube"],
+        "follower_threshold_facebook": thresholds["facebook"],
         "last_scan": getattr(scheduler, "last_follower_scan", 0),
         "is_scanning": getattr(tiktok_tracker, "_is_scanning_all", False)
     }
@@ -3439,6 +3510,7 @@ def save_follower_scheduler_settings(req: FollowerSchedulerRequest):
         interval_hours=req.interval_hours
     )
     try:
+        from backend.database import set_setting, recalculate_profiles_eligibility
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('follower_scan_enabled', ?)", ("1" if req.enabled else "0",))
@@ -3447,6 +3519,14 @@ def save_follower_scheduler_settings(req: FollowerSchedulerRequest):
         cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('follower_scan_interval_hours', ?)", (str(req.interval_hours or 6),))
         conn.commit()
         conn.close()
+
+        if req.follower_threshold_tiktok is not None:
+            set_setting("follower_threshold_tiktok", str(max(1, req.follower_threshold_tiktok)))
+        if req.follower_threshold_youtube is not None:
+            set_setting("follower_threshold_youtube", str(max(1, req.follower_threshold_youtube)))
+        if req.follower_threshold_facebook is not None:
+            set_setting("follower_threshold_facebook", str(max(1, req.follower_threshold_facebook)))
+        recalculate_profiles_eligibility()
     except Exception as e:
         log_event("WARNING", f"Lỗi lưu cấu hình scheduler vào settings: {e}")
 
@@ -3721,16 +3801,38 @@ def test_specific_telegram_channel(channel_id: int, mode: Optional[str] = "conne
         return {"status": "failed", "message": f"Lỗi gửi tin nhắn: {err_msg}"}
 
 @app.post("/api/telegram/test-alert")
-def test_telegram_alert():
+def test_telegram_alert(req: Optional[TestTelegramAlertRequest] = None):
+    plat = (req.platform if req and req.platform else "tiktok").lower()
+    from backend.database import get_follower_thresholds
+    thresholds = get_follower_thresholds()
+    target_th = req.threshold if (req and req.threshold) else thresholds.get(plat, 10000)
+
+    if plat == "youtube":
+        p_name = req.profile_name if (req and req.profile_name) else "Profile YouTube #01"
+        u_name = req.username if (req and req.username) else "ShortsStackChannel"
+        f_cnt = req.followers if (req and req.followers) else (target_th + 150)
+    elif plat == "facebook":
+        p_name = req.profile_name if (req and req.profile_name) else "Profile Facebook #01"
+        u_name = req.username if (req and req.username) else "ReelsPageViral"
+        f_cnt = req.followers if (req and req.followers) else (target_th + 120)
+    else:
+        p_name = req.profile_name if (req and req.profile_name) else "Profile TikTok #01"
+        u_name = req.username if (req and req.username) else "mmo_creator_us"
+        f_cnt = req.followers if (req and req.followers) else (target_th + 450)
+
     result = notifier.send_10k_alert_detailed(
-        profile_name="Profile Demo #01",
-        username="mmo_creator_us",
-        followers=10450,
-        views=250000
+        profile_name=p_name,
+        username=u_name,
+        followers=f_cnt,
+        views=250000,
+        platform=plat,
+        threshold=target_th
     )
     return {
         "status": "success" if result.get("success") else "failed",
         "message": result.get("message", "Đã gửi test alert Telegram"),
+        "platform": plat,
+        "threshold": target_th,
         "sent_count": result.get("sent_count", 0),
         "total_active": result.get("total_active", 0),
         "channels": result.get("channels", [])
@@ -3867,6 +3969,9 @@ def get_api_keys():
     app_language = os.getenv("APP_LANGUAGE", db_settings.get("APP_LANGUAGE", "vi"))
     app_theme = os.getenv("APP_THEME", db_settings.get("APP_THEME", "dark"))
 
+    from backend.database import get_follower_thresholds
+    thresholds = get_follower_thresholds()
+
     sub_style = os.getenv("SUBTITLE_STYLE", db_settings.get("SUBTITLE_STYLE", getattr(cfg, 'SUBTITLE_STYLE', 'karaoke_yellow')))
     sub_pos = os.getenv("SUBTITLE_POSITION", db_settings.get("SUBTITLE_POSITION", getattr(cfg, 'SUBTITLE_POSITION', 'center')))
     sub_size = int(os.getenv("SUBTITLE_FONT_SIZE", db_settings.get("SUBTITLE_FONT_SIZE", getattr(cfg, 'SUBTITLE_FONT_SIZE', 54))))
@@ -3904,6 +4009,9 @@ def get_api_keys():
         "genlogin_api_base_url": genlogin_url,
         "app_language": app_language,
         "app_theme": app_theme,
+        "follower_threshold_tiktok": thresholds["tiktok"],
+        "follower_threshold_youtube": thresholds["youtube"],
+        "follower_threshold_facebook": thresholds["facebook"],
     }
 
 @app.post("/api/settings/keys")
@@ -3978,6 +4086,12 @@ def save_api_keys(req: SaveApiKeysRequest):
         updates["APP_LANGUAGE"] = req.app_language.strip().lower()
     if req.app_theme is not None and req.app_theme.strip():
         updates["APP_THEME"] = req.app_theme.strip().lower()
+    if req.follower_threshold_tiktok is not None:
+        updates["follower_threshold_tiktok"] = str(max(1, req.follower_threshold_tiktok))
+    if req.follower_threshold_youtube is not None:
+        updates["follower_threshold_youtube"] = str(max(1, req.follower_threshold_youtube))
+    if req.follower_threshold_facebook is not None:
+        updates["follower_threshold_facebook"] = str(max(1, req.follower_threshold_facebook))
 
     # 1. Save to .env file
     save_env_config(updates)
@@ -3990,6 +4104,10 @@ def save_api_keys(req: SaveApiKeysRequest):
             cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (k, str(v)))
         conn.commit()
         conn.close()
+
+        # Tự động tính toán lại cờ chuẩn điều kiện cho dàn profile
+        from backend.database import recalculate_profiles_eligibility
+        recalculate_profiles_eligibility()
     except Exception as e:
         log_event("WARNING", f"Lỗi lưu cấu hình vào DB: {e}")
 
@@ -3998,6 +4116,23 @@ def save_api_keys(req: SaveApiKeysRequest):
         notifier.bot_token = updates["TELEGRAM_BOT_TOKEN"]
     log_event("INFO", f"Đã cập nhật cấu hình API keys và lưu vào DB: {list(updates.keys())}")
     return {"status": "ok", "message": "Đã lưu cấu hình thành công", "pool_size": yt_scanner.key_pool.total_keys}
+
+@app.get("/api/settings/thresholds")
+def get_threshold_settings():
+    from backend.database import get_follower_thresholds
+    return {"status": "success", "thresholds": get_follower_thresholds()}
+
+@app.post("/api/settings/thresholds")
+def save_threshold_settings(req: ThresholdSettingsRequest):
+    from backend.database import set_setting, recalculate_profiles_eligibility, get_follower_thresholds
+    if req.follower_threshold_tiktok is not None:
+        set_setting("follower_threshold_tiktok", str(max(1, req.follower_threshold_tiktok)))
+    if req.follower_threshold_youtube is not None:
+        set_setting("follower_threshold_youtube", str(max(1, req.follower_threshold_youtube)))
+    if req.follower_threshold_facebook is not None:
+        set_setting("follower_threshold_facebook", str(max(1, req.follower_threshold_facebook)))
+    recalculate_profiles_eligibility()
+    return {"status": "success", "thresholds": get_follower_thresholds(), "message": "Đã lưu cài đặt ngưỡng thông báo thành công!"}
 
 @app.get("/api/settings/ui-preferences")
 def get_ui_preferences():

@@ -191,25 +191,91 @@ class TelegramNotifier:
         return sent_count > 0
 
     # =========================================================================
-    # 1. THÔNG BÁO NICK ĐẠT 10.000 FOLLOWER
+    # 1. THÔNG BÁO NICK / KÊNH ĐẠT NGƯỠNG FOLLOWER / SUBSCRIBERS
     # =========================================================================
-    def send_10k_alert(self, profile_name: str, username: str, followers: int, views: int = 0, target_chat_id: Optional[str] = None) -> bool:
-        """Bắn cảnh báo nick đạt 10.000 Follower đủ điều kiện TikTok Beta tới các kênh nhận notify_10k"""
+    def send_threshold_alert(
+        self,
+        profile_name: str,
+        username: str,
+        followers: int,
+        platform: str = "tiktok",
+        threshold: Optional[int] = None,
+        views: int = 0,
+        target_chat_id: Optional[str] = None
+    ) -> bool:
+        """Bắn cảnh báo nick/kênh đạt ngưỡng Follower/Subs (TikTok Beta, YouTube YPP, Facebook Reels) tới các kênh nhận notify_10k"""
+        plat = (platform or "tiktok").lower()
         now_str = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
-        msg = (
-            "🚨 *[TIKTOK BETA ALERT] TÀI KHOẢN ĐỦ ĐIỀU KIỆN!*\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"👤 *Tài khoản:* `@{username or 'N/A'}`\n"
-            f"🆔 *Profile GPM:* `{profile_name}`\n"
-            f"📈 *Followers:* *{followers:,}* / 10,000 ✅\n"
-            f"⏰ *Thời điểm đạt:* `{now_str}`\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            "👉 *Hành động ngay:*\n"
-            "1. Mở phần mềm GPMLogin và bật profile này.\n"
-            "2. Truy cập TikTok Studio / Creator Rewards Program.\n"
-            "3. Bấm **Nộp Đơn (Apply)** để kích hoạt tính năng kiếm tiền Beta!"
-        )
+
+        if plat == "youtube":
+            th = threshold or 1000
+            msg = (
+                "🚨 *[YOUTUBE PARTNER ALERT] KÊNH ĐỦ ĐIỀU KIỆN!*\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📺 *Kênh YouTube:* `@{username.lstrip('@') if username else 'N/A'}`\n"
+                f"🆔 *Profile:* `{profile_name}`\n"
+                f"📈 *Người đăng ký:* *{followers:,}* / {th:,} subs ✅\n"
+                f"⏰ *Thời điểm đạt:* `{now_str}`\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "👉 *Hành động ngay:*\n"
+                "1. Mở profile và truy cập **YouTube Studio**.\n"
+                "2. Vào mục **Kiếm Tiền (Earn)** kiểm tra điều kiện phát triển kênh.\n"
+                "3. Bấm **Đăng Ký Ngay (Apply Now)** để bật kiếm tiền YouTube Partner Program!"
+            )
+        elif plat == "facebook":
+            th = threshold or 1000
+            msg = (
+                "🚨 *[FACEBOOK REELS ALERT] TRANG/NICK ĐỦ ĐIỀU KIỆN!*\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📘 *Trang/Nick Facebook:* `{username or 'N/A'}`\n"
+                f"🆔 *Profile:* `{profile_name}`\n"
+                f"📈 *Followers:* *{followers:,}* / {th:,} followers ✅\n"
+                f"⏰ *Thời điểm đạt:* `{now_str}`\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "👉 *Hành động ngay:*\n"
+                "1. Mở profile và truy cập **Meta Business Suite**.\n"
+                "2. Vào mục **Kiếm Tiền (Monetization)** để kiểm tra tính hợp lệ.\n"
+                "3. Thiết lập tài khoản thanh toán và bật tính năng Kiếm Tiền Reels / Fanpage!"
+            )
+        else: # tiktok
+            th = threshold or 10000
+            clean_u = username.lstrip('@') if username else 'N/A'
+            msg = (
+                "🚨 *[TIKTOK BETA ALERT] TÀI KHOẢN ĐỦ ĐIỀU KIỆN!*\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 *Tài khoản TikTok:* `@{clean_u}`\n"
+                f"🆔 *Profile:* `{profile_name}`\n"
+                f"📈 *Followers:* *{followers:,}* / {th:,} followers ✅\n"
+                f"⏰ *Thời điểm đạt:* `{now_str}`\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "👉 *Hành động ngay:*\n"
+                "1. Mở phần mềm và bật profile này.\n"
+                "2. Truy cập TikTok Studio / Creator Rewards Program.\n"
+                "3. Bấm **Nộp Đơn (Apply)** để kích hoạt tính năng kiếm tiền Beta!"
+            )
+
         return self.send_message(msg, target_chat_id=target_chat_id, notification_type="10k")
+
+    def send_10k_alert(
+        self,
+        profile_name: str,
+        username: str,
+        followers: int,
+        views: int = 0,
+        target_chat_id: Optional[str] = None,
+        platform: str = "tiktok",
+        threshold: Optional[int] = None
+    ) -> bool:
+        """Alias tương thích ngược cho send_threshold_alert"""
+        return self.send_threshold_alert(
+            profile_name=profile_name,
+            username=username,
+            followers=followers,
+            platform=platform,
+            threshold=threshold,
+            views=views,
+            target_chat_id=target_chat_id
+        )
 
     def send_first_30min_checklist(
         self,
@@ -242,7 +308,16 @@ class TelegramNotifier:
         )
         return self.send_message(msg, target_chat_id=target_chat_id, notification_type=None)
 
-    def send_10k_alert_detailed(self, profile_name: str, username: str, followers: int, views: int = 0, target_chat_id: Optional[str] = None) -> Dict[str, Any]:
+    def send_10k_alert_detailed(
+        self,
+        profile_name: str,
+        username: str,
+        followers: int,
+        views: int = 0,
+        target_chat_id: Optional[str] = None,
+        platform: str = "tiktok",
+        threshold: Optional[int] = None
+    ) -> Dict[str, Any]:
         """Gửi cảnh báo và trả về chi tiết từng kênh thành công/thất bại (Dùng cho test alert)"""
         bot_token = self.get_bot_token()
         if not bot_token:
@@ -262,23 +337,52 @@ class TelegramNotifier:
         if not active_channels:
             return {
                 "success": False,
-                "message": "Không có kênh Telegram nào đang BẬT tùy chọn nhận 'Cảnh báo 10K Follower'.",
+                "message": "Không có kênh Telegram nào đang BẬT tùy chọn nhận 'Cảnh báo 10K / Đạt Chỉ Tiêu'.",
                 "sent_count": 0,
                 "total_active": 0,
                 "channels": []
             }
 
+        plat = (platform or "tiktok").lower()
         now_str = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
-        msg = (
-            "🚨 *[TIKTOK BETA ALERT] TÀI KHOẢN ĐỦ ĐIỀU KIỆN! (TEST)*\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"👤 *Tài khoản:* `@{username or 'demo_user'}`\n"
-            f"🆔 *Profile GPM:* `{profile_name}`\n"
-            f"📈 *Followers:* *{followers:,}* / 10,000 ✅\n"
-            f"⏰ *Thời điểm:* `{now_str}`\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            "👉 *Hành động:* Hãy vào ngay GPMLogin mở nick này và nộp đơn tham gia Quỹ Sáng Tạo (TikTok Creator Rewards Program)!"
-        )
+
+        if plat == "youtube":
+            th = threshold or 1000
+            msg = (
+                "🚨 *[YOUTUBE PARTNER ALERT] KÊNH ĐỦ ĐIỀU KIỆN! (TEST)*\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📺 *Kênh YouTube:* `@{username.lstrip('@') if username else 'demo_channel'}`\n"
+                f"🆔 *Profile:* `{profile_name}`\n"
+                f"📈 *Người đăng ký:* *{followers:,}* / {th:,} subs ✅\n"
+                f"⏰ *Thời điểm:* `{now_str}`\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "👉 *Hành động:* Mở YouTube Studio và nộp đơn tham gia Chương trình Đối tác YouTube (YPP)!"
+            )
+        elif plat == "facebook":
+            th = threshold or 1000
+            msg = (
+                "🚨 *[FACEBOOK REELS ALERT] TRANG/NICK ĐỦ ĐIỀU KIỆN! (TEST)*\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📘 *Trang/Nick Facebook:* `{username or 'demo_page'}`\n"
+                f"🆔 *Profile:* `{profile_name}`\n"
+                f"📈 *Followers:* *{followers:,}* / {th:,} followers ✅\n"
+                f"⏰ *Thời điểm:* `{now_str}`\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "👉 *Hành động:* Mở Meta Business Suite kiểm tra và bật kiếm tiền Reels / Sao!"
+            )
+        else: # tiktok
+            th = threshold or 10000
+            clean_u = username.lstrip('@') if username else 'demo_user'
+            msg = (
+                "🚨 *[TIKTOK BETA ALERT] TÀI KHOẢN ĐỦ ĐIỀU KIỆN! (TEST)*\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 *Tài khoản TikTok:* `@{clean_u}`\n"
+                f"🆔 *Profile:* `{profile_name}`\n"
+                f"📈 *Followers:* *{followers:,}* / {th:,} followers ✅\n"
+                f"⏰ *Thời điểm:* `{now_str}`\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "👉 *Hành động:* Hãy vào ngay mở nick này và nộp đơn tham gia Quỹ Sáng Tạo (TikTok Creator Rewards Program)!"
+            )
 
         results = []
         sent_count = 0

@@ -108,6 +108,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // DEBUG CLICK MONITOR (Capture phase to see if click reaches DOM)
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('#btnFollowerSchedulerModal, #btnThresholdSettingsModal, .btn-inline-edit, .action-dropdown-item');
+        if (btn) {
+            console.log('[DEBUG CLICK MONITOR] Clicked button in capture phase:', btn.id || btn.className, 'target:', e.target);
+        }
+    }, true);
+
     // Close column dropdown & action menus when clicking outside
     document.addEventListener('click', (e) => {
         const container = document.querySelector('.col-picker-container');
@@ -168,8 +176,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const follSchedModal = document.getElementById('followerSchedulerModal');
     if (follSchedModal) {
         follSchedModal.addEventListener('click', (e) => {
+            console.log('[DEBUG MODAL] follSchedModal click event, target:', e.target.id || e.target.className);
             if (e.target === follSchedModal) {
+                console.log('[DEBUG MODAL] Clicked directly on follSchedModal backdrop -> closing');
                 closeFollowerSchedulerModal();
+            }
+        });
+    }
+
+    const threshModal = document.getElementById('thresholdSettingsModal');
+    if (threshModal) {
+        threshModal.addEventListener('click', (e) => {
+            console.log('[DEBUG MODAL] threshModal click event, target:', e.target.id || e.target.className);
+            if (e.target === threshModal) {
+                console.log('[DEBUG MODAL] Clicked directly on threshModal backdrop -> closing');
+                closeThresholdSettingsModal();
             }
         });
     }
@@ -177,7 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const editUserModal = document.getElementById('editProfileUsernameModal');
     if (editUserModal) {
         editUserModal.addEventListener('click', (e) => {
+            console.log('[DEBUG MODAL] editUserModal click event, target:', e.target.id || e.target.className);
             if (e.target === editUserModal) {
+                console.log('[DEBUG MODAL] Clicked directly on editUserModal backdrop -> closing');
                 closeEditUsernameModal();
             }
         });
@@ -193,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeCampaignLogsModal();
             closeSchedulerSettingsModal();
             closeFollowerSchedulerModal();
+            closeThresholdSettingsModal();
             closeEditUsernameModal();
         }
     });
@@ -2908,6 +2932,30 @@ async function syncGPMProfiles(btn) {
     }
 }
 window.syncGPMProfiles = syncGPMProfiles;
+window.toggleGpmSortDirection = toggleGpmSortDirection;
+window.handleGpmSortChange = handleGpmSortChange;
+window.handleGpmHeaderSort = handleGpmHeaderSort;
+window.renderGpmProfilesTable = renderGpmProfilesTable;
+window.resetGpmFilters = resetGpmFilters;
+window.exportGpmProfilesCsv = exportGpmProfilesCsv;
+window.stopAllProfilesScan = stopAllProfilesScan;
+window.openEditUsernameModal = openEditUsernameModal;
+window.openEditChannelModal = openEditChannelModal;
+window.closeEditUsernameModal = closeEditUsernameModal;
+window.setCachedGpmProfiles = function(p) { cachedGpmProfiles = p; };
+window.cycleProfileNotifyStatus = cycleProfileNotifyStatus;
+window.setChannelNotifyStatus = setChannelNotifyStatus;
+window.cycleChannelNotifyStatus = cycleChannelNotifyStatus;
+window.scanSingleChannelFollowers = scanSingleChannelFollowers;
+window.deleteChannelFromList = deleteChannelFromList;
+window.updateEditProfileModalLabels = updateEditProfileModalLabels;
+window.onEditProfilePlatformChange = onEditProfilePlatformChange;
+window.scanSingleProfileFollowers = scanSingleProfileFollowers;
+window.loadGpmProfiles = loadGpmProfiles;
+window.updateSelectedGpmCount = updateSelectedGpmCount;
+window.updateEditSelectedGpmCount = updateEditSelectedGpmCount;
+window.selectAllEditCampaignGpm = selectAllEditCampaignGpm;
+
 
 // ==========================================
 // 4. GPMLOGIN PROFILES & TIKTOK TRACKER
@@ -3186,28 +3234,61 @@ function renderGpmProfilesTable() {
             if (plat === 'youtube') {
                 if (channelsList) {
                     const chToShow = defCh || channelsList[0];
-                    const handle = chToShow.channel_url || chToShow.channel_name || '';
-                    const cleanHandle = handle.startsWith('@') ? handle : '@' + handle;
+                    const rawUrl = (chToShow.channel_url || '').trim();
+                    let ytLink = '';
+                    let ytHandle = '';
+
+                    if (rawUrl.startsWith('http')) {
+                        ytLink = rawUrl;
+                        ytHandle = rawUrl.split('/').pop();
+                    } else if (rawUrl.startsWith('@') && !rawUrl.includes(' ')) {
+                        ytLink = `https://www.youtube.com/${rawUrl}`;
+                        ytHandle = rawUrl;
+                    } else if (chToShow.channel_id) {
+                        ytLink = `https://www.youtube.com/channel/${chToShow.channel_id}`;
+                        ytHandle = chToShow.channel_id.startsWith('UC') ? `ID: ${chToShow.channel_id}` : (rawUrl ? (rawUrl.startsWith('@') ? rawUrl : `@${rawUrl}`) : `@${chToShow.channel_name}`);
+                    } else {
+                        const cleanHandle = rawUrl.startsWith('@') ? rawUrl : `@${rawUrl || chToShow.channel_name}`;
+                        ytLink = `https://www.youtube.com/${encodeURIComponent(cleanHandle)}`;
+                        ytHandle = cleanHandle;
+                    }
+
                     usernameDisplay = `
                         <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
                             <div style="display:flex; align-items:center; gap:6px; min-width:0;">
-                                <a href="https://www.youtube.com/${escapeHtml(cleanHandle)}" target="_blank" class="table-text-truncate" style="max-width:145px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(chToShow.channel_name)} (${escapeHtml(chToShow.channel_id)})">
+                                <a href="${escapeHtml(ytLink)}" target="_blank" class="table-text-truncate" style="max-width:145px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(chToShow.channel_name)} (${escapeHtml(chToShow.channel_id)})">
                                     <i class="fa-brands fa-youtube" style="color:#ef4444; flex-shrink:0;"></i>
                                     <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(chToShow.channel_name)}</span>
                                 </a>
                                 <span class="badge" style="background:rgba(239,68,68,0.15); color:#f87171; font-size:9.5px; padding:1px 5px; font-weight:600;"><i class="fa-solid fa-star"></i> Mặc định</span>
                             </div>
                             <div class="table-text-truncate text-muted" style="max-width:145px; font-size:11px; font-weight:500;" title="ID: ${escapeHtml(chToShow.channel_id)}">
-                                <i class="fa-solid fa-id-badge" style="font-size:10px; opacity:0.7;"></i> ${escapeHtml(cleanHandle)}
+                                <i class="fa-solid fa-id-badge" style="font-size:10px; opacity:0.7;"></i> ${escapeHtml(ytHandle)}
                             </div>
                         </div>`;
                 } else {
-                    const handle = p.channel_handle || p.tiktok_username || '';
-                    const cleanHandle = handle ? (handle.startsWith('@') ? handle : '@' + handle) : '';
+                    const rawHandle = (p.channel_handle || p.tiktok_username || '').trim();
+                    let ytLink = '';
+                    let cleanHandle = '';
+
+                    if (rawHandle.startsWith('http')) {
+                        ytLink = rawHandle;
+                        cleanHandle = rawHandle.split('/').pop();
+                    } else if (rawHandle.startsWith('@') && !rawHandle.includes(' ')) {
+                        ytLink = `https://www.youtube.com/${rawHandle}`;
+                        cleanHandle = rawHandle;
+                    } else if (rawHandle.startsWith('UC')) {
+                        ytLink = `https://www.youtube.com/channel/${rawHandle}`;
+                        cleanHandle = `ID: ${rawHandle}`;
+                    } else if (rawHandle) {
+                        cleanHandle = rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`;
+                        ytLink = `https://www.youtube.com/${encodeURIComponent(cleanHandle)}`;
+                    }
+
                     usernameDisplay = cleanHandle ? `
                         <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
                             <div style="display:flex; align-items:center; gap:6px; min-width:0;">
-                                <a href="https://www.youtube.com/${escapeHtml(cleanHandle)}" target="_blank" class="table-text-truncate" style="max-width:150px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(cleanHandle)}">
+                                <a href="${escapeHtml(ytLink)}" target="_blank" class="table-text-truncate" style="max-width:150px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(cleanHandle)}">
                                     <i class="fa-brands fa-youtube" style="color:#ef4444; flex-shrink:0;"></i> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(cleanHandle)}</span>
                                 </a>
                                 <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(cleanHandle)}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'youtube')" data-tooltip="Sửa Kênh YouTube">
@@ -3393,7 +3474,7 @@ function renderGpmProfilesTable() {
                             <button type="button" class="action-dropdown-item" onclick="scanSingleProfileFollowers('${escapeHtml(p.gpm_id)}', this); closeAllActionMenus();">
                                 <i class="fa-solid fa-magnifying-glass-chart" style="color:var(--accent-pink);"></i> Quét Follower ngay
                             </button>
-                            <button type="button" class="action-dropdown-item" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(p.tiktok_username || '')}', ${followersCount}, '${escapeHtml(p.tiktok_nickname || '')}'); closeAllActionMenus();">
+                            <button type="button" class="action-dropdown-item" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(p.tiktok_username || '')}', ${followersCount}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', '${escapeHtml(plat)}'); closeAllActionMenus();">
                                 <i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Sửa Nick & Chỉ số
                             </button>
                             ${nStatus === 'tracking' ? `
@@ -3412,10 +3493,19 @@ function renderGpmProfilesTable() {
                             <button type="button" class="action-dropdown-item" onclick="setProfileNotifyStatus('${escapeHtml(p.gpm_id)}', 'tracking'); closeAllActionMenus();">
                                 <i class="fa-solid fa-bell" style="color:#34d399;"></i> Theo dõi (gửi khi đủ 10K)
                             </button>`}
-                            ${plat === 'youtube' ? `
-                            <a href="https://www.youtube.com/${escapeHtml(p.channel_handle || (defCh && defCh.channel_url) || p.tiktok_username || '')}" target="_blank" rel="noopener" class="action-dropdown-item" onclick="closeAllActionMenus()">
-                                <i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Mở kênh chính YouTube
-                            </a>` : plat === 'facebook' ? `
+                            ${plat === 'youtube' ? (() => {
+                                const ytTarget = defCh || p;
+                                const rawYt = (ytTarget.channel_url || p.channel_handle || '').trim();
+                                let mainYtLink = 'https://www.youtube.com';
+                                if (rawYt.startsWith('http')) mainYtLink = rawYt;
+                                else if (rawYt.startsWith('@') && !rawYt.includes(' ')) mainYtLink = `https://www.youtube.com/${rawYt}`;
+                                else if (ytTarget.channel_id) mainYtLink = `https://www.youtube.com/channel/${ytTarget.channel_id}`;
+                                else if (p.tiktok_username && p.tiktok_username.startsWith('UC')) mainYtLink = `https://www.youtube.com/channel/${p.tiktok_username}`;
+                                return `
+                                <a href="${escapeHtml(mainYtLink)}" target="_blank" rel="noopener" class="action-dropdown-item" onclick="closeAllActionMenus()">
+                                    <i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Mở kênh chính YouTube
+                                </a>`;
+                            })() : plat === 'facebook' ? `
                             <a href="https://www.facebook.com/${escapeHtml(p.fb_page_id || (defCh && defCh.channel_id) || p.tiktok_username || '')}" target="_blank" rel="noopener" class="action-dropdown-item" onclick="closeAllActionMenus()">
                                 <i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Mở trang Facebook
                             </a>` : (p.tiktok_username ? `
@@ -3449,21 +3539,36 @@ function renderGpmProfilesTable() {
                     let chLink = '';
 
                     if (plat === 'youtube') {
-                        const h = ch.channel_url || ch.channel_name || '';
-                        const cleanH = h.startsWith('@') ? h : '@' + h;
-                        chLink = `https://www.youtube.com/${escapeHtml(cleanH)}`;
+                        const rawChUrl = (ch.channel_url || '').trim();
+                        let subChLink = '';
+                        let subChHandle = '';
+                        if (rawChUrl.startsWith('http')) {
+                            subChLink = rawChUrl;
+                            subChHandle = rawChUrl.split('/').pop();
+                        } else if (rawChUrl.startsWith('@') && !rawChUrl.includes(' ')) {
+                            subChLink = `https://www.youtube.com/${rawChUrl}`;
+                            subChHandle = rawChUrl;
+                        } else if (ch.channel_id) {
+                            subChLink = `https://www.youtube.com/channel/${ch.channel_id}`;
+                            subChHandle = ch.channel_id.startsWith('UC') ? `ID: ${ch.channel_id}` : (rawChUrl ? (rawChUrl.startsWith('@') ? rawChUrl : `@${rawChUrl}`) : `@${ch.channel_name}`);
+                        } else {
+                            const cleanHandle = rawChUrl.startsWith('@') ? rawChUrl : `@${rawChUrl || ch.channel_name}`;
+                            subChLink = `https://www.youtube.com/${encodeURIComponent(cleanHandle)}`;
+                            subChHandle = cleanHandle;
+                        }
+                        chLink = subChLink;
                         chTypeBadge = `<span class="badge" style="background:rgba(239,68,68,0.1); color:#f87171; font-size:9.5px; padding:2px 6px;"><i class="fa-brands fa-youtube"></i> Channel</span>`;
                         chNameHtml = `
                             <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
                                 <div style="display:flex; align-items:center; gap:6px; min-width:0;">
-                                    <a href="${chLink}" target="_blank" class="table-text-truncate" style="max-width:145px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(ch.channel_name)} (${escapeHtml(ch.channel_id)})">
+                                    <a href="${escapeHtml(chLink)}" target="_blank" class="table-text-truncate" style="max-width:145px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(ch.channel_name)} (${escapeHtml(ch.channel_id)})">
                                         <i class="fa-brands fa-youtube" style="color:#ef4444; flex-shrink:0;"></i>
                                         <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(ch.channel_name)}</span>
                                     </a>
                                     ${ch.is_default ? '<span class="badge" style="background:rgba(234,179,8,0.15); color:#eab308; font-size:9px; padding:1px 5px; font-weight:600;"><i class="fa-solid fa-star"></i> Mặc định</span>' : ''}
                                 </div>
                                 <span class="table-text-truncate text-muted" style="max-width:145px; font-size:10.5px;" title="ID: ${escapeHtml(ch.channel_id)}">
-                                    <i class="fa-solid fa-id-badge" style="font-size:9.5px; opacity:0.7;"></i> ${escapeHtml(cleanH)}
+                                    <i class="fa-solid fa-id-badge" style="font-size:9.5px; opacity:0.7;"></i> ${escapeHtml(subChHandle)}
                                 </span>
                             </div>
                         `;
@@ -3487,6 +3592,19 @@ function renderGpmProfilesTable() {
                             </div>
                         `;
                     }
+
+                    const chNotifyStatus = (ch.notify_status || (ch.is_default ? p.notify_status : 'tracking') || 'tracking').toLowerCase();
+                    let chNotifyBadge = '';
+                    if (chNotifyStatus === 'sent') {
+                        chNotifyBadge = `<span class="badge badge-success has-tooltip tooltip-top" onclick="cycleChannelNotifyStatus('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', '${chNotifyStatus}')" data-tooltip="Đã gửi thông báo đạt mốc. Bấm để theo dõi lại." style="cursor:pointer;"><i class="fa-solid fa-circle-check"></i> Đã gửi 10K</span>`;
+                    } else if (chNotifyStatus === 'muted') {
+                        chNotifyBadge = `<span class="badge badge-secondary has-tooltip tooltip-top" onclick="cycleChannelNotifyStatus('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', '${chNotifyStatus}')" data-tooltip="Đang tắt thông báo. Bấm để bật theo dõi." style="cursor:pointer; opacity:0.6;"><i class="fa-solid fa-bell-slash"></i> Đã tắt</span>`;
+                    } else {
+                        chNotifyBadge = `<span class="badge badge-warning has-tooltip tooltip-top" onclick="cycleChannelNotifyStatus('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', '${chNotifyStatus}')" data-tooltip="Đang theo dõi tăng trưởng. Bấm để tắt." style="cursor:pointer;"><i class="fa-solid fa-bell"></i> Đang theo dõi</span>`;
+                    }
+
+                    const safeChId = escapeHtml(ch.channel_id).replace(/[^a-zA-Z0-9_-]/g, '_');
+                    const chMenuKey = `ch-${escapeHtml(p.gpm_id)}-${safeChId}`;
 
                     return `
                     <tr class="sub-channel-row sub-row-${escapeHtml(p.gpm_id)} ${plat === 'youtube' ? 'youtube-channel' : 'facebook-page'}" style="${isExpanded ? '' : 'display:none;'}">
@@ -3515,28 +3633,59 @@ function renderGpmProfilesTable() {
                                 : `<span class="badge badge-success" style="font-size:10px; background:rgba(24,119,242,0.18); color:#60a5fa; border:1px solid rgba(24,119,242,0.3);"><i class="fa-solid fa-trophy"></i> ĐỦ ${formatThresholdDisplay(chTh)} FLW!</span>`
                         ) : '<span class="badge badge-info" style="font-size:10px;"><i class="fa-solid fa-seedling"></i> Đang Nuôi</span>'}
                         </td>
-                        <td>
-                            <span class="badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted); font-size:10px; font-family:monospace; padding:2px 6px;" title="Channel ID: ${escapeHtml(ch.channel_id)}">
-                                ID: ${escapeHtml(ch.channel_id.length > 13 ? ch.channel_id.slice(0, 13) + '...' : ch.channel_id)}
-                            </span>
-                        </td>
+                        <td>${chNotifyBadge}</td>
                         <td style="text-align: center;">
-                            <div style="display:flex; align-items:center; justify-content:center; gap:5px;">
-                                ${!ch.is_default ? `
-                                <button type="button" class="btn-subchannel-action primary-action has-tooltip tooltip-top" onclick="setDefaultChannel('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}')" data-tooltip="Đặt kênh này làm mặc định cho profile">
-                                    <i class="fa-solid fa-star"></i> Chọn
-                                </button>` : `
-                                <span class="badge" style="background:rgba(234,179,8,0.15); color:#eab308; font-size:10px; padding:3px 7px; font-weight:600;">
-                                    <i class="fa-solid fa-circle-check"></i> Đang dùng
-                                </span>`}
-                                
-                                <a href="${chLink}" target="_blank" rel="noopener" class="btn-subchannel-action has-tooltip tooltip-top" data-tooltip="Mở trên trình duyệt">
-                                    <i class="${plat === 'youtube' ? 'fa-brands fa-youtube' : 'fa-brands fa-facebook'}" style="color:${plat === 'youtube' ? '#ef4444' : '#1877f2'};"></i>
-                                </a>
-                                
-                                <button type="button" class="btn-subchannel-action has-tooltip tooltip-top" onclick="copyTextToClipboard('${escapeHtml(ch.channel_id)}', 'Đã sao chép ID!');" data-tooltip="Sao chép ID: ${escapeHtml(ch.channel_id)}">
-                                    <i class="fa-solid fa-copy"></i>
+                            <div class="action-dropdown-wrap">
+                                <button type="button" class="btn-more-actions" id="btn-more-${chMenuKey}" 
+                                    onclick="toggleActionMenu(event, '${chMenuKey}')" 
+                                    title="Tùy chọn thao tác">
+                                    <i class="fa-solid fa-ellipsis"></i>
                                 </button>
+                                <div class="action-dropdown-menu" id="action-menu-${chMenuKey}">
+                                    ${!ch.is_default ? `
+                                    <button type="button" class="action-dropdown-item" onclick="setDefaultChannel('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-star" style="color:var(--accent-gold);"></i> ${plat === 'youtube' ? 'Đặt làm Kênh YouTube chính' : 'Đặt làm Fanpage chính'}
+                                    </button>` : `
+                                    <button type="button" class="action-dropdown-item" style="opacity:0.65; cursor:default;" disabled>
+                                        <i class="fa-solid fa-star" style="color:var(--accent-gold);"></i> ${plat === 'youtube' ? 'Kênh chính (Mặc định)' : 'Trang chính (Mặc định)'}
+                                    </button>`}
+                                    <button type="button" class="action-dropdown-item" onclick="scanSingleChannelFollowers('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', '${plat}', this); closeAllActionMenus();">
+                                        <i class="fa-solid fa-magnifying-glass-chart" style="color:var(--accent-pink);"></i> ${plat === 'youtube' ? 'Quét Subscribers ngay' : 'Quét Followers ngay'}
+                                    </button>
+                                    <button type="button" class="action-dropdown-item" onclick="openEditChannelModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(ch.channel_id)}', '${escapeHtml(ch.channel_name || '')}', ${ch.followers_count || 0}, '${escapeHtml(ch.channel_url || ch.channel_id)}', '${plat}'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> ${plat === 'youtube' ? 'Sửa Kênh & Subscribers' : 'Sửa Trang & Followers'}
+                                    </button>
+                                    ${chNotifyStatus === 'tracking' ? `
+                                    <button type="button" class="action-dropdown-item" onclick="setChannelNotifyStatus('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', 'muted'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-bell-slash" style="color:#94a3b8;"></i> Bỏ theo dõi (Tắt thông báo)
+                                    </button>
+                                    <button type="button" class="action-dropdown-item" onclick="setChannelNotifyStatus('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', 'sent'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-circle-check" style="color:#60a5fa;"></i> Đánh dấu đã gửi
+                                    </button>` : chNotifyStatus === 'sent' ? `
+                                    <button type="button" class="action-dropdown-item" onclick="setChannelNotifyStatus('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', 'tracking'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-rotate-right" style="color:#fbbf24;"></i> Theo dõi lại (tiếp tục theo dõi)
+                                    </button>
+                                    <button type="button" class="action-dropdown-item" onclick="setChannelNotifyStatus('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', 'muted'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-bell-slash" style="color:#94a3b8;"></i> Bỏ theo dõi (Tắt thông báo)
+                                    </button>` : `
+                                    <button type="button" class="action-dropdown-item" onclick="setChannelNotifyStatus('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', 'tracking'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-bell" style="color:#34d399;"></i> Theo dõi (gửi khi đạt mốc)
+                                    </button>`}
+                                    <a href="${chLink}" target="_blank" rel="noopener" class="action-dropdown-item" onclick="closeAllActionMenus()">
+                                        <i class="${plat === 'youtube' ? 'fa-brands fa-youtube' : 'fa-brands fa-facebook'}" style="color:${plat === 'youtube' ? '#ef4444' : '#1877f2'};"></i> ${plat === 'youtube' ? 'Mở kênh YouTube' : 'Mở trang Facebook'}
+                                    </a>
+                                    <button type="button" class="action-dropdown-item" onclick="copyTextToClipboard('${escapeHtml(ch.channel_id)}', 'Đã sao chép ID!'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-copy" style="color:#94a3b8;"></i> Sao chép ${plat === 'youtube' ? 'Channel ID' : 'Page UID'}
+                                    </button>
+                                    <button type="button" class="action-dropdown-item" onclick="copyTextToClipboard('${escapeHtml(chLink)}', 'Đã sao chép liên kết!'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-link" style="color:#94a3b8;"></i> Sao chép liên kết
+                                    </button>
+                                    ${!ch.is_default ? `
+                                    <div class="dropdown-divider"></div>
+                                    <button type="button" class="action-dropdown-item text-danger" onclick="deleteChannelFromList('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}', '${escapeHtml(ch.channel_name || ch.channel_id)}'); closeAllActionMenus();">
+                                        <i class="fa-solid fa-trash text-danger"></i> Xóa khỏi danh sách
+                                    </button>` : ''}
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -3896,43 +4045,154 @@ async function scanAllProfilesFollowers(btn) {
 }
 window.scanAllProfilesFollowers = scanAllProfilesFollowers;
 
-// Quản lý Modal sửa Nick & Followers
-function openEditUsernameModal(gpmId, profileName, currentUsername, followers, currentNickname, browserType, platform) {
-    document.getElementById('editProfileGpmId').value = gpmId;
-    document.getElementById('editProfileName').value = profileName || gpmId;
-    document.getElementById('editProfileUsername').value = (currentUsername || '').replace(/^@/, '');
+// Quản lý Modal sửa Nick & Followers / Account & Channel Metrics
+function updateEditProfileModalLabels(platform, channelId) {
+    const plat = (platform || 'tiktok').toLowerCase();
+    const isSub = Boolean(channelId);
+
+    const iconEl = document.getElementById('editProfileModalIcon');
+    const titleEl = document.getElementById('editProfileModalTitle');
+    const subEl = document.getElementById('editProfileModalSub');
+    const userIcon = document.getElementById('editProfileUserIcon');
+    const userLabel = document.getElementById('editProfileUserLabel');
+    const userPrefix = document.getElementById('editProfileUserPrefix');
+    const userInput = document.getElementById('editProfileUsername');
+    const userHint = document.getElementById('editProfileUserHint');
+    const nickIcon = document.getElementById('editProfileNickIcon');
+    const nickLabel = document.getElementById('editProfileNickLabel');
+    const nickInput = document.getElementById('editProfileNickname');
+    const flwIcon = document.getElementById('editProfileFollowersIcon');
+    const flwLabel = document.getElementById('editProfileFollowersLabel');
+
+    if (plat === 'youtube') {
+        if (iconEl) { iconEl.className = 'fa-brands fa-youtube'; iconEl.style.color = '#ef4444'; }
+        if (titleEl) titleEl.textContent = isSub ? 'Sửa Kênh YouTube & Số Subscribers' : 'Sửa Tài Khoản YouTube & Chỉ Số';
+        if (subEl) subEl.textContent = isSub ? 'Cập nhật tên kênh, handle và số người đăng ký cho kênh con' : 'Gán thủ công hoặc đồng bộ thông số kênh YouTube cho profile';
+        if (userIcon) { userIcon.className = 'fa-brands fa-youtube'; userIcon.style.color = '#ef4444'; }
+        if (userLabel) userLabel.textContent = 'YouTube Handle / Channel ID:';
+        if (userPrefix) userPrefix.style.display = 'block';
+        if (userInput) { userInput.placeholder = 'ten_kenh_youtube'; userInput.style.paddingLeft = '28px'; }
+        if (userHint) userHint.innerHTML = 'Handle YouTube (ví dụ: <code>tenkenh</code>) hoặc Channel ID (ví dụ: <code>UC...</code>)';
+        if (nickIcon) nickIcon.className = 'fa-solid fa-id-badge';
+        if (nickLabel) nickLabel.textContent = 'Tên Kênh YouTube:';
+        if (nickInput) nickInput.placeholder = 'Ví dụ: Shorts Stack Channel, Tech Tips...';
+        if (flwIcon) flwIcon.className = 'fa-solid fa-users';
+        if (flwLabel) flwLabel.textContent = 'Số Người Đăng Ký (Subscribers):';
+    } else if (plat === 'facebook') {
+        if (iconEl) { iconEl.className = 'fa-brands fa-facebook'; iconEl.style.color = '#1877f2'; }
+        if (titleEl) titleEl.textContent = isSub ? 'Sửa Fanpage & Số Followers' : 'Sửa Tài Khoản Facebook & Chỉ Số';
+        if (subEl) subEl.textContent = isSub ? 'Cập nhật tên fanpage, UID và số người theo dõi cho trang con' : 'Gán thủ công hoặc đồng bộ thông số Facebook cho profile';
+        if (userIcon) { userIcon.className = 'fa-brands fa-facebook'; userIcon.style.color = '#1877f2'; }
+        if (userLabel) userLabel.textContent = 'Page UID / Username:';
+        if (userPrefix) userPrefix.style.display = 'none';
+        if (userInput) { userInput.placeholder = 'Ví dụ: 6159616419 hoặc page_username'; userInput.style.paddingLeft = '12px'; }
+        if (userHint) userHint.innerHTML = 'Nhập UID Fanpage hoặc Username / URL trang Facebook';
+        if (nickIcon) nickIcon.className = 'fa-solid fa-flag';
+        if (nickLabel) nickLabel.textContent = 'Tên Fanpage / Trang Facebook:';
+        if (nickInput) nickInput.placeholder = 'Ví dụ: Cộng Đồng MMO, Tin Tức 24h...';
+        if (flwIcon) flwIcon.className = 'fa-solid fa-users';
+        if (flwLabel) flwLabel.textContent = 'Số Followers / Likes Hiện Tại:';
+    } else {
+        if (iconEl) { iconEl.className = 'fa-brands fa-tiktok text-accent'; iconEl.style.color = ''; }
+        if (titleEl) titleEl.textContent = 'Sửa Tài Khoản & Chỉ Số TikTok';
+        if (subEl) subEl.textContent = 'Gán thủ công hoặc đồng bộ thông số cho profile';
+        if (userIcon) { userIcon.className = 'fa-brands fa-tiktok'; userIcon.style.color = ''; }
+        if (userLabel) userLabel.textContent = 'TikTok Username:';
+        if (userPrefix) userPrefix.style.display = 'block';
+        if (userInput) { userInput.placeholder = 'username_cua_ban'; userInput.style.paddingLeft = '28px'; }
+        if (userHint) userHint.innerHTML = 'Không cần nhập dấu @. Ví dụ: <code>dat.nguyen261096</code>';
+        if (nickIcon) nickIcon.className = 'fa-solid fa-id-badge';
+        if (nickLabel) nickLabel.textContent = 'Tên Kênh / Hiển Thị TikTok:';
+        if (nickInput) nickInput.placeholder = 'Ví dụ: Hoàng Minh, Iamcooked...';
+        if (flwIcon) flwIcon.className = 'fa-solid fa-users';
+        if (flwLabel) flwLabel.textContent = 'Số Follower Hiện Tại:';
+    }
+}
+window.updateEditProfileModalLabels = updateEditProfileModalLabels;
+
+function onEditProfilePlatformChange(val) {
+    const chId = document.getElementById('editProfileChannelId')?.value;
+    updateEditProfileModalLabels(val, chId);
+}
+window.onEditProfilePlatformChange = onEditProfilePlatformChange;
+
+function openEditChannelModal(gpmId, profileName, channelId, channelName, followers, handle, platform) {
+    openEditUsernameModal(gpmId, profileName, handle || channelId, followers, channelName, 'gpm', platform, channelId);
+}
+window.openEditChannelModal = openEditChannelModal;
+
+function openEditUsernameModal(gpmId, profileName, currentUsername, followers, currentNickname, browserType, platform, channelId) {
+    console.log('[DEBUG MODAL] openEditUsernameModal CALLED with:', { gpmId, profileName, currentUsername, followers, currentNickname, browserType, platform, channelId });
+    const gpmIdEl = document.getElementById('editProfileGpmId');
+    if (gpmIdEl) gpmIdEl.value = gpmId;
+    const channelIdEl = document.getElementById('editProfileChannelId');
+    if (channelIdEl) channelIdEl.value = channelId || '';
+    const nameEl = document.getElementById('editProfileName');
+    if (nameEl) nameEl.value = profileName || gpmId;
+    const userEl = document.getElementById('editProfileUsername');
+    if (userEl) userEl.value = (currentUsername || '').replace(/^@/, '');
     const nickInput = document.getElementById('editProfileNickname');
     if (nickInput) nickInput.value = currentNickname || '';
-    document.getElementById('editProfileFollowers').value = followers || 0;
+    const flwEl = document.getElementById('editProfileFollowers');
+    if (flwEl) flwEl.value = followers || 0;
     const bTypeSelect = document.getElementById('editProfileBrowserType');
     if (bTypeSelect && browserType) bTypeSelect.value = browserType.toLowerCase();
     const platSelect = document.getElementById('editProfilePlatform');
-    if (platSelect && platform) platSelect.value = platform.toLowerCase();
+    const effPlat = (platform || 'tiktok').toLowerCase();
+    if (platSelect) platSelect.value = effPlat;
+
+    updateEditProfileModalLabels(effPlat, channelId);
+
     const modal = document.getElementById('editProfileUsernameModal');
-    if (modal) modal.classList.add('active');
+    console.log('[DEBUG MODAL] #editProfileUsernameModal element:', modal);
+    if (modal) {
+        modal.classList.add('active');
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        const computed = window.getComputedStyle(modal);
+        console.log('[DEBUG MODAL] #editProfileUsernameModal after open -> style.display:', modal.style.display, 'computed display:', computed.display, 'z-index:', computed.zIndex, 'visibility:', computed.visibility, 'opacity:', computed.opacity);
+    } else {
+        console.error('[DEBUG MODAL] #editProfileUsernameModal NOT FOUND in DOM!');
+    }
 }
+window.openEditUsernameModal = openEditUsernameModal;
 
 function closeEditUsernameModal() {
+    console.log('[DEBUG MODAL] closeEditUsernameModal CALLED');
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+    }
+    const channelIdEl = document.getElementById('editProfileChannelId');
+    if (channelIdEl) channelIdEl.value = '';
     const modal = document.getElementById('editProfileUsernameModal');
-    if (modal) modal.classList.remove('active');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        console.log('[DEBUG MODAL] #editProfileUsernameModal closed');
+    }
 }
+window.closeEditUsernameModal = closeEditUsernameModal;
 
 async function saveProfileUsernameFromModal(btn) {
     const gpmId = document.getElementById('editProfileGpmId').value;
+    const channelId = document.getElementById('editProfileChannelId')?.value;
     const usernameInput = document.getElementById('editProfileUsername');
     const nicknameInput = document.getElementById('editProfileNickname');
     const followersInput = document.getElementById('editProfileFollowers');
+    const platform = (document.getElementById('editProfilePlatform')?.value || 'tiktok').toLowerCase();
     const username = usernameInput ? usernameInput.value.trim().replace(/^@/, '') : '';
     const nickname = nicknameInput ? nicknameInput.value.trim() : '';
     const rawFollowers = followersInput ? followersInput.value.trim() : '0';
     const followers = parseInt(rawFollowers, 10);
 
+    const userLabel = platform === 'youtube' ? 'YouTube Handle / ID' : (platform === 'facebook' ? 'Page UID / Username' : 'TikTok Username');
     if (!username) {
-        markInputError('editProfileUsername', 'Vui lòng nhập Username TikTok (không được để trống)!');
+        markInputError('editProfileUsername', `Vui lòng nhập ${userLabel} (không được để trống)!`);
         return;
     }
     if (isNaN(followers) || followers < 0) {
-        markInputError('editProfileFollowers', 'Số lượng Followers phải là số nguyên không âm (>= 0)!');
+        markInputError('editProfileFollowers', 'Số lượng Followers / Subscribers phải là số nguyên không âm (>= 0)!');
         return;
     }
 
@@ -3943,6 +4203,30 @@ async function saveProfileUsernameFromModal(btn) {
     }
 
     try {
+        if (channelId) {
+            // Lưu thông tin kênh / trang con
+            const resCh = await fetch(`/api/gpm/profiles/${encodeURIComponent(gpmId)}/channels/${encodeURIComponent(channelId)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    channel_name: nickname,
+                    channel_url: platform === 'youtube' ? (username.startsWith('@') ? username : '@' + username) : username,
+                    new_channel_id: (platform === 'youtube' && channelId.startsWith('UC') && !username.startsWith('UC')) ? channelId : username,
+                    followers_count: followers
+                })
+            });
+            const dataCh = await resCh.json();
+            if (!resCh.ok) {
+                showToast('Lỗi cập nhật kênh: ' + (dataCh.detail || dataCh.message || 'Thất bại'), 'error');
+                return;
+            }
+            showToast(`✅ Đã lưu thông tin kênh "${nickname || username}" thành công!`, 'success');
+            closeEditUsernameModal();
+            loadGpmProfiles();
+            loadDashboardStats();
+            return;
+        }
+
         const resU = await fetch(`/api/profiles/${gpmId}/username`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -3950,7 +4234,7 @@ async function saveProfileUsernameFromModal(btn) {
                 username: username,
                 nickname: nickname,
                 browser_type: document.getElementById('editProfileBrowserType')?.value || 'gpm',
-                platform: document.getElementById('editProfilePlatform')?.value || 'tiktok'
+                platform: platform
             })
         });
         const dataU = await resU.json();
@@ -3976,7 +4260,7 @@ async function saveProfileUsernameFromModal(btn) {
             return;
         }
 
-        showToast(`✅ Đã lưu thông tin @${username} (${nickname || 'Không có tên'}) thành công!`, 'success');
+        showToast(`✅ Đã lưu thông tin ${nickname || username} thành công!`, 'success');
         closeEditUsernameModal();
         loadGpmProfiles();
         loadDashboardStats();
@@ -3989,6 +4273,103 @@ async function saveProfileUsernameFromModal(btn) {
         }
     }
 }
+
+async function setChannelNotifyStatus(gpmId, channelId, newStatus) {
+    try {
+        const res = await fetch(`/api/gpm/profiles/${encodeURIComponent(gpmId)}/channels/${encodeURIComponent(channelId)}/notify-status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            if (cachedGpmProfiles) {
+                const targetP = cachedGpmProfiles.find(p => p.gpm_id === gpmId);
+                if (targetP && targetP.channels) {
+                    const targetCh = targetP.channels.find(c => c.channel_id === channelId);
+                    if (targetCh) targetCh.notify_status = newStatus;
+                }
+            }
+            showToast(`✅ Đã chuyển trạng thái theo dõi kênh: ${data.label || newStatus}`);
+            renderGpmProfilesTable();
+        } else {
+            showToast(data.detail || data.message || 'Lỗi cập nhật trạng thái theo dõi kênh', true);
+        }
+    } catch (err) {
+        console.error('Lỗi setChannelNotifyStatus:', err);
+        showToast('Lỗi kết nối khi cập nhật trạng thái theo dõi kênh: ' + err.message, true);
+    }
+}
+window.setChannelNotifyStatus = setChannelNotifyStatus;
+
+function cycleChannelNotifyStatus(gpmId, channelId, currentStatus) {
+    const cur = (currentStatus || 'tracking').toLowerCase();
+    let nextStatus = 'tracking';
+    if (cur === 'tracking') {
+        nextStatus = 'muted';
+    } else if (cur === 'muted') {
+        nextStatus = 'tracking';
+    } else if (cur === 'sent') {
+        nextStatus = 'tracking';
+    }
+    setChannelNotifyStatus(gpmId, channelId, nextStatus);
+}
+window.cycleChannelNotifyStatus = cycleChannelNotifyStatus;
+
+async function scanSingleChannelFollowers(gpmId, channelId, plat, btn) {
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Quét...';
+    }
+    showToast('Đang kết nối và đồng bộ số liệu kênh / trang...');
+    try {
+        const res = await fetch(`/api/gpm/profiles/${encodeURIComponent(gpmId)}/channels/sync`, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast(`✅ Đã đồng bộ và cập nhật chỉ số kênh thành công!`);
+            loadGpmProfiles();
+            loadDashboardStats();
+        } else {
+            showToast(data.message || 'Lỗi khi đồng bộ chỉ số kênh', true);
+        }
+    } catch (err) {
+        showToast('Lỗi khi quét kênh: ' + err.message, true);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+window.scanSingleChannelFollowers = scanSingleChannelFollowers;
+
+async function deleteChannelFromList(gpmId, channelId, channelName) {
+    closeAllActionMenus();
+    const ok = await showConfirmDialog({
+        title: 'Xóa Kênh / Trang Con',
+        message: `Bạn có chắc chắn muốn xóa kênh/trang "${channelName || channelId}" khỏi danh sách theo dõi?`,
+        details: 'Kênh này sẽ không còn hiển thị trong danh sách kênh con của profile.',
+        confirmText: 'Xóa Kênh',
+        confirmClass: 'btn-danger'
+    });
+    if (!ok) return;
+    try {
+        const res = await fetch(`/api/gpm/profiles/${encodeURIComponent(gpmId)}/channels/${encodeURIComponent(channelId)}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast(`✅ ${data.message || 'Đã xóa kênh thành công!'}`);
+            loadGpmProfiles();
+        } else {
+            showToast(data.message || 'Không thể xóa kênh', true);
+        }
+    } catch (err) {
+        showToast('Lỗi khi xóa kênh: ' + err.message, true);
+    }
+}
+window.deleteChannelFromList = deleteChannelFromList;
 
 async function scanCurrentEditProfile(btn) {
     const gpmId = document.getElementById('editProfileGpmId').value;
@@ -4051,12 +4432,24 @@ function toggleFollowerScanModeUI() {
 }
 
 async function openFollowerSchedulerModal() {
+    console.log('[DEBUG MODAL] openFollowerSchedulerModal CALLED');
     const modal = document.getElementById('followerSchedulerModal');
-    if (modal) modal.classList.add('active');
+    console.log('[DEBUG MODAL] #followerSchedulerModal element:', modal);
+    if (modal) {
+        modal.classList.add('active');
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        const computed = window.getComputedStyle(modal);
+        console.log('[DEBUG MODAL] #followerSchedulerModal after open -> style.display:', modal.style.display, 'computed display:', computed.display, 'z-index:', computed.zIndex, 'visibility:', computed.visibility, 'opacity:', computed.opacity);
+    } else {
+        console.error('[DEBUG MODAL] #followerSchedulerModal NOT FOUND in DOM!');
+    }
 
     try {
+        console.log('[DEBUG MODAL] Fetching /api/settings/follower-scheduler...');
         const res = await fetch('/api/settings/follower-scheduler');
         const data = await res.json();
+        console.log('[DEBUG MODAL] follower-scheduler settings received:', data);
         const chk = document.getElementById('chkFollowerSchedulerEnable');
         if (chk) chk.checked = Boolean(data.enabled);
         if (data.mode === 'interval') {
@@ -4084,18 +4477,28 @@ async function openFollowerSchedulerModal() {
         }
         if (typeof toggleFollowerScanModeUI === 'function') toggleFollowerScanModeUI();
     } catch (err) {
-        console.error('Lỗi đọc settings:', err);
+        console.error('[DEBUG MODAL] Lỗi đọc follower scheduler settings:', err);
     }
 }
 window.openFollowerSchedulerModal = openFollowerSchedulerModal;
 
 function closeFollowerSchedulerModal() {
+    console.log('[DEBUG MODAL] closeFollowerSchedulerModal CALLED');
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+    }
     const modal = document.getElementById('followerSchedulerModal');
-    if (modal) modal.classList.remove('active');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        console.log('[DEBUG MODAL] #followerSchedulerModal closed');
+    }
 }
 window.closeFollowerSchedulerModal = closeFollowerSchedulerModal;
 
 function openThresholdSettingsModal() {
+    console.log('[DEBUG MODAL] openThresholdSettingsModal CALLED');
     const inputTiktok = document.getElementById('modalThTiktok');
     const inputYoutube = document.getElementById('modalThYoutube');
     const inputFacebook = document.getElementById('modalThFacebook');
@@ -4105,12 +4508,22 @@ function openThresholdSettingsModal() {
     if (inputFacebook) inputFacebook.value = followerThresholds.facebook || 1000;
 
     const modal = document.getElementById('thresholdSettingsModal');
-    if (modal) modal.classList.add('active');
+    console.log('[DEBUG MODAL] #thresholdSettingsModal element:', modal);
+    if (modal) {
+        modal.classList.add('active');
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        const computed = window.getComputedStyle(modal);
+        console.log('[DEBUG MODAL] #thresholdSettingsModal after open -> style.display:', modal.style.display, 'computed display:', computed.display, 'z-index:', computed.zIndex, 'visibility:', computed.visibility, 'opacity:', computed.opacity);
+    } else {
+        console.error('[DEBUG MODAL] #thresholdSettingsModal NOT FOUND in DOM!');
+    }
 
     // Nạp lại giá trị mới nhất từ backend
     fetch('/api/settings/thresholds')
         .then(r => r.json())
         .then(data => {
+            console.log('[DEBUG MODAL] thresholds settings received:', data);
             if (data.status === 'success' && data.thresholds) {
                 followerThresholds.tiktok = Number(data.thresholds.tiktok) || 10000;
                 followerThresholds.youtube = Number(data.thresholds.youtube) || 1000;
@@ -4120,13 +4533,22 @@ function openThresholdSettingsModal() {
                 if (inputFacebook) inputFacebook.value = followerThresholds.facebook;
             }
         })
-        .catch(e => console.warn('Lỗi đọc thresholds:', e));
+        .catch(e => console.warn('[DEBUG MODAL] Lỗi đọc thresholds:', e));
 }
 window.openThresholdSettingsModal = openThresholdSettingsModal;
 
 function closeThresholdSettingsModal() {
+    console.log('[DEBUG MODAL] closeThresholdSettingsModal CALLED');
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+    }
     const modal = document.getElementById('thresholdSettingsModal');
-    if (modal) modal.classList.remove('active');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        console.log('[DEBUG MODAL] #thresholdSettingsModal closed');
+    }
 }
 window.closeThresholdSettingsModal = closeThresholdSettingsModal;
 
@@ -6652,38 +7074,89 @@ function renderCampaignGpmCheckboxes(profiles) {
     if (activePlatforms.size === 0) activePlatforms.add('tiktok');
 
     let matchingCheckedCount = 0;
+    const itemsHtml = [];
 
-    gpmListEl.innerHTML = profiles.map(p => {
+    profiles.forEach(p => {
         const plat = (p.platform || 'tiktok').toLowerCase();
-        let platIcon = '<i class="fa-brands fa-tiktok" style="color:#ff0050;"></i>';
-        let platColor = 'var(--accent-gold)';
-        let displayName = `@${escapeHtml(p.tiktok_username || 'Chưa gắn')}`;
-        if (plat === 'youtube') {
-            platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444;"></i>';
-            platColor = '#ef4444';
-            displayName = escapeHtml(p.channel_handle || p.tiktok_username || 'YouTube');
-        } else if (plat === 'facebook') {
-            platIcon = '<i class="fa-brands fa-facebook" style="color:#1877f2;"></i>';
-            platColor = '#60a5fa';
-            displayName = escapeHtml(p.tiktok_nickname || `FB: ${p.fb_page_id || p.tiktok_username || ''}`);
+        const hasSubChannels = (plat === 'youtube' || plat === 'facebook') && Array.isArray(p.channels) && p.channels.length > 0;
+
+        if (hasSubChannels) {
+            p.channels.forEach(ch => {
+                let platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444; font-size:14px;"></i>';
+                let platColor = '#ef4444';
+                let typeBadge = '';
+                const count = ch.followers_count || 0;
+                const flwText = plat === 'youtube' ? 'subs' : 'flw';
+
+                if (plat === 'youtube') {
+                    platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444; font-size:14px;"></i>';
+                    platColor = '#ef4444';
+                    typeBadge = ch.is_default
+                        ? `<span class="badge" style="font-size:9.5px; flex-shrink:0; white-space:nowrap; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);" data-i18n="campaign_channel_default">${window.i18n ? window.i18n.t('campaign_channel_default', 'Mặc định') : 'Mặc định'}</span>`
+                        : `<span class="badge" style="font-size:9.5px; flex-shrink:0; white-space:nowrap; background:rgba(255,255,255,0.08); color:var(--text-secondary);" data-i18n="campaign_channel_sub">${window.i18n ? window.i18n.t('campaign_channel_sub', 'Kênh phụ') : 'Kênh phụ'}</span>`;
+                } else if (plat === 'facebook') {
+                    platIcon = '<i class="fa-brands fa-facebook" style="color:#1877f2; font-size:14px;"></i>';
+                    platColor = '#60a5fa';
+                    typeBadge = ch.is_default
+                        ? `<span class="badge" style="font-size:9.5px; flex-shrink:0; white-space:nowrap; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3);" data-i18n="campaign_fb_personal">${window.i18n ? window.i18n.t('campaign_fb_personal', 'Cá nhân') : 'Cá nhân'}</span>`
+                        : `<span class="badge" style="font-size:9.5px; flex-shrink:0; white-space:nowrap; background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3);" data-i18n="campaign_fb_fanpage">${window.i18n ? window.i18n.t('campaign_fb_fanpage', 'Fanpage') : 'Fanpage'}</span>`;
+                }
+
+                const chTitle = ch.channel_name || ch.channel_url || p.name;
+                const chSub = ch.channel_url || '';
+                const isMatchingPlat = activePlatforms.has(plat);
+                const shouldPreCheck = isMatchingPlat && matchingCheckedCount < 3;
+                if (shouldPreCheck) matchingCheckedCount++;
+
+                itemsHtml.push(`
+                <label class="multi-select-item" data-platform="${plat}" style="display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03); min-width:0;">
+                    <input type="checkbox" class="campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-channel-id="${escapeHtml(ch.channel_id || '')}" data-channel-name="${escapeHtml(ch.channel_name || '')}" data-platform="${plat}" ${shouldPreCheck ? 'checked' : ''} onchange="updateSelectedGpmCount(); if(this.checked && '${escapeHtml(ch.channel_id)}') handleChannelSelectionChange('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}')" style="flex-shrink:0;">
+                    <span style="flex-shrink:0; display:inline-flex; align-items:center;">${platIcon}</span>
+                    <div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; overflow:hidden;">
+                        <span style="font-size:11px; flex-shrink:0; color:var(--text-secondary); background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:4px; white-space:nowrap;">${escapeHtml(p.name)}</span>
+                        <span style="font-weight:600; color:#fff; min-width:0; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block;" title="${escapeHtml(chTitle)}">${escapeHtml(chTitle)}</span>
+                        ${typeBadge}
+                    </div>
+                    <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0;">
+                        <span style="font-size:11px; color:${platColor}; white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(chSub)}">${escapeHtml(chSub)}</span>
+                        <span class="badge ${count >= 1000 ? 'badge-success' : 'badge-secondary'}" style="font-size:10px; white-space:nowrap;">${count.toLocaleString()} ${flwText}</span>
+                    </div>
+                </label>
+                `);
+            });
+        } else {
+            let platIcon = '<i class="fa-brands fa-tiktok" style="color:#ff0050; font-size:14px;"></i>';
+            let platColor = 'var(--accent-gold)';
+            let displayName = `@${escapeHtml(p.tiktok_username || 'Chưa gắn')}`;
+            if (plat === 'youtube') {
+                platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444; font-size:14px;"></i>';
+                platColor = '#ef4444';
+                displayName = escapeHtml(p.channel_handle || p.tiktok_username || 'YouTube');
+            } else if (plat === 'facebook') {
+                platIcon = '<i class="fa-brands fa-facebook" style="color:#1877f2; font-size:14px;"></i>';
+                platColor = '#60a5fa';
+                displayName = escapeHtml(p.tiktok_nickname || `FB: ${p.fb_page_id || p.tiktok_username || ''}`);
+            }
+
+            const isMatchingPlat = activePlatforms.has(plat);
+            const shouldPreCheck = isMatchingPlat && matchingCheckedCount < 3;
+            if (shouldPreCheck) matchingCheckedCount++;
+
+            itemsHtml.push(`
+            <label class="multi-select-item" data-platform="${plat}" style="display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03); min-width:0;">
+                <input type="checkbox" class="campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-channel-id="" data-platform="${plat}" ${shouldPreCheck ? 'checked' : ''} onchange="updateSelectedGpmCount()" style="flex-shrink:0;">
+                <span style="flex-shrink:0; display:inline-flex; align-items:center;">${platIcon}</span>
+                <span style="font-weight:600; color:#fff; min-width:0; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+                <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0;">
+                    <span style="font-size:11px; color:${platColor}; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${displayName}">${displayName}</span>
+                    <span class="badge ${p.eligible_10k ? 'badge-success' : 'badge-secondary'}" style="font-size:10px; white-space:nowrap;">${(p.followers_count || 0).toLocaleString()} flw</span>
+                </div>
+            </label>
+            `);
         }
+    });
 
-        const isMatchingPlat = activePlatforms.has(plat);
-        const shouldPreCheck = isMatchingPlat && matchingCheckedCount < 3;
-        if (shouldPreCheck) matchingCheckedCount++;
-
-        return `
-        <label class="multi-select-item" data-platform="${plat}" style="display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03);">
-            <input type="checkbox" class="campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-platform="${plat}" ${shouldPreCheck ? 'checked' : ''} onchange="updateSelectedGpmCount(); loadChannelPicker('${escapeHtml(p.gpm_id)}', '${plat}', this)">
-            ${platIcon}
-            <span style="font-weight:600; color:#fff; flex:1;">${escapeHtml(p.name)}</span>
-            <span style="font-size:11px; color:${platColor};">${displayName}</span>
-            <span class="badge ${p.eligible_10k ? 'badge-success' : 'badge-secondary'}" style="font-size:10px;">${(p.followers_count || 0).toLocaleString()} flw</span>
-        </label>
-        <div id="channel-picker-${escapeHtml(p.gpm_id)}" class="channel-picker-container" data-platform="${plat}" style="display:none; margin-left:32px; padding:4px 8px; font-size:11.5px;"></div>
-        `;
-    }).join('');
-
+    gpmListEl.innerHTML = itemsHtml.join('');
     filterCampaignGpmAccounts('new');
 }
 
@@ -6802,9 +7275,6 @@ function selectAllCampaignGpm(select) {
         const item = b.closest('label');
         if (item && item.style.display !== 'none') {
             b.checked = select;
-            const gpmId = b.getAttribute('data-gpm-id');
-            const plat = b.getAttribute('data-platform') || 'tiktok';
-            loadChannelPicker(gpmId, plat, b);
         }
     });
     updateSelectedGpmCount();
@@ -7004,8 +7474,11 @@ async function handleCreateCampaignSubmit(e) {
     const autoUpload = document.getElementById('campaignAutoUploadSwitch')?.checked ? 1 : 0;
 
     // 2. Gather Selected GPM Profiles
-    const gpmBoxes = document.querySelectorAll('.campaign-gpm-check:checked');
-    const selectedGpmIds = Array.from(gpmBoxes).map(b => parseInt(b.value, 10)).filter(id => !isNaN(id));
+    const gpmBoxes = Array.from(document.querySelectorAll('.campaign-gpm-check:checked')).filter(b => {
+        const item = b.closest('label');
+        return item && item.style.display !== 'none';
+    });
+    const selectedGpmIds = Array.from(new Set(gpmBoxes.map(b => parseInt(b.value, 10)).filter(id => !isNaN(id))));
     if (autoUpload && selectedGpmIds.length === 0) {
         showToast('⚠️ Vui lòng chọn ít nhất 1 Profile nhận video (hoặc bỏ chọn "Tự động tải lên TikTok" nếu chỉ muốn render)!', 'warning');
         return;
@@ -7157,6 +7630,8 @@ async function handleCreateCampaignSubmit(e) {
         source_mode: sourceMode,
         local_folder_path: localFolder,
         target_platforms: targetPlatforms.join(','),
+        youtube_profile_ids: gpmBoxes.filter(b => b.getAttribute('data-platform') === 'youtube' && b.getAttribute('data-channel-id')).map(b => b.getAttribute('data-channel-id')).join(','),
+        facebook_profile_ids: gpmBoxes.filter(b => b.getAttribute('data-platform') === 'facebook' && b.getAttribute('data-channel-id')).map(b => b.getAttribute('data-channel-id')).join(','),
         tts_engine: document.querySelector('input[name="campaignTtsEngineRadio"]:checked')?.value || 'edge-tts',
         elevenlabs_voice_id: document.getElementById('campaignElevenLabsVoiceId')?.value || null,
         elevenlabs_model: document.getElementById('campaignElevenLabsModel')?.value || 'eleven_multilingual_v2'
@@ -7571,33 +8046,84 @@ function renderEditCampaignGpmCheckboxes(profiles, selectedIds = []) {
     }
 
     const selSet = new Set((selectedIds || []).map(String));
-    gpmListEl.innerHTML = profiles.map(p => {
-        const isChecked = selSet.has(String(p.id));
-        const plat = (p.platform || 'tiktok').toLowerCase();
-        let platIcon = '<i class="fa-brands fa-tiktok" style="color:#ff0050; font-size:14px;"></i>';
-        let platColor = 'var(--accent-gold)';
-        let displayName = `@${escapeHtml(p.tiktok_username || 'Chưa gắn')}`;
-        if (plat === 'youtube') {
-            platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444; font-size:14px;"></i>';
-            platColor = '#ef4444';
-            displayName = escapeHtml(p.channel_handle || p.tiktok_username || 'YouTube');
-        } else if (plat === 'facebook') {
-            platIcon = '<i class="fa-brands fa-facebook" style="color:#1877f2; font-size:14px;"></i>';
-            platColor = '#60a5fa';
-            displayName = escapeHtml(p.tiktok_nickname || `FB: ${p.fb_page_id || p.tiktok_username || ''}`);
-        }
-        return `
-            <label class="multi-select-item" style="display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03);">
-                <input type="checkbox" class="edit-campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-platform="${plat}" ${isChecked ? 'checked' : ''} onchange="updateEditSelectedGpmCount(); loadChannelPicker('${escapeHtml(p.gpm_id)}', '${plat}', this)">
-                ${platIcon}
-                <span style="font-weight:600; color:#fff; flex:1;">${escapeHtml(p.name)}</span>
-                <span style="font-size:11px; color:${platColor};">${displayName}</span>
-                <span class="badge ${p.eligible_10k ? 'badge-success' : 'badge-secondary'}" style="font-size:10px;">${(p.followers_count || 0).toLocaleString()} flw</span>
-            </label>
-            <div id="channel-picker-${escapeHtml(p.gpm_id)}" class="channel-picker-container" style="display:none; margin-left:32px; padding:4px 8px; font-size:11.5px;"></div>
-        `;
-    }).join('');
+    const itemsHtml = [];
 
+    profiles.forEach(p => {
+        const plat = (p.platform || 'tiktok').toLowerCase();
+        const hasSubChannels = (plat === 'youtube' || plat === 'facebook') && Array.isArray(p.channels) && p.channels.length > 0;
+
+        if (hasSubChannels) {
+            p.channels.forEach(ch => {
+                let platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444; font-size:14px;"></i>';
+                let platColor = '#ef4444';
+                let typeBadge = '';
+                const count = ch.followers_count || 0;
+                const flwText = plat === 'youtube' ? 'subs' : 'flw';
+
+                if (plat === 'youtube') {
+                    platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444; font-size:14px;"></i>';
+                    platColor = '#ef4444';
+                    typeBadge = ch.is_default
+                        ? `<span class="badge" style="font-size:9.5px; flex-shrink:0; white-space:nowrap; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);" data-i18n="campaign_channel_default">${window.i18n ? window.i18n.t('campaign_channel_default', 'Mặc định') : 'Mặc định'}</span>`
+                        : `<span class="badge" style="font-size:9.5px; flex-shrink:0; white-space:nowrap; background:rgba(255,255,255,0.08); color:var(--text-secondary);" data-i18n="campaign_channel_sub">${window.i18n ? window.i18n.t('campaign_channel_sub', 'Kênh phụ') : 'Kênh phụ'}</span>`;
+                } else if (plat === 'facebook') {
+                    platIcon = '<i class="fa-brands fa-facebook" style="color:#1877f2; font-size:14px;"></i>';
+                    platColor = '#60a5fa';
+                    typeBadge = ch.is_default
+                        ? `<span class="badge" style="font-size:9.5px; flex-shrink:0; white-space:nowrap; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3);" data-i18n="campaign_fb_personal">${window.i18n ? window.i18n.t('campaign_fb_personal', 'Cá nhân') : 'Cá nhân'}</span>`
+                        : `<span class="badge" style="font-size:9.5px; flex-shrink:0; white-space:nowrap; background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3);" data-i18n="campaign_fb_fanpage">${window.i18n ? window.i18n.t('campaign_fb_fanpage', 'Fanpage') : 'Fanpage'}</span>`;
+                }
+
+                const chTitle = ch.channel_name || ch.channel_url || p.name;
+                const chSub = ch.channel_url || '';
+                const isChecked = selSet.has(String(p.id)) && (ch.is_default || p.channels.length === 1);
+
+                itemsHtml.push(`
+                <label class="multi-select-item" data-platform="${plat}" style="display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03); min-width:0;">
+                    <input type="checkbox" class="edit-campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-channel-id="${escapeHtml(ch.channel_id || '')}" data-channel-name="${escapeHtml(ch.channel_name || '')}" data-platform="${plat}" ${isChecked ? 'checked' : ''} onchange="updateEditSelectedGpmCount(); if(this.checked && '${escapeHtml(ch.channel_id)}') handleChannelSelectionChange('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}')" style="flex-shrink:0;">
+                    <span style="flex-shrink:0; display:inline-flex; align-items:center;">${platIcon}</span>
+                    <div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; overflow:hidden;">
+                        <span style="font-size:11px; flex-shrink:0; color:var(--text-secondary); background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:4px; white-space:nowrap;">${escapeHtml(p.name)}</span>
+                        <span style="font-weight:600; color:#fff; min-width:0; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block;" title="${escapeHtml(chTitle)}">${escapeHtml(chTitle)}</span>
+                        ${typeBadge}
+                    </div>
+                    <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0;">
+                        <span style="font-size:11px; color:${platColor}; white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(chSub)}">${escapeHtml(chSub)}</span>
+                        <span class="badge ${count >= 1000 ? 'badge-success' : 'badge-secondary'}" style="font-size:10px; white-space:nowrap;">${count.toLocaleString()} ${flwText}</span>
+                    </div>
+                </label>
+                `);
+            });
+        } else {
+            const isChecked = selSet.has(String(p.id));
+            let platIcon = '<i class="fa-brands fa-tiktok" style="color:#ff0050; font-size:14px;"></i>';
+            let platColor = 'var(--accent-gold)';
+            let displayName = `@${escapeHtml(p.tiktok_username || 'Chưa gắn')}`;
+            if (plat === 'youtube') {
+                platIcon = '<i class="fa-brands fa-youtube" style="color:#ef4444; font-size:14px;"></i>';
+                platColor = '#ef4444';
+                displayName = escapeHtml(p.channel_handle || p.tiktok_username || 'YouTube');
+            } else if (plat === 'facebook') {
+                platIcon = '<i class="fa-brands fa-facebook" style="color:#1877f2; font-size:14px;"></i>';
+                platColor = '#60a5fa';
+                displayName = escapeHtml(p.tiktok_nickname || `FB: ${p.fb_page_id || p.tiktok_username || ''}`);
+            }
+
+            itemsHtml.push(`
+            <label class="multi-select-item" data-platform="${plat}" style="display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03); min-width:0;">
+                <input type="checkbox" class="edit-campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-channel-id="" data-platform="${plat}" ${isChecked ? 'checked' : ''} onchange="updateEditSelectedGpmCount()" style="flex-shrink:0;">
+                <span style="flex-shrink:0; display:inline-flex; align-items:center;">${platIcon}</span>
+                <span style="font-weight:600; color:#fff; min-width:0; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+                <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0;">
+                    <span style="font-size:11px; color:${platColor}; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${displayName}">${displayName}</span>
+                    <span class="badge ${p.eligible_10k ? 'badge-success' : 'badge-secondary'}" style="font-size:10px; white-space:nowrap;">${(p.followers_count || 0).toLocaleString()} flw</span>
+                </div>
+            </label>
+            `);
+        }
+    });
+
+    gpmListEl.innerHTML = itemsHtml.join('');
     filterCampaignGpmAccounts('edit');
 }
 
@@ -7634,9 +8160,6 @@ function selectAllEditCampaignGpm(select) {
         const item = b.closest('label');
         if (item && item.style.display !== 'none') {
             b.checked = select;
-            const gpmId = b.getAttribute('data-gpm-id');
-            const plat = b.getAttribute('data-platform') || 'tiktok';
-            loadChannelPicker(gpmId, plat, b);
         }
     });
     updateEditSelectedGpmCount();
@@ -7707,8 +8230,11 @@ async function handleEditCampaignSubmit(e) {
 
     const autoUpload = document.getElementById('editCampaignAutoUploadSwitch')?.checked ? 1 : 0;
 
-    const gpmBoxes = document.querySelectorAll('.edit-campaign-gpm-check:checked');
-    const selectedGpmIds = Array.from(gpmBoxes).map(b => parseInt(b.value, 10)).filter(id => !isNaN(id));
+    const gpmBoxes = Array.from(document.querySelectorAll('.edit-campaign-gpm-check:checked')).filter(b => {
+        const item = b.closest('label');
+        return item && item.style.display !== 'none';
+    });
+    const selectedGpmIds = Array.from(new Set(gpmBoxes.map(b => parseInt(b.value, 10)).filter(id => !isNaN(id))));
     if (autoUpload && selectedGpmIds.length === 0) {
         showToast('⚠️ Vui lòng chọn ít nhất 1 Profile nhận video (hoặc bỏ chọn "Tự động tải lên TikTok" nếu chỉ muốn render)!', 'warning');
         return;
@@ -7861,6 +8387,8 @@ async function handleEditCampaignSubmit(e) {
         tts_engine: document.querySelector('input[name="editCampaignTtsEngineRadio"]:checked')?.value || 'edge-tts',
         elevenlabs_voice_id: document.getElementById('editCampaignElevenLabsVoiceId')?.value || null,
         elevenlabs_model: document.getElementById('editCampaignElevenLabsModel')?.value || 'eleven_multilingual_v2',
+        youtube_profile_ids: gpmBoxes.filter(b => b.getAttribute('data-platform') === 'youtube' && b.getAttribute('data-channel-id')).map(b => b.getAttribute('data-channel-id')).join(','),
+        facebook_profile_ids: gpmBoxes.filter(b => b.getAttribute('data-platform') === 'facebook' && b.getAttribute('data-channel-id')).map(b => b.getAttribute('data-channel-id')).join(','),
         target_platforms: [
             document.getElementById('editCampTargetTikTok')?.checked ? 'tiktok' : null,
             document.getElementById('editCampTargetYouTube')?.checked ? 'youtube' : null,
@@ -9112,22 +9640,17 @@ async function loadApiKeySettings() {
         const genEl = document.getElementById('settingGenLoginUrl');
         if (genEl) genEl.value = data.genlogin_api_base_url || '';
 
-        if (data.app_language) {
-            const langEl = document.getElementById('settingAppLanguage');
-            if (langEl) langEl.value = data.app_language;
-            const topLangEl = document.getElementById('selectAppLanguage');
-            if (topLangEl) topLangEl.value = data.app_language;
-            if (typeof window.setAppLanguage === 'function' && window.i18n && window.i18n.getLanguage() !== data.app_language) {
-                window.setAppLanguage(data.app_language, false);
-            }
-        }
-        if (data.app_theme) {
-            const themeEl = document.getElementById('settingAppTheme');
-            if (themeEl) themeEl.value = data.app_theme;
-            if (typeof window.setAppTheme === 'function') {
-                window.setAppTheme(data.app_theme, false);
-            }
-        }
+        // Sync language dropdown without overriding the user's active session language
+        const activeLang = (window.i18n ? window.i18n.currentLang : localStorage.getItem('app_language')) || data.app_language || 'vi';
+        const langEl = document.getElementById('settingAppLanguage');
+        if (langEl) langEl.value = activeLang;
+        const topLangEl = document.getElementById('selectAppLanguage');
+        if (topLangEl) topLangEl.value = activeLang;
+
+        // Sync theme dropdown without overriding the user's active session theme
+        const activeTheme = (window.themeManager ? window.themeManager.currentTheme : localStorage.getItem('app_theme')) || data.app_theme || 'dark';
+        const themeEl = document.getElementById('settingAppTheme');
+        if (themeEl) themeEl.value = activeTheme;
 
         if (data.follower_threshold_tiktok !== undefined) {
             const el = document.getElementById('settingThresholdTiktok');
@@ -13135,3 +13658,171 @@ window.handleVisualSourceChange = function (el, targetWrapId) {
         target.style.display = isStock ? 'block' : 'none';
     }
 };
+
+// ==== AUTO-GENERATED WINDOW EXPOSURES ====
+window.applyStudioPreset = applyStudioPreset;
+window.browseFolderForInput = browseFolderForInput;
+window.clearAiUsageStats = clearAiUsageStats;
+window.clearChannelHistoryFromModal = clearChannelHistoryFromModal;
+window.clearStudioFilters = clearStudioFilters;
+window.closeAudioPreviewDock = closeAudioPreviewDock;
+window.closeAudioSettingsModal = closeAudioSettingsModal;
+window.closeCampaignLogsModal = closeCampaignLogsModal;
+window.closeChannelDetailModal = closeChannelDetailModal;
+window.closeChannelSettingsModal = closeChannelSettingsModal;
+window.closeChannelVideosModal = closeChannelVideosModal;
+window.closeColumnDropdown = closeColumnDropdown;
+window.closeCreateAudioCategoryModal = closeCreateAudioCategoryModal;
+window.closeDiagnosticsModal = closeDiagnosticsModal;
+window.closeDownloadAudioCategoryModal = closeDownloadAudioCategoryModal;
+window.closeEditCampaignModal = closeEditCampaignModal;
+window.closeEditCategoryModal = closeEditCategoryModal;
+window.closeEditStudioVideoModal = closeEditStudioVideoModal;
+window.closeNewCampaignModal = closeNewCampaignModal;
+window.closeSchedulerSettingsModal = closeSchedulerSettingsModal;
+window.closeSystemIssuesModal = closeSystemIssuesModal;
+window.closeTelegramChannelModal = closeTelegramChannelModal;
+window.closeUploadModal = closeUploadModal;
+window.closeVariantsReportModal = closeVariantsReportModal;
+window.confirmClearFileLog = confirmClearFileLog;
+window.confirmDownloadAudioTrack = confirmDownloadAudioTrack;
+window.copyCurrentChannelUrl = copyCurrentChannelUrl;
+window.deleteCategoryPrompt = deleteCategoryPrompt;
+window.deleteChannelFromModal = deleteChannelFromModal;
+window.downloadLogFile = downloadLogFile;
+window.downloadSingleVideo = downloadSingleVideo;
+window.executeUploadVideo = executeUploadVideo;
+window.exportAiUsageLogsCsv = exportAiUsageLogsCsv;
+window.exportCurrentChannelVideosCsv = exportCurrentChannelVideosCsv;
+window.exportPipelineVideosCsv = exportPipelineVideosCsv;
+window.exportSavedChannelsCsv = exportSavedChannelsCsv;
+window.exportYtSearchCsv = exportYtSearchCsv;
+window.filterCampaignChannelList = filterCampaignChannelList;
+window.filterCampaignGpmList = filterCampaignGpmList;
+window.filterEditCampaignChannelList = filterEditCampaignChannelList;
+window.filterEditCampaignGpmList = filterEditCampaignGpmList;
+window.filterStudioVideos = filterStudioVideos;
+window.handleAiDateFilterChange = handleAiDateFilterChange;
+window.handleAiHeaderSort = handleAiHeaderSort;
+window.handleAiModelFilterChange = handleAiModelFilterChange;
+window.handleAiSortChange = handleAiSortChange;
+window.handleAudioFilesSelected = handleAudioFilesSelected;
+window.handleAudioFilterDownloadChange = handleAudioFilterDownloadChange;
+window.handleAudioFilterDurationChange = handleAudioFilterDurationChange;
+window.handleAudioFilterKeywordChange = handleAudioFilterKeywordChange;
+window.handleAudioHeaderSort = handleAudioHeaderSort;
+window.handleAudioSortChange = handleAudioSortChange;
+window.handleCampaignClipsInputChange = handleCampaignClipsInputChange;
+window.handleCustomCadenceInput = handleCustomCadenceInput;
+window.handleCustomSubsInput = handleCustomSubsInput;
+window.handleCustomViewsInput = handleCustomViewsInput;
+window.handleFileLogSearch = handleFileLogSearch;
+window.handleFilterActiveChange = handleFilterActiveChange;
+window.handleFilterCadenceChange = handleFilterCadenceChange;
+window.handleFilterCountryChange = handleFilterCountryChange;
+window.handleFilterKeywordChange = handleFilterKeywordChange;
+window.handleFilterSavedChange = handleFilterSavedChange;
+window.handleFilterSubsChange = handleFilterSubsChange;
+window.handleFilterViewsChange = handleFilterViewsChange;
+window.handleHeaderSort = handleHeaderSort;
+window.handleSavedFilterCadenceChange = handleSavedFilterCadenceChange;
+window.handleSavedFilterCountryChange = handleSavedFilterCountryChange;
+window.handleSavedFilterSubsChange = handleSavedFilterSubsChange;
+window.handleSavedFilterViewsChange = handleSavedFilterViewsChange;
+window.handleSavedHeaderSort = handleSavedHeaderSort;
+window.handleSavedSortSelectChange = handleSavedSortSelectChange;
+window.handleSortSelectChange = handleSortSelectChange;
+window.handleStudioClipsPerVideoChange = handleStudioClipsPerVideoChange;
+window.loadAiUsageStats = loadAiUsageStats;
+window.loadApiKeySettings = loadApiKeySettings;
+window.loadCampaigns = loadCampaigns;
+window.loadDashboardStats = loadDashboardStats;
+window.loadFileLogs = loadFileLogs;
+window.loadPipelineStatus = loadPipelineStatus;
+window.loadSavedChannels = loadSavedChannels;
+window.loadSystemIssues = loadSystemIssues;
+window.loadTelegramChannels = loadTelegramChannels;
+window.onCampaignFrequencyChange = onCampaignFrequencyChange;
+window.onEditCampaignFrequencyChange = onEditCampaignFrequencyChange;
+window.onStudioChannelFilterChange = onStudioChannelFilterChange;
+window.onStudioSearchInput = onStudioSearchInput;
+window.onToggleFormatCheckbox = onToggleFormatCheckbox;
+window.openAddTelegramChannelModal = openAddTelegramChannelModal;
+window.openAudioSettingsModal = openAudioSettingsModal;
+window.openCreateAudioCategoryModal = openCreateAudioCategoryModal;
+window.openCurrentChannelYouTube = openCurrentChannelYouTube;
+window.openDownloadAudioCategoryModal = openDownloadAudioCategoryModal;
+window.openEditCategoryModal = openEditCategoryModal;
+window.openLogFolder = openLogFolder;
+window.openNewCampaignModal = openNewCampaignModal;
+window.openSchedulerSettingsModal = openSchedulerSettingsModal;
+window.openUploadModalForActiveStudioVideo = openUploadModalForActiveStudioVideo;
+window.openVariantsReportModal = openVariantsReportModal;
+window.playVoicePreview = playVoicePreview;
+window.refreshActiveChannelStats = refreshActiveChannelStats;
+window.refreshAudioLibrary = refreshAudioLibrary;
+window.refreshCurrentCampaignLogs = refreshCurrentCampaignLogs;
+window.refreshStudioVideos = refreshStudioVideos;
+window.renderSavedChannelsTable = renderSavedChannelsTable;
+window.renderStudioActiveVideo = renderStudioActiveVideo;
+window.resetAiFilters = resetAiFilters;
+window.resetSavedFilters = resetSavedFilters;
+window.resetYtFilters = resetYtFilters;
+window.runDiagnosticsCheck = runDiagnosticsCheck;
+window.saveApiKeySettings = saveApiKeySettings;
+window.saveAudioSettings = saveAudioSettings;
+window.saveCategoryRename = saveCategoryRename;
+window.saveChannelSettings = saveChannelSettings;
+window.saveProfileUsernameFromModal = saveProfileUsernameFromModal;
+window.saveSchedulerSettings = saveSchedulerSettings;
+window.saveStudioVideoEdit = saveStudioVideoEdit;
+window.saveTelegramChannelModal = saveTelegramChannelModal;
+window.saveThresholdSettingsOnly = saveThresholdSettingsOnly;
+window.scanAllChannelsPipeline = scanAllChannelsPipeline;
+window.scanAllSavedChannels = scanAllSavedChannels;
+window.scanCurrentChannelNow = scanCurrentChannelNow;
+window.searchYouTubeAudio = searchYouTubeAudio;
+window.searchYouTubeChannels = searchYouTubeChannels;
+window.selectAllCampaignChannels = selectAllCampaignChannels;
+window.selectAllCampaignGpm = selectAllCampaignGpm;
+window.selectAllEditCampaignChannels = selectAllEditCampaignChannels;
+window.sendDiagnosticsIssueAlertToTelegram = sendDiagnosticsIssueAlertToTelegram;
+window.setCampaignSchedulePreset = setCampaignSchedulePreset;
+window.setEditCampaignSchedulePreset = setEditCampaignSchedulePreset;
+window.setSchedulerPreset = setSchedulerPreset;
+window.submitCreateAudioCategory = submitCreateAudioCategory;
+window.switchAudioSubTab = switchAudioSubTab;
+window.switchCampaignDetailTab = switchCampaignDetailTab;
+window.switchLogsSubTab = switchLogsSubTab;
+window.switchSourceSubTab = switchSourceSubTab;
+window.switchTab = switchTab;
+window.syncChannelVariantModeUI = syncChannelVariantModeUI;
+window.syncStudioVariantModeUI = syncStudioVariantModeUI;
+window.testDailyReportNow = testDailyReportNow;
+window.testIssueAlertNow = testIssueAlertNow;
+window.testTelegramAlert = testTelegramAlert;
+window.testYoutubeKey = testYoutubeKey;
+window.toggleAiSortDirection = toggleAiSortDirection;
+window.toggleAiStoryCard = toggleAiStoryCard;
+window.toggleAudioSortDirection = toggleAudioSortDirection;
+window.toggleAutostartSetting = toggleAutostartSetting;
+window.toggleCampaignAutoUpload = toggleCampaignAutoUpload;
+window.toggleColVisibility = toggleColVisibility;
+window.toggleColumnDropdown = toggleColumnDropdown;
+window.toggleDailyTimeRow = toggleDailyTimeRow;
+window.toggleDockPlayPause = toggleDockPlayPause;
+window.toggleFollowerScanModeUI = toggleFollowerScanModeUI;
+window.toggleMasterScheduler = toggleMasterScheduler;
+window.toggleMinimizeToTraySetting = toggleMinimizeToTraySetting;
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.toggleSavedSortDirection = toggleSavedSortDirection;
+window.toggleSidebar = toggleSidebar;
+window.toggleSortDirection = toggleSortDirection;
+window.toggleStudioPlayback = toggleStudioPlayback;
+window.triggerCampaignTestRun = triggerCampaignTestRun;
+window.triggerManualCleanup = triggerManualCleanup;
+window.triggerProcessUploads = triggerProcessUploads;
+window.updateModalIntervalBadge = updateModalIntervalBadge;
+window.updateVoiceDropdownOptions = updateVoiceDropdownOptions;
+window.validateMinDurationInput = validateMinDurationInput;
+// ==== END AUTO-GENERATED WINDOW EXPOSURES ====

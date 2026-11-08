@@ -251,6 +251,8 @@ def fetch_account_info_from_genlogin(profile_id: str) -> Dict[str, Any]:
 
     yt_channel_id = None
     yt_title = None
+    yt_handle = None
+    sub_count = 0
 
     if has_yt_auth:
         sess_yt = requests.Session()
@@ -279,13 +281,36 @@ def fetch_account_info_from_genlogin(profile_id: str) -> Dict[str, Any]:
                     t_m = re.search(r'<meta property="og:title" content="([^"]+)">', r_ch.text)
                     if t_m:
                         yt_title = t_m.group(1)
+                    
+                    # Trích xuất handle YouTube thực sự (@handle)
+                    m_vanity = re.search(r'"vanityChannelUrl":"https?://(?:www\.)?youtube\.com/(@[^"]+)"', r_ch.text)
+                    if m_vanity:
+                        yt_handle = m_vanity.group(1)
+                    else:
+                        m_canon = re.search(r'"canonicalBaseUrl":"/(@[^"]+)"', r_ch.text)
+                        if m_canon:
+                            yt_handle = m_canon.group(1)
+                        else:
+                            m_u = re.search(r'<meta property="og:url" content="([^"]+)">', r_ch.text)
+                            if m_u:
+                                handle_candidate = m_u.group(1).split('/')[-1]
+                                if handle_candidate.startswith('@'):
+                                    yt_handle = handle_candidate
+
+                    # Trích xuất số lượng người đăng ký (subscriber count)
+                    m_sub = re.search(r'"subscriberCountText":\{.*?"simpleText":"([^"]+)"', r_ch.text)
+                    if not m_sub:
+                        m_sub = re.search(r'"subscriberCountText":\{.*?"label":"([^"]+)"', r_ch.text)
+                    if m_sub:
+                        from backend.modules.gpm_profile_reader import parse_yt_sub_count
+                        sub_count = parse_yt_sub_count(m_sub.group(1))
             except Exception:
                 pass
 
     # Nếu có channel YouTube xác thực -> Chọn YouTube
     if yt_channel_id:
-        display_name = yt_title or yt_channel_id
-        handle_name = f"@{display_name}" if not display_name.startswith("@") else display_name
+        display_name = yt_title or yt_channel_id or "YouTube_Channel"
+        handle_name = yt_handle or f"https://www.youtube.com/channel/{yt_channel_id}"
         return {
             "found": True,
             "is_logged_in": True,
@@ -297,7 +322,7 @@ def fetch_account_info_from_genlogin(profile_id: str) -> Dict[str, Any]:
             "tiktok_uid": "",
             "sec_uid": "",
             "fb_page_id": "",
-            "followers": 0,
+            "followers": sub_count,
             "views_7d": 0,
             "source": "genlogin_cdp",
             "message": f"OK: YouTube {display_name}"
@@ -331,7 +356,7 @@ def fetch_account_info_from_genlogin(profile_id: str) -> Dict[str, Any]:
             "platform": "youtube",
             "username": "YouTube_Channel",
             "nickname": "YouTube_Channel",
-            "channel_handle": "@YouTube_Channel",
+            "channel_handle": "",
             "user_id": "",
             "tiktok_uid": "",
             "sec_uid": "",

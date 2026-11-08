@@ -35,6 +35,8 @@
             "topbar_theme_dark": "Tối",
             "topbar_theme_light": "Sáng",
             "topbar_theme_tooltip": "Chuyển sang giao diện Sáng/Tối",
+            "topbar_theme_tooltip_light": "Chuyển sang giao diện Sáng",
+            "topbar_theme_tooltip_dark": "Chuyển sang giao diện Tối",
             "topbar_lang_tooltip": "Chọn ngôn ngữ hiển thị",
             "settings_theme_label": "Chế Độ Giao Diện:",
             "settings_theme_dark": "🌙 Giao diện Tối",
@@ -45,6 +47,20 @@
             "settings_lang_zh": "ZH - 简体中文",
             "settings_appearance_title": "Giao Diện & Ngôn Ngữ",
             "settings_appearance_sub": "Tùy chỉnh giao diện sáng/tối và lựa chọn ngôn ngữ làm việc theo ý muốn.",
+            "settings_telegram_title": "Telegram Bot & Cảnh Báo Tăng Trưởng",
+            "settings_telegram_sub": "Cấu hình Bot, quản lý kênh nhận cảnh báo và ngưỡng số lượng người theo dõi/đăng ký để kích hoạt thông báo.",
+            "settings_telegram_test_daily": "Test Báo Cáo Ngày",
+            "settings_telegram_test_issue": "Test Cảnh Báo Lỗi",
+            "settings_telegram_test_milestone": "Test Cảnh Báo Đạt Mốc",
+            "profiles_threshold_btn": "Ngưỡng Thông Báo",
+            "profiles_threshold_btn_title": "Cài đặt ngưỡng gửi thông báo tăng trưởng & chuẩn đạt chỉ tiêu",
+            "threshold_modal_note": "Lưu ý: Khi bấm lưu, hệ thống tự động tính lại nhãn Đạt Chỉ Tiêu cho toàn bộ danh sách profile và gửi thông báo Telegram tức thì khi có kênh/profile đạt mốc trong các lần quét.",
+            "threshold_modal_close": "Đóng",
+            "threshold_modal_save": "Lưu Cài Đặt Ngưỡng",
+            "campaign_channel_default": "Mặc định",
+            "campaign_channel_sub": "Kênh phụ",
+            "campaign_fb_personal": "Cá nhân",
+            "campaign_fb_fanpage": "Fanpage",
 
             "tab_auto_pipeline_title": "Chiến Dịch Tự Động Hóa",
             "tab_auto_pipeline_sub": "Quy trình khép kín: Quét RSS Kênh → Tải MP4 → AI Render 9:16 → Tự Đăng Tài Khoản",
@@ -105,6 +121,8 @@
             "topbar_theme_dark": "Dark",
             "topbar_theme_light": "Light",
             "topbar_theme_tooltip": "Switch between Light/Dark theme",
+            "topbar_theme_tooltip_light": "Switch to Light mode",
+            "topbar_theme_tooltip_dark": "Switch to Dark mode",
             "topbar_lang_tooltip": "Choose display language",
             "settings_theme_label": "Theme Mode:",
             "settings_theme_dark": "🌙 Dark Mode",
@@ -113,6 +131,22 @@
             "settings_lang_vi": "VI - Vietnamese",
             "settings_lang_en": "EN - English",
             "settings_lang_zh": "ZH - Chinese",
+            "settings_appearance_title": "Appearance & Language",
+            "settings_appearance_sub": "Customize light/dark theme and choose your preferred system language.",
+            "settings_telegram_title": "Telegram Bot & Growth Alerts",
+            "settings_telegram_sub": "Configure Bot, manage alert channels and follower/subscriber thresholds for notifications.",
+            "settings_telegram_test_daily": "Test Daily Report",
+            "settings_telegram_test_issue": "Test Error Alert",
+            "settings_telegram_test_milestone": "Test Milestone Alert",
+            "profiles_threshold_btn": "Alert Thresholds",
+            "profiles_threshold_btn_title": "Configure growth notification thresholds & eligibility criteria",
+            "threshold_modal_note": "Note: Upon saving, the system automatically recalculates the Eligibility status for all profiles and sends instant Telegram alerts when any channel/profile hits the target during scans.",
+            "threshold_modal_close": "Close",
+            "threshold_modal_save": "Save Thresholds",
+            "campaign_channel_default": "Default",
+            "campaign_channel_sub": "Sub-channel",
+            "campaign_fb_personal": "Personal Profile",
+            "campaign_fb_fanpage": "Fanpage",
 
             "tab_auto_pipeline_title": "Auto-Pilot Campaigns",
             "tab_auto_pipeline_sub": "End-to-end pipeline: Channel RSS Scan → MP4 Download → AI 9:16 Render → Auto-Post",
@@ -173,6 +207,8 @@
             "topbar_theme_dark": "深色",
             "topbar_theme_light": "浅色",
             "topbar_theme_tooltip": "切换深色/浅色界面",
+            "topbar_theme_tooltip_light": "切换至浅色模式",
+            "topbar_theme_tooltip_dark": "切换至深色模式",
             "topbar_lang_tooltip": "选择界面显示语言",
             "settings_theme_label": "界面主题:",
             "settings_theme_dark": "🌙 深色模式",
@@ -181,8 +217,22 @@
             "settings_lang_vi": "VI - 越南语",
             "settings_lang_en": "EN - 英语",
             "settings_lang_zh": "ZH - 简体中文",
-            "settings_appearance_title": "Giao Diện & Ngôn Ngữ",
-            "settings_appearance_sub": "Tùy chỉnh giao diện sáng/tối và lựa chọn ngôn ngữ làm việc theo ý muốn.",
+            "settings_appearance_title": "界面与语言",
+            "settings_appearance_sub": "自定义深色/浅色主题，选择您的首选系统语言。",
+            "settings_telegram_title": "Telegram 机器人与增长预警",
+            "settings_telegram_sub": "配置机器人、管理接收预警频道及触发通知的粉丝/订阅量阈值。",
+            "settings_telegram_test_daily": "测试每日报告",
+            "settings_telegram_test_issue": "测试错误预警",
+            "settings_telegram_test_milestone": "测试达标预警",
+            "profiles_threshold_btn": "通知阈值",
+            "profiles_threshold_btn_title": "设置增长通知阈值与达标标准",
+            "threshold_modal_note": "注意：点击保存后，系统将自动重新计算所有配置文件的达标状态，并在扫描中频道/账号达到目标时立即发送 Telegram 预警。",
+            "threshold_modal_close": "关闭",
+            "threshold_modal_save": "保存通知阈值",
+            "campaign_channel_default": "默认",
+            "campaign_channel_sub": "子频道",
+            "campaign_fb_personal": "个人主页",
+            "campaign_fb_fanpage": "公共主页",
 
             "tab_auto_pipeline_title": "自动化营销活动",
             "tab_auto_pipeline_sub": "全流程闭环: 扫描 RSS → 下载 MP4 → AI 9:16 渲染 → 矩阵全自动发布",
@@ -832,6 +882,8 @@
         "Cảnh Báo & Lỗi (WARN+ERR)": { en: "Warning & Error (WARN+ERR)", zh: "警告 & 错误 (WARN+ERR)" },
         "Cảnh báo 10K:": { en: "Alert 10K:", zh: "预警 10K:" },
         "Cảnh báo accounts đạt 10.000 Follower": { en: "Alert when accounts reach 10,000 Followers", zh: "账号达到万粉 (10,000) 创作者基金门槛时提醒" },
+        "Cảnh báo nick đạt ngưỡng Follower / Sub (TikTok, YouTube, Facebook)": { en: "Alert when accounts reach Follower / Sub threshold (TikTok, YouTube, Facebook)", zh: "账号达到关注者/订阅者阈值时提醒 (TikTok, YouTube, Facebook)" },
+        "🌟 Cảnh báo nick đạt ngưỡng Follower / Sub (TikTok, YouTube, Facebook)": { en: "🌟 Alert when accounts reach Follower / Sub threshold (TikTok, YouTube, Facebook)", zh: "🌟 账号达到关注者/订阅者阈值时提醒 (TikTok, YouTube, Facebook)" },
         "Cảnh báo lỗi nghiêm trọng & Cách khắc phục": { en: "Critical Error Alerts & Troubleshooting", zh: "严重错误警报与应急排障指南" },
         "Cảnh báo nick đạt 10.000 Follower": { en: "Alert when accounts reach 10,000 Followers", zh: "账号达到万粉 (10,000) 创作者基金门槛时提醒" },
         "Cảnh báo tài khoản đạt 10.000 Follower": { en: "Alert when accounts reach 10,000 Followers", zh: "账号达到万粉 (10,000) 创作者基金门槛时提醒" },
@@ -1866,6 +1918,35 @@
         "Sửa": { en: "Edit", zh: "编辑" },
         "Sửa Nick & Chỉ số": { en: "Edit Nickname & Metrics", zh: "修改账号与指标" },
         "Sửa Nick TikTok & Chỉ Số": { en: "Edit TikTok Profile & Metrics", zh: "修改 TikTok 账号与指标" },
+        "Sửa Thông Tin & Chỉ Số Tài Khoản": { en: "Edit Account Info & Metrics", zh: "编辑账号信息与指标" },
+        "Sửa Tài Khoản & Chỉ Số TikTok": { en: "Edit TikTok Account & Metrics", zh: "编辑 TikTok 账号与指标" },
+        "Sửa Kênh YouTube & Số Subscribers": { en: "Edit YouTube Channel & Subscribers", zh: "编辑 YouTube 频道与订阅数" },
+        "Sửa Tài Khoản YouTube & Chỉ Số": { en: "Edit YouTube Account & Metrics", zh: "编辑 YouTube 账号与指标" },
+        "Sửa Fanpage & Số Followers": { en: "Edit Fanpage & Followers", zh: "编辑 Facebook 粉丝主页与粉丝数" },
+        "Sửa Tài Khoản Facebook & Chỉ Số": { en: "Edit Facebook Account & Metrics", zh: "编辑 Facebook 账号与指标" },
+        "Gán thủ công hoặc đồng bộ thông số cho profile / kênh": { en: "Manually assign or synchronize metrics for profile / channel", zh: "手动指定或同步个人资料/频道参数" },
+        "Tài Khoản / Username:": { en: "Account / Username:", zh: "账号 / 用户名：" },
+        "YouTube Handle / Channel ID:": { en: "YouTube Handle / Channel ID:", zh: "YouTube 用户名 / 频道 ID：" },
+        "Page UID / Username:": { en: "Page UID / Username:", zh: "主页 UID / 用户名：" },
+        "Tên Kênh / Hiển Thị:": { en: "Channel / Display Name:", zh: "频道 / 显示名称：" },
+        "Tên Kênh YouTube:": { en: "YouTube Channel Name:", zh: "YouTube 频道名称：" },
+        "Tên Fanpage / Trang Facebook:": { en: "Fanpage / Facebook Page Name:", zh: "粉丝主页 / Facebook 页面名称：" },
+        "Số Follower / Người Đăng Ký:": { en: "Followers / Subscribers Count:", zh: "粉丝数 / 订阅者数：" },
+        "Số Người Đăng Ký (Subscribers):": { en: "Subscribers Count:", zh: "订阅者数 (Subscribers)：" },
+        "Số Followers / Likes Hiện Tại:": { en: "Followers / Likes Count:", zh: "粉丝数 / 点赞数：" },
+        "Đặt làm Kênh YouTube chính": { en: "Set as Default YouTube Channel", zh: "设为主 YouTube 频道" },
+        "Đặt làm Fanpage chính": { en: "Set as Default Fanpage", zh: "设为主 Facebook 主页" },
+        "Kênh chính (Mặc định)": { en: "Default Main Channel", zh: "主频道 (默认)" },
+        "Trang chính (Mặc định)": { en: "Default Main Page", zh: "主页面 (默认)" },
+        "Quét Subscribers ngay": { en: "Scan Subscribers Now", zh: "立即扫描订阅数" },
+        "Sửa Kênh & Subscribers": { en: "Edit Channel & Subscribers", zh: "修改频道与订阅数" },
+        "Sửa Trang & Followers": { en: "Edit Page & Followers", zh: "修改主页与粉丝数" },
+        "Mở kênh YouTube": { en: "Open YouTube Channel", zh: "在 YouTube 打开频道" },
+        "Mở trang Facebook": { en: "Open Facebook Page", zh: "在 Facebook 打开主页" },
+        "Sao chép Channel ID": { en: "Copy Channel ID", zh: "复制频道 ID" },
+        "Sao chép Page UID": { en: "Copy Page UID", zh: "复制主页 UID" },
+        "Sao chép liên kết": { en: "Copy Link", zh: "复制链接" },
+        "Xóa khỏi danh sách": { en: "Remove from list", zh: "从列表中移除" },
         "Sự Kiện Live (DB)": { en: "Live Events (DB)", zh: "实时数据库事件 (DB)" },
         "T2": { en: "T2", zh: "T2" },
         "T3": { en: "T3", zh: "T3" },
@@ -3687,17 +3768,27 @@
         const textSpan = themeBtn.querySelector('#themeToggleText') || themeBtn.querySelector('span');
 
         if (currentTheme === 'light') {
-            if (icon) icon.className = 'fa-solid fa-sun';
-            themeBtn.setAttribute('data-tooltip', t('topbar_theme_tooltip', 'Chuyển sang giao diện Sáng/Tối'));
-            themeBtn.title = t('topbar_theme_tooltip', 'Chuyển sang giao diện Sáng/Tối');
-            const label = t('topbar_theme_light', 'Sáng');
-            if (textSpan) textSpan.textContent = label;
-        } else {
             if (icon) icon.className = 'fa-solid fa-moon';
-            themeBtn.setAttribute('data-tooltip', t('topbar_theme_tooltip', 'Chuyển sang giao diện Sáng/Tối'));
-            themeBtn.title = t('topbar_theme_tooltip', 'Chuyển sang giao diện Sáng/Tối');
+            const tip = t('topbar_theme_tooltip_dark', 'Chuyển sang giao diện Tối');
+            themeBtn.setAttribute('data-tooltip', tip);
+            themeBtn.setAttribute('data-i18n-tooltip', 'topbar_theme_tooltip_dark');
+            themeBtn.title = tip;
             const label = t('topbar_theme_dark', 'Tối');
-            if (textSpan) textSpan.textContent = label;
+            if (textSpan) {
+                textSpan.textContent = label;
+                textSpan.setAttribute('data-i18n', 'topbar_theme_dark');
+            }
+        } else {
+            if (icon) icon.className = 'fa-solid fa-sun';
+            const tip = t('topbar_theme_tooltip_light', 'Chuyển sang giao diện Sáng');
+            themeBtn.setAttribute('data-tooltip', tip);
+            themeBtn.setAttribute('data-i18n-tooltip', 'topbar_theme_tooltip_light');
+            themeBtn.title = tip;
+            const label = t('topbar_theme_light', 'Sáng');
+            if (textSpan) {
+                textSpan.textContent = label;
+                textSpan.setAttribute('data-i18n', 'topbar_theme_light');
+            }
         }
     }
 

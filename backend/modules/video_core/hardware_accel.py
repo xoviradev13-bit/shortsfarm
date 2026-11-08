@@ -2,6 +2,7 @@ import os
 import subprocess
 import shutil
 from typing import Dict, Any, List
+import sys
 
 _NVENC_CACHE = None
 

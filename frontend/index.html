@@ -24,8 +24,10 @@
         rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css?v=20261107_36">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20261107_36">
+    <link rel="stylesheet" href="/static/css/style.css?v=20261108_02">
+    <link rel="stylesheet" href="/static/css/theme.css?v=20261108_02">
+    <link rel="stylesheet" href="/static/css/style.css?v=20261108_05">
+    <link rel="stylesheet" href="/static/css/theme.css?v=20261108_05">
     <link rel="icon" type="image/x-icon" href="/logo/app-logo.ico">
     <link rel="shortcut icon" type="image/x-icon" href="/logo/app-logo.ico">
     <link rel="apple-touch-icon" href="/logo/app-logo.png">
@@ -156,10 +158,10 @@
                     </select>
                 </div>
                 <button class="btn btn-secondary btn-sm theme-toggle-btn has-tooltip tooltip-left" id="themeToggleBtn"
-                    onclick="window.toggleAppTheme()" data-i18n-tooltip="topbar_theme_tooltip"
-                    data-tooltip="Chuyển sang giao diện Sáng/Tối">
-                    <i class="fa-solid fa-moon" id="themeToggleIcon"></i>
-                    <span id="themeToggleText" data-i18n="topbar_theme_dark">Tối</span>
+                    onclick="window.toggleAppTheme()" data-i18n-tooltip="topbar_theme_tooltip_light"
+                    data-tooltip="Chuyển sang giao diện Sáng">
+                    <i class="fa-solid fa-sun" id="themeToggleIcon"></i>
+                    <span id="themeToggleText" data-i18n="topbar_theme_light">Sáng</span>
                 </button>
                 <button class="btn btn-info btn-sm has-tooltip tooltip-left" id="btnUpdateAvailable"
                     onclick="window.LicenseManager.openUpdateModal()" style="display:none;"
@@ -2508,8 +2510,10 @@
                             <button class="btn btn-secondary" id="btnThresholdSettingsModal"
                                 onclick="openThresholdSettingsModal()"
                                 style="display:flex; align-items:center; gap:6px;"
+                                data-i18n-title="profiles_threshold_btn_title"
                                 title="Cài đặt ngưỡng gửi thông báo tăng trưởng & chuẩn đạt chỉ tiêu">
-                                <i class="fa-solid fa-sliders text-accent"></i> <span>Ngưỡng Thông Báo</span>
+                                <i class="fa-solid fa-sliders text-accent"></i> <span
+                                    data-i18n="profiles_threshold_btn">Ngưỡng Thông Báo</span>
                             </button>
                             <button class="btn btn-accent" id="btnScanAllFollowersTab"
                                 onclick="scanAllProfilesFollowers(this)"
@@ -3690,8 +3694,10 @@
                                 <div style="display:flex; align-items:center; gap:12px;">
                                     <i class="fa-brands fa-telegram" style="color:#2AABEE; font-size:26px;"></i>
                                     <div>
-                                        <h4 style="margin:0; font-size:16px;">Telegram Bot & Cảnh Báo Tăng Trưởng</h4>
-                                        <p class="panel-sub" style="margin:2px 0 0 0;">Cấu hình Bot, quản lý kênh nhận
+                                        <h4 style="margin:0; font-size:16px;" data-i18n="settings_telegram_title">
+                                            Telegram Bot & Cảnh Báo Tăng Trưởng</h4>
+                                        <p class="panel-sub" style="margin:2px 0 0 0;"
+                                            data-i18n="settings_telegram_sub">Cấu hình Bot, quản lý kênh nhận
                                             cảnh báo và ngưỡng số lượng người theo dõi/đăng ký để kích hoạt thông báo.
                                         </p>
                                     </div>
@@ -3706,22 +3712,25 @@
                                     <button type="button" class="btn btn-secondary btn-sm" id="btnTestDailyReport"
                                         onclick="testDailyReportNow(this)"
                                         title="Gửi thử Báo cáo hoạt động ngày tới các kênh đã bật nhận báo cáo">
-                                        <i class="fa-solid fa-chart-pie" style="color:#10b981;"></i> Test Báo Cáo Ngày
+                                        <i class="fa-solid fa-chart-pie" style="color:#10b981;"></i> <span
+                                            data-i18n="settings_telegram_test_daily">Test Báo Cáo Ngày</span>
                                     </button>
                                     <button type="button" class="btn btn-secondary btn-sm" id="btnTestIssueAlert"
                                         onclick="testIssueAlertNow(this)"
                                         title="Gửi thử Cảnh báo sự cố kèm giải pháp tới các kênh đã bật nhận cảnh báo lỗi">
-                                        <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> Test
-                                        Cảnh Báo Lỗi
+                                        <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> <span
+                                            data-i18n="settings_telegram_test_issue">Test Cảnh Báo Lỗi</span>
                                     </button>
                                     <button type="button" class="btn btn-secondary btn-sm" id="btnTestAllTelegram"
                                         onclick="testTelegramAlert(this)"
                                         title="Gửi tin nhắn thử nghiệm đạt ngưỡng tới tất cả kênh đang bật nhận cảnh báo">
-                                        <i class="fa-solid fa-bell" style="color:#2AABEE;"></i> Test Cảnh Báo Đạt Mốc
+                                        <i class="fa-solid fa-bell" style="color:#2AABEE;"></i> <span
+                                            data-i18n="settings_telegram_test_milestone">Test Cảnh Báo Đạt Mốc</span>
                                     </button>
                                     <button type="button" class="btn btn-primary btn-sm"
                                         onclick="openAddTelegramChannelModal()">
-                                        <i class="fa-solid fa-plus"></i> Thêm Kênh Mới
+                                        <i class="fa-solid fa-plus"></i> <span data-i18n="tele_btn_add_channel">Thêm
+                                            Kênh Mới</span>
                                     </button>
                                 </div>
                             </div>
@@ -4184,7 +4193,7 @@
                             <div>
                                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                                     <span style="font-weight:600; font-size:12.5px; color:var(--text-primary);">🌟 Cảnh
-                                        báo nick đạt 10.000 Follower</span>
+                                        báo nick đạt ngưỡng Follower / Sub (TikTok, YouTube, Facebook)</span>
                                     <span class="badge"
                                         style="font-size:10px; padding:1px 6px; background:rgba(42,171,238,0.15); color:#2AABEE; border:1px solid rgba(42,171,238,0.3); border-radius:10px;"><i
                                             class="fa-regular fa-clock"></i> Gửi từ Lịch Quét Định Kỳ</span>
@@ -4192,8 +4201,8 @@
                                 <span
                                     style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px; line-height:1.4;">
                                     Hệ thống tự động phát hiện trong <b>Lịch Quét Định Kỳ</b> (hoặc khi bấm quét): Tự
-                                    động bắn thông báo khi nick ở trạng thái 🔔 <i>Đang theo dõi</i> chạm mốc 10.000
-                                    Followers.
+                                    động bắn thông báo khi tài khoản / kênh ở trạng thái 🔔 <i>Đang theo dõi</i> chạm ngưỡng
+                                    chỉ tiêu đã cài đặt (TikTok, YouTube, Facebook).
                                 </span>
                             </div>
                         </label>
@@ -6861,11 +6870,7 @@
                                 <div>
                                     <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-crop"></i>
                                         Định Dạng Khung Hình:</label>
-                                    <select id="editCampaignAsp
-                        <!-- Thư Mục Lưu Tải Về & Bộ Lọc Thời Lượng -->
-             
-... [truncated for diff preview]
-                                    <select id=" editCampaignAspectRatio" class="custom-select mt-1"
+                                    <select id="editCampaignAspectRatio" class="custom-select mt-1"
                                         style="width:100%; height:40px;">
                                         <option value="9:16_blur" selected>9:16 Dọc Nền Mờ - Chuẩn TikTok
                                         </option>
@@ -7056,8 +7061,9 @@
                                 </select>
                             </div>
                         </div>
-                        <!-- ================= TAB 3: AI STORY & VISUAL ================= -->
-                        <div id="editCampPane-ai_story" class="modal-tab-pane">
+                    </div>
+                    <!-- ================= TAB 3: AI STORY & VISUAL ================= -->
+                    <div id="editCampPane-ai_story" class="modal-tab-pane">
                             <div class="form-group full-width"
                                 style="background:rgba(236,72,153,0.06); padding:16px; border-radius:var(--radius-md); border:1px solid rgba(236,72,153,0.25);">
                                 <div
@@ -7360,6 +7366,7 @@
                                     <label
                                         style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.03); padding:10px 12px; border-radius:8px; cursor:pointer;">
                                         <input type="checkbox" id="editCampTargetTikTok" checked
+                                            onchange="filterCampaignGpmAccounts('edit')"
                                             style="width:16px; height:16px; accent-color:#fe2c55;">
                                         <div>
                                             <div style="font-size:12px; font-weight:700; color:#fff;"><i
@@ -7371,6 +7378,7 @@
                                     <label
                                         style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.03); padding:10px 12px; border-radius:8px; cursor:pointer;">
                                         <input type="checkbox" id="editCampTargetYouTube"
+                                            onchange="filterCampaignGpmAccounts('edit')"
                                             style="width:16px; height:16px; accent-color:#ff0000;">
                                         <div>
                                             <div style="font-size:12px; font-weight:700; color:#fff;"><i
@@ -7383,6 +7391,7 @@
                                     <label
                                         style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.03); padding:10px 12px; border-radius:8px; cursor:pointer;">
                                         <input type="checkbox" id="editCampTargetFacebook"
+                                            onchange="filterCampaignGpmAccounts('edit')"
                                             style="width:16px; height:16px; accent-color:#1877f2;">
                                         <div>
                                             <div style="font-size:12px; font-weight:700; color:#fff;"><i
@@ -8130,36 +8139,39 @@
                 <!-- Hint -->
                 <div
                     style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); border-radius: 8px; padding: 10px 14px; font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;">
-                    <i class="fa-solid fa-circle-info text-accent"></i> <strong>Lưu ý:</strong> <span>Khi bấm lưu, hệ
-                        thống tự động tính lại nhãn Đạt Chỉ Tiêu cho toàn bộ danh sách profile và gửi thông báo Telegram
-                        tức thì khi có kênh/profile đạt mốc trong các lần quét.</span>
+                    <i class="fa-solid fa-circle-info text-accent"></i> <strong data-i18n="hint_note_prefix">Lưu
+                        ý:</strong> <span data-i18n="threshold_modal_note">Khi bấm lưu, hệ thống tự động tính lại nhãn
+                        Đạt Chỉ Tiêu cho toàn bộ danh sách profile và gửi thông báo Telegram tức thì khi có kênh/profile
+                        đạt mốc trong các lần quét.</span>
                 </div>
             </div>
             <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-                <button type="button" class="btn btn-secondary" onclick="closeThresholdSettingsModal()">Đóng</button>
+                <button type="button" class="btn btn-secondary" onclick="closeThresholdSettingsModal()"
+                    data-i18n="threshold_modal_close">Đóng</button>
                 <button type="button" class="btn btn-primary" onclick="saveThresholdFromDedicatedModal(this)"
                     style="font-weight: 700;">
-                    <i class="fa-solid fa-check"></i> <span>Lưu Cài Đặt Ngưỡng</span>
+                    <i class="fa-solid fa-check"></i> <span data-i18n="threshold_modal_save">Lưu Cài Đặt Ngưỡng</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: GÁN / SỬA USERNAME & CHỈ SỐ PROFILE -->
+    <!-- MODAL: GÁN / SỬA USERNAME & CHỈ SỐ PROFILE / ACCOUNT METRICS -->
     <div id="editProfileUsernameModal" class="modal">
         <div class="modal-content" style="max-width: 480px;">
             <div class="modal-header">
                 <div>
                     <h3 style="display:flex; align-items:center; gap:8px;">
-                        <i class="fa-brands fa-tiktok text-accent"></i> Sửa Nick TikTok & Chỉ Số
+                        <i id="editProfileModalIcon" class="fa-solid fa-user-pen text-accent"></i> <span id="editProfileModalTitle">Sửa Thông Tin & Chỉ Số Tài Khoản</span>
                     </h3>
-                    <p class="modal-sub">Gán thủ công hoặc đồng bộ thông số cho profile</p>
+                    <p class="modal-sub" id="editProfileModalSub">Gán thủ công hoặc đồng bộ thông số cho profile / kênh</p>
                 </div>
                 <button type="button" class="close-btn has-tooltip" onclick="closeEditUsernameModal()"
                     data-tooltip="Đóng"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
                 <input type="hidden" id="editProfileGpmId">
+                <input type="hidden" id="editProfileChannelId">
                 <div class="form-group">
                     <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Tên Profile
                         :</label>
@@ -8181,7 +8193,7 @@
                     <div class="form-group">
                         <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);"><i
                                 class="fa-solid fa-share-nodes"></i> Nền Tảng:</label>
-                        <select id="editProfilePlatform" class="input-field" style="height:38px;">
+                        <select id="editProfilePlatform" class="input-field" style="height:38px;" onchange="onEditProfilePlatformChange(this.value)">
                             <option value="tiktok">TikTok</option>
                             <option value="youtube">YouTube</option>
                             <option value="facebook">Facebook</option>
@@ -8189,30 +8201,30 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
-                        <i class="fa-brands fa-tiktok"></i> TikTok Username:
+                    <label id="lblEditProfileUsername" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
+                        <i id="editProfileUserIcon" class="fa-brands fa-tiktok"></i> <span id="editProfileUserLabel">Tài Khoản / Username:</span>
                     </label>
                     <div style="position: relative;">
-                        <span
+                        <span id="editProfileUserPrefix"
                             style="position: absolute; left: 12px; top: 10px; color: var(--text-muted); font-weight: 700;">@</span>
                         <input type="text" id="editProfileUsername" class="input-field" placeholder="username_cua_ban"
                             style="padding-left: 28px;">
                     </div>
-                    <small class="form-hint"
+                    <small id="editProfileUserHint" class="form-hint"
                         style="font-size: 11px; color: var(--text-muted); margin-top: 3px; display: block;">
                         Không cần nhập dấu @. Ví dụ: <code>dat.nguyen261096</code>
                     </small>
                 </div>
                 <div class="form-group">
-                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
-                        <i class="fa-solid fa-id-badge"></i> Tên Kênh TikTok:
+                    <label id="lblEditProfileNickname" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
+                        <i id="editProfileNickIcon" class="fa-solid fa-id-badge"></i> <span id="editProfileNickLabel">Tên Kênh / Hiển Thị:</span>
                     </label>
                     <input type="text" id="editProfileNickname" class="input-field"
                         placeholder="Ví dụ: Hoàng Minh, Iamcooked...">
                 </div>
                 <div class="form-group">
-                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
-                        <i class="fa-solid fa-users"></i> Số Follower Hiện Tại:
+                    <label id="lblEditProfileFollowers" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
+                        <i id="editProfileFollowersIcon" class="fa-solid fa-users"></i> <span id="editProfileFollowersLabel">Số Follower / Người Đăng Ký:</span>
                     </label>
                     <input type="number" id="editProfileFollowers" class="input-field" placeholder="0">
                 </div>
@@ -8593,9 +8605,9 @@
 
     <div id="toast" class="toast"></div>
 
-    <script src="/static/js/i18n.js?v=20261107_36"></script>
-    <script src="/static/js/app.js?v=20261107_36"></script>
-    <script src="/static/js/video_manager.js?v=20261103_02"></script>
+    <script src="/static/js/i18n.js?v=20261108_06"></script>
+    <script src="/static/js/app.js?v=20261108_06"></script>
+    <script src="/static/js/video_manager.js?v=20261108_06"></script>
 
     <script>
         function updateSyncBtnLabel(browserType) {
@@ -8658,7 +8670,7 @@
         }
     </script>
 
-    <script src="/static/js/elevenlabs_studio.js?v=20261107_02"></script>
+    <script src="/static/js/elevenlabs_studio.js?v=20261108_05"></script>
 
     <!-- Modal Kích Hoạt Bản Quyền -->
     <div class="modal" id="licenseActivationModal"
@@ -8837,7 +8849,7 @@
     </div>
 
     <!-- Script Quản Lý Bản Quyền & Auto-Update -->
-    <script src="/static/js/license_update.js"></script>
+    <script src="/static/js/license_update.js?v=20261108_05"></script>
 </body>
 
 </html>

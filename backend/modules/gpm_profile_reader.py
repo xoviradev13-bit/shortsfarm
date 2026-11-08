@@ -436,6 +436,7 @@ def fetch_account_info_from_gpm(profile_id: str, storage_path_hint: Optional[str
 
         yt_channel_id = None
         yt_title = None
+        yt_handle = None
         try:
             r_st = sess_yt.get("https://studio.youtube.com", timeout=8)
             if r_st.status_code == 200:
@@ -452,12 +453,19 @@ def fetch_account_info_from_gpm(profile_id: str, storage_path_hint: Optional[str
                     t_m = re.search(r'<meta property="og:title" content="([^"]+)">', r_ch.text)
                     if t_m:
                         yt_title = t_m.group(1)
+                    m_vanity = re.search(r'"vanityChannelUrl":"https?://(?:www\.)?youtube\.com/(@[^"]+)"', r_ch.text)
+                    if m_vanity:
+                        yt_handle = m_vanity.group(1)
+                    else:
+                        m_canon = re.search(r'"canonicalBaseUrl":"/(@[^"]+)"', r_ch.text)
+                        if m_canon:
+                            yt_handle = m_canon.group(1)
             except Exception:
                 pass
 
         display_name = yt_title or yt_channel_id or "YouTube_Channel"
-        handle_name = f"@{display_name}" if not display_name.startswith("@") else display_name
-        log_event("INFO", f"✅ [GPMZeroRAM] {profile_id}: YouTube Channel {display_name} (ID: {yt_channel_id or 'N/A'})")
+        handle_name = yt_handle or (f"https://www.youtube.com/channel/{yt_channel_id}" if yt_channel_id else (f"@{display_name}" if not display_name.startswith("@") else display_name))
+        log_event("INFO", f"✅ [GPMZeroRAM] {profile_id}: YouTube Channel {display_name} (ID: {yt_channel_id or 'N/A'}, Handle: {handle_name})")
         return {
             "found": True,
             "is_logged_in": True,
@@ -696,7 +704,7 @@ def enumerate_youtube_channels(profile_id: str) -> list:
             continue
 
         ch_name = cid
-        handle = f"@{cid}"
+        handle = f"https://www.youtube.com/channel/{cid}"
         sub_count = 0
         try:
             r_ch = requests.get(f"https://www.youtube.com/channel/{cid}", headers=public_headers, timeout=8)
@@ -704,13 +712,24 @@ def enumerate_youtube_channels(profile_id: str) -> list:
                 m_t = re.search(r'<meta property="og:title" content="([^"]+)">', r_ch.text)
                 if m_t:
                     ch_name = m_t.group(1)
-                m_u = re.search(r'<meta property="og:url" content="([^"]+)">', r_ch.text)
-                if m_u:
-                    handle_candidate = m_u.group(1).split('/')[-1]
-                    if handle_candidate.startswith('@'):
-                        handle = handle_candidate
+                
+                # Trích xuất handle YouTube thực sự (ví dụ @youkindasus-m6x)
+                m_vanity = re.search(r'"vanityChannelUrl":"https?://(?:www\.)?youtube\.com/(@[^"]+)"', r_ch.text)
+                if m_vanity:
+                    handle = m_vanity.group(1)
+                else:
+                    m_canon = re.search(r'"canonicalBaseUrl":"/(@[^"]+)"', r_ch.text)
+                    if m_canon:
+                        handle = m_canon.group(1)
                     else:
-                        handle = f"@{ch_name}"
+                        m_u = re.search(r'<meta property="og:url" content="([^"]+)">', r_ch.text)
+                        if m_u:
+                            handle_candidate = m_u.group(1).split('/')[-1]
+                            if handle_candidate.startswith('@'):
+                                handle = handle_candidate
+                            else:
+                                handle = f"https://www.youtube.com/channel/{cid}"
+
                 # Trích xuất số lượng người đăng ký (subscriber count)
                 m_sub = re.search(r'"subscriberCountText":\{.*?"simpleText":"([^"]+)"', r_ch.text)
                 if not m_sub:
@@ -724,7 +743,7 @@ def enumerate_youtube_channels(profile_id: str) -> list:
         final_list.append({
             "channel_id": cid,
             "channel_name": ch_name,
-            "channel_url": handle if handle.startswith('@') else f"@{ch_name}",
+            "channel_url": handle,
             "is_default": is_def,
             "followers_count": sub_count
         })
@@ -963,6 +982,12 @@ def sync_profile_channels(profile_id: str) -> dict:
             SET followers_count = ?, eligible_10k = ?, notify_status = ? 
             WHERE gpm_id = ?
         """, (def_f, is_eligible, new_notify, profile_id))
+
+        if p_plat == "youtube":
+            cursor.execute("SELECT channel_url, channel_name FROM profile_channels WHERE gpm_id = ? AND is_default = 1 LIMIT 1", (profile_id,))
+            def_yt = cursor.fetchone()
+            if def_yt and def_yt["channel_url"]:
+                cursor.execute("UPDATE gpm_profiles SET channel_handle = ?, tiktok_username = ? WHERE gpm_id = ?", (def_yt["channel_url"], def_yt["channel_url"], profile_id))
 
         if should_alert:
             log_event("INFO", f"🎉 [ProfileChannels] Kênh/Trang của {p_name} ({p_plat}) đạt {effective_f:,} (ngưỡng {target_th:,})! Gửi cảnh báo Telegram...")

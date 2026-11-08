@@ -1343,6 +1343,32 @@ body.light-mode .btn-subtab.active * {
     color: #ffffff !important;
 }
 
+/* ── Light Mode Switches & Toggle Sliders ── */
+body.light-mode .slider {
+    background-color: #cbd5e1 !important;
+    border: 1px solid #94a3b8 !important;
+}
+body.light-mode input:checked + .slider {
+    background-color: #6366f1 !important;
+    border-color: #4f46e5 !important;
+}
+body.light-mode .slider:before {
+    background-color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
+}
+body.light-mode .tele-toggle-slider {
+    background-color: #cbd5e1 !important;
+    border: 1px solid #94a3b8 !important;
+}
+body.light-mode .tele-toggle-switch input:checked + .tele-toggle-slider {
+    background-color: #10b981 !important;
+    border-color: #059669 !important;
+}
+body.light-mode .tele-toggle-slider:before {
+    background-color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
+}
+
 /* ── Toast Notifications (Light Mode) ── */
 body.light-mode .toast,
 body.light-mode .toast-container .toast-message {
@@ -2371,4 +2397,30 @@ body.light-mode .btn-subtab.active {
 }
 body.light-mode .btn-subtab.active * {
     color: #ffffff !important;
+}
+
+/* ── Light Mode Switches & Toggle Sliders ── */
+body.light-mode .slider {
+    background-color: #cbd5e1 !important;
+    border: 1px solid #94a3b8 !important;
+}
+body.light-mode input:checked + .slider {
+    background-color: #6366f1 !important;
+    border-color: #4f46e5 !important;
+}
+body.light-mode .slider:before {
+    background-color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
+}
+body.light-mode .tele-toggle-slider {
+    background-color: #cbd5e1 !important;
+    border: 1px solid #94a3b8 !important;
+}
+body.light-mode .tele-toggle-switch input:checked + .tele-toggle-slider {
+    background-color: #10b981 !important;
+    border-color: #059669 !important;
+}
+body.light-mode .tele-toggle-slider:before {
+    background-color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
 }

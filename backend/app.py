@@ -251,6 +251,15 @@ class UpdateProfileUsernameRequest(BaseModel):
 class UpdateProfileNotifyStatusRequest(BaseModel):
     status: str
 
+class UpdateProfileChannelRequest(BaseModel):
+    channel_name: Optional[str] = None
+    channel_url: Optional[str] = None
+    followers_count: Optional[int] = None
+    new_channel_id: Optional[str] = None
+
+class ChannelNotifyStatusRequest(BaseModel):
+    status: str
+
 class FollowerSchedulerRequest(BaseModel):
     enabled: bool
     mode: str = "daily_times"
@@ -923,6 +932,98 @@ def delete_profile_channel(gpm_id: str, channel_id: str):
     conn.commit()
     conn.close()
     return {"status": "success", "message": f"Đã xóa kênh {channel_id}"}
+
+
+@app.put("/api/gpm/profiles/{gpm_id}/channels/{channel_id}")
+def update_profile_channel_endpoint(gpm_id: str, channel_id: str, req: UpdateProfileChannelRequest):
+    """Cập nhật thông tin kênh / trang con (tên, handle/url, số lượng followers/subs)"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM profile_channels WHERE gpm_id = ? AND channel_id = ?", (gpm_id, channel_id))
+    ch = cursor.fetchone()
+    if not ch:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Không tìm thấy kênh hoặc trang con")
+
+    name = req.channel_name if req.channel_name is not None else ch["channel_name"]
+    url = req.channel_url if req.channel_url is not None else ch["channel_url"]
+    f_count = req.followers_count if req.followers_count is not None else (ch["followers_count"] or 0)
+    target_id = req.new_channel_id.strip() if req.new_channel_id and req.new_channel_id.strip() else channel_id
+
+    cursor.execute("""
+        UPDATE profile_channels 
+        SET channel_id = ?, channel_name = ?, channel_url = ?, followers_count = ?
+        WHERE gpm_id = ? AND channel_id = ?
+    """, (target_id, name, url, f_count, gpm_id, channel_id))
+
+    # Nếu kênh này đang là mặc định thì đồng bộ lên bảng cha gpm_profiles
+    if ch["is_default"]:
+        cursor.execute("SELECT platform FROM gpm_profiles WHERE gpm_id = ?", (gpm_id,))
+        p_row = cursor.fetchone()
+        plat = (p_row["platform"] if p_row and p_row["platform"] else "tiktok").lower()
+        from backend.database import get_follower_thresholds
+        thresholds = get_follower_thresholds()
+        target_th = thresholds.get(plat, 1000)
+        is_10k = 1 if f_count >= target_th else 0
+        if plat == "youtube":
+            clean_handle = url or target_id
+            if not clean_handle.startswith("@") and not clean_handle.startswith("UC"):
+                clean_handle = "@" + clean_handle
+            cursor.execute("""
+                UPDATE gpm_profiles 
+                SET channel_handle = ?, tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
+                WHERE gpm_id = ?
+            """, (clean_handle, clean_handle, name, f_count, is_10k, gpm_id))
+        elif plat == "facebook":
+            cursor.execute("""
+                UPDATE gpm_profiles 
+                SET fb_page_id = ?, tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
+                WHERE gpm_id = ?
+            """, (target_id, target_id, name, f_count, is_10k, gpm_id))
+        else:
+            cursor.execute("""
+                UPDATE gpm_profiles 
+                SET tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
+                WHERE gpm_id = ?
+            """, (target_id, name, f_count, is_10k, gpm_id))
+
+    conn.commit()
+    conn.close()
+    return {"status": "success", "message": f"Đã cập nhật kênh {target_id}"}
+
+
+@app.put("/api/gpm/profiles/{gpm_id}/channels/{channel_id}/notify-status")
+@app.post("/api/gpm/profiles/{gpm_id}/channels/{channel_id}/notify-status")
+def update_channel_notify_status_endpoint(gpm_id: str, channel_id: str, req: ChannelNotifyStatusRequest):
+    """Cập nhật trạng thái thông báo theo dõi cho kênh/trang con"""
+    valid_statuses = {"tracking", "sent", "muted"}
+    status = (req.status or "").strip().lower()
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Trạng thái không hợp lệ (phải là tracking, sent, hoặc muted)")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, channel_name FROM profile_channels WHERE gpm_id = ? AND channel_id = ?", (gpm_id, channel_id))
+    ch = cursor.fetchone()
+    if not ch:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Không tìm thấy kênh hoặc trang con")
+
+    cursor.execute("UPDATE profile_channels SET notify_status = ? WHERE gpm_id = ? AND channel_id = ?", (status, gpm_id, channel_id))
+    conn.commit()
+    conn.close()
+
+    status_labels = {
+        "tracking": "Đang theo dõi",
+        "sent": "Đã gửi 10K",
+        "muted": "Đã tắt thông báo"
+    }
+    return {
+        "status": "success",
+        "notify_status": status,
+        "label": status_labels.get(status, status),
+        "message": f"Đã cập nhật trạng thái theo dõi kênh thành: {status_labels.get(status, status)}"
+    }
 
 
 @app.get("/api/gpm/profiles/{gpm_id}/stage")
@@ -3966,8 +4067,8 @@ def get_api_keys():
     adspower_url = os.getenv("ADSPOWER_API_BASE_URL", db_settings.get("ADSPOWER_API_BASE_URL", "http://local.adspower.net:50325"))
     dolphin_url = os.getenv("DOLPHIN_API_BASE_URL", db_settings.get("DOLPHIN_API_BASE_URL", "http://localhost:3001/v1.0"))
     genlogin_url = os.getenv("GENLOGIN_API_BASE_URL", db_settings.get("GENLOGIN_API_BASE_URL", "http://localhost:55550"))
-    app_language = os.getenv("APP_LANGUAGE", db_settings.get("APP_LANGUAGE", "vi"))
-    app_theme = os.getenv("APP_THEME", db_settings.get("APP_THEME", "dark"))
+    app_language = db_settings.get("APP_LANGUAGE") or os.getenv("APP_LANGUAGE", "vi")
+    app_theme = db_settings.get("APP_THEME") or os.getenv("APP_THEME", "dark")
 
     from backend.database import get_follower_thresholds
     thresholds = get_follower_thresholds()

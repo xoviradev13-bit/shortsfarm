@@ -195,6 +195,7 @@ def init_db():
         channel_url TEXT DEFAULT '',
         is_default INTEGER DEFAULT 0,
         followers_count INTEGER DEFAULT 0,
+        notify_status TEXT DEFAULT 'tracking',
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(gpm_id, platform, channel_id)
     )
@@ -202,6 +203,11 @@ def init_db():
 
     try:
         cursor.execute("ALTER TABLE profile_channels ADD COLUMN followers_count INTEGER DEFAULT 0")
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE profile_channels ADD COLUMN notify_status TEXT DEFAULT 'tracking'")
     except Exception:
         pass
 

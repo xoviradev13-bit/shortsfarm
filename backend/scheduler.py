@@ -546,24 +546,60 @@ class BackgroundScheduler:
                         cooldown_mins = max(15, int(c_row["min_post_interval_minutes"]))
             except Exception:
                 pass
-            # Kiểm tra thời điểm đăng bài hoàn tất gần nhất của profile này
-            cursor.execute("""
-                SELECT uploaded_at FROM upload_tasks
-                WHERE gpm_profile_id = ? AND status = 'completed' AND uploaded_at IS NOT NULL
-                ORDER BY uploaded_at DESC LIMIT 1
-            """, (cand_profile_id,))
+            from backend.database import get_linked_profile_ids
+            linked_ids = get_linked_profile_ids(cursor, cand_profile_id)
+            ph_linked = ",".join("?" for _ in linked_ids)
+
+            # A. Chống đăng trùng tuyệt đối (Duplicate Clip Guard across Browsers):
+            # Nếu clip này (cùng video_id và part_number) đã từng đăng thành công qua bất kỳ profile nào cùng nick (GPM hoặc GenLogin) -> Bỏ qua
+            cursor.execute(f"""
+                SELECT ut.id, ut.uploaded_at, gp.name FROM upload_tasks ut
+                JOIN gpm_profiles gp ON ut.gpm_profile_id = gp.id
+                WHERE ut.video_id = ? 
+                  AND (ut.part_number = ? OR (ut.part_number IS NULL AND ? = 1))
+                  AND ut.status = 'completed'
+                  AND gp.id IN ({ph_linked})
+                  AND ut.id != ?
+            """, (cand_video_id, cand_part_num, cand_part_num, *linked_ids, cand["id"]))
+            already_done = cursor.fetchone()
+            if already_done:
+                cursor.execute("UPDATE upload_tasks SET status = 'skipped', error_message = ? WHERE id = ?",
+                    (f"Bỏ qua: Clip đã được đăng thành công trước đó (Task #{already_done['id']} qua profile '{already_done['name']}')", cand["id"]))
+                conn.commit()
+                log_event("WARNING", f"[UPLOAD WORKER] 🛡️ Chống đăng trùng: Video #{cand_video_id} (Part {cand_part_num}) đã được đăng thành công qua '{already_done['name']}' lúc {already_done['uploaded_at']}. Tự động đánh dấu 'skipped' Task #{cand['id']} để bảo vệ kênh!")
+                continue
+
+            # B. Khóa đồng thời kênh (Channel Concurrency Lock):
+            # Không cho phép 2 profile (1 GPM, 1 GenLogin) cùng mở và upload vào cùng 1 kênh cùng lúc
+            cursor.execute(f"""
+                SELECT ut.id, gp.name FROM upload_tasks ut
+                JOIN gpm_profiles gp ON ut.gpm_profile_id = gp.id
+                WHERE gp.id IN ({ph_linked}) AND ut.status = 'processing' AND ut.id != ?
+            """, (*linked_ids, cand["id"]))
+            in_progress = cursor.fetchone()
+            if in_progress:
+                log_event("INFO", f"[UPLOAD WORKER] ⏳ Kênh của Task #{cand['id']} đang có tiến trình upload khác đang chạy (Task #{in_progress['id']} qua '{in_progress['name']}'). Chờ phiên hoàn tất trước khi mở tiếp.")
+                continue
+
+            # C. Giãn cách tối thiểu liên trình duyệt (Cross-Browser Cooldown Guard):
+            # Kiểm tra thời điểm đăng bài hoàn tất gần nhất của TẤT CẢ profile cùng nick này (GPMLogin + GenLogin)
+            cursor.execute(f"""
+                SELECT ut.uploaded_at, gp.name FROM upload_tasks ut
+                JOIN gpm_profiles gp ON ut.gpm_profile_id = gp.id
+                WHERE ut.gpm_profile_id IN ({ph_linked}) AND ut.status = 'completed' AND ut.uploaded_at IS NOT NULL
+                ORDER BY ut.uploaded_at DESC LIMIT 1
+            """, tuple(linked_ids))
             last_upload = cursor.fetchone()
             if last_upload and last_upload["uploaded_at"]:
                 try:
                     last_uploaded_dt = datetime.strptime(last_upload["uploaded_at"], "%Y-%m-%d %H:%M:%S")
                     elapsed_minutes = (now_dt - last_uploaded_dt).total_seconds() / 60.0
                     if elapsed_minutes < cooldown_mins:
-                        # Tài khoản vừa đăng quá gần (chưa đủ giãn cách an toàn)
-                        # Tự động dời lịch của task này để bảo vệ tài khoản khỏi bị TikTok flag/shadowban
-                        safe_time = (last_uploaded_dt + timedelta(minutes=cooldown_mins)).strftime("%Y-%m-%d %H:%M:%S")
-                        cursor.execute("UPDATE upload_tasks SET scheduled_time = ? WHERE id = ?", (safe_time, cand["id"]))
+                        postpone_minutes = int(cooldown_mins - elapsed_minutes) + random.randint(1, 5)
+                        new_time = (now_dt + timedelta(minutes=postpone_minutes)).strftime("%Y-%m-%d %H:%M:%S")
+                        cursor.execute("UPDATE upload_tasks SET scheduled_time = ? WHERE id = ?", (new_time, cand["id"]))
                         conn.commit()
-                        log_event("WARNING", f"[UPLOAD WORKER] 🛡️ Profile '{cand['gpm_id']}' vừa đăng clip lúc {last_upload['uploaded_at']} (cách đây {int(elapsed_minutes)}p). Giãn cách an toàn tối thiểu {cooldown_mins}p: Tự động lùi Task #{cand['id']} tới {safe_time}.")
+                        log_event("WARNING", f"[UPLOAD WORKER] 🛡️ Kênh của profile '{cand['gpm_id']}' vừa đăng clip qua '{last_upload['name']}' lúc {last_upload['uploaded_at']} (cách đây {int(elapsed_minutes)}p). Giãn cách an toàn tối thiểu {cooldown_mins}p: Tự động lùi Task #{cand['id']} tới {new_time}.")
                         continue
                 except Exception:
                     pass

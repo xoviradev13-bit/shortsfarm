@@ -723,6 +723,7 @@ def sync_gpm_profiles():
         for db_p in cursor.fetchall():
             if db_p["gpm_id"] not in active_gpm_ids:
                 cursor.execute("DELETE FROM gpm_profiles WHERE gpm_id = ?", (db_p["gpm_id"],))
+                cursor.execute("DELETE FROM profile_channels WHERE gpm_id = ?", (db_p["gpm_id"],))
                 removed_count += 1
                 log_event("INFO", f"Tự động gỡ bỏ profile '{db_p['name']}' ({db_p['gpm_id']}) do đã bị xóa trên {active_browser.upper()}.")
 
@@ -812,6 +813,11 @@ def sync_gpm_profiles():
     if removed_count > 0:
         msg += f" (đã gỡ bỏ {removed_count} profile không còn tồn tại)"
     log_event("INFO", msg)
+    try:
+        from backend.modules.gpm_profile_reader import propagate_linked_profile_channels
+        propagate_linked_profile_channels()
+    except Exception:
+        pass
     return {"status": "success", "synced": synced, "tiktok_synced": tt_synced, "removed": removed_count, "message": msg}
 
 @app.get("/api/gpm/profiles")
@@ -848,6 +854,7 @@ def delete_gpm_profile(gpm_id: str):
 
     p_name = row["name"]
     cursor.execute("DELETE FROM gpm_profiles WHERE gpm_id = ?", (gpm_id,))
+    cursor.execute("DELETE FROM profile_channels WHERE gpm_id = ?", (gpm_id,))
     conn.commit()
     conn.close()
 
@@ -950,42 +957,57 @@ def update_profile_channel_endpoint(gpm_id: str, channel_id: str, req: UpdatePro
     f_count = req.followers_count if req.followers_count is not None else (ch["followers_count"] or 0)
     target_id = req.new_channel_id.strip() if req.new_channel_id and req.new_channel_id.strip() else channel_id
 
+    # 1. Cập nhật kênh tại profile hiện tại
     cursor.execute("""
         UPDATE profile_channels 
         SET channel_id = ?, channel_name = ?, channel_url = ?, followers_count = ?
         WHERE gpm_id = ? AND channel_id = ?
     """, (target_id, name, url, f_count, gpm_id, channel_id))
 
-    # Nếu kênh này đang là mặc định thì đồng bộ lên bảng cha gpm_profiles
-    if ch["is_default"]:
-        cursor.execute("SELECT platform FROM gpm_profiles WHERE gpm_id = ?", (gpm_id,))
-        p_row = cursor.fetchone()
-        plat = (p_row["platform"] if p_row and p_row["platform"] else "tiktok").lower()
-        from backend.database import get_follower_thresholds
-        thresholds = get_follower_thresholds()
-        target_th = thresholds.get(plat, 1000)
-        is_10k = 1 if f_count >= target_th else 0
-        if plat == "youtube":
-            clean_handle = url or target_id
-            if not clean_handle.startswith("@") and not clean_handle.startswith("UC"):
-                clean_handle = "@" + clean_handle
-            cursor.execute("""
-                UPDATE gpm_profiles 
-                SET channel_handle = ?, tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
-                WHERE gpm_id = ?
-            """, (clean_handle, clean_handle, name, f_count, is_10k, gpm_id))
-        elif plat == "facebook":
-            cursor.execute("""
-                UPDATE gpm_profiles 
-                SET fb_page_id = ?, tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
-                WHERE gpm_id = ?
-            """, (target_id, target_id, name, f_count, is_10k, gpm_id))
-        else:
-            cursor.execute("""
-                UPDATE gpm_profiles 
-                SET tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
-                WHERE gpm_id = ?
-            """, (target_id, name, f_count, is_10k, gpm_id))
+    # 2. Tự động đồng bộ tên / handle / số sub sang tất cả các profile liên kết cùng sở hữu kênh/trang này (GPMLogin & GenLogin)
+    cursor.execute("""
+        UPDATE profile_channels 
+        SET channel_name = ?, channel_url = ?, followers_count = ?
+        WHERE channel_id = ?
+    """, (name, url, f_count, target_id))
+
+    # 3. Đồng bộ lên gpm_profiles cho tất cả profile liên kết mà kênh này đang là mặc định
+    cursor.execute("SELECT gpm_id, is_default FROM profile_channels WHERE channel_id = ?", (target_id,))
+    linked_ch_rows = cursor.fetchall()
+    
+    from backend.database import get_follower_thresholds
+    thresholds = get_follower_thresholds()
+
+    for l_row in linked_ch_rows:
+        if l_row["is_default"]:
+            l_gid = l_row["gpm_id"]
+            cursor.execute("SELECT platform FROM gpm_profiles WHERE gpm_id = ?", (l_gid,))
+            p_row = cursor.fetchone()
+            plat = (p_row["platform"] if p_row and p_row["platform"] else "tiktok").lower()
+            target_th = thresholds.get(plat, 1000)
+            is_10k = 1 if f_count >= target_th else 0
+
+            if plat == "youtube":
+                clean_handle = url or target_id
+                if not clean_handle.startswith("@") and not clean_handle.startswith("UC"):
+                    clean_handle = "@" + clean_handle
+                cursor.execute("""
+                    UPDATE gpm_profiles 
+                    SET channel_handle = ?, tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
+                    WHERE gpm_id = ?
+                """, (clean_handle, clean_handle, name, f_count, is_10k, l_gid))
+            elif plat == "facebook":
+                cursor.execute("""
+                    UPDATE gpm_profiles 
+                    SET fb_page_id = ?, tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
+                    WHERE gpm_id = ?
+                """, (target_id, target_id, name, f_count, is_10k, l_gid))
+            else:
+                cursor.execute("""
+                    UPDATE gpm_profiles 
+                    SET tiktok_username = ?, tiktok_nickname = ?, followers_count = ?, eligible_10k = ?
+                    WHERE gpm_id = ?
+                """, (target_id, name, f_count, is_10k, l_gid))
 
     conn.commit()
     conn.close()

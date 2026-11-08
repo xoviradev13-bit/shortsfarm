@@ -1,3 +1,78 @@
+
+// ==========================================
+// Cross-Browser Linked Account Helpers
+// ==========================================
+function getCanonicalAccountKey(profile, channel = null) {
+    if (!profile) return '';
+    const plat = (profile.platform || 'tiktok').toLowerCase();
+    if (plat === 'youtube') {
+        if (channel && channel.channel_id) return 'yt:' + String(channel.channel_id).trim();
+        if (channel && channel.channel_url) {
+            const u = String(channel.channel_url).trim().toLowerCase().replace(/^@/, '');
+            if (u) return 'yt:' + u;
+        }
+        if (profile.channel_handle) return 'yt:' + String(profile.channel_handle).trim().toLowerCase().replace(/^@/, '');
+        if (profile.tiktok_username) return 'yt:' + String(profile.tiktok_username).trim().toLowerCase().replace(/^@/, '');
+        if (profile.tiktok_uid) return 'yt:' + String(profile.tiktok_uid).trim();
+        return 'yt:' + String(profile.name || profile.gpm_id).trim().toLowerCase();
+    } else if (plat === 'facebook') {
+        if (channel && channel.channel_id) return 'fb:' + String(channel.channel_id).trim();
+        if (profile.fb_page_id) return 'fb:' + String(profile.fb_page_id).trim();
+        if (profile.tiktok_username) return 'fb:' + String(profile.tiktok_username).trim();
+        return 'fb:' + String(profile.name || profile.gpm_id).trim().toLowerCase();
+    } else {
+        if (profile.tiktok_uid) return 'tt:' + String(profile.tiktok_uid).trim();
+        if (profile.tiktok_username) return 'tt:' + String(profile.tiktok_username).trim().toLowerCase().replace(/^@/, '');
+        return 'tt:' + String(profile.name || profile.gpm_id).trim().toLowerCase();
+    }
+}
+
+function findLinkedCrossBrowserProfile(targetProfile, allProfiles) {
+    if (!targetProfile || !allProfiles) return null;
+    const tKey = getCanonicalAccountKey(targetProfile);
+    const tBType = (targetProfile.browser_type || 'gpm').toLowerCase();
+    const tPlat = (targetProfile.platform || 'tiktok').toLowerCase();
+
+    for (const o of allProfiles) {
+        if (o.id === targetProfile.id) continue;
+        const oPlat = (o.platform || 'tiktok').toLowerCase();
+        if (oPlat !== tPlat) continue;
+
+        const oKey = getCanonicalAccountKey(o);
+        if (tKey && oKey && tKey === oKey) {
+            return o;
+        }
+
+        // Check channel intersections
+        if (Array.isArray(targetProfile.channels) && Array.isArray(o.channels)) {
+            for (const tc of targetProfile.channels) {
+                const tcKey = getCanonicalAccountKey(targetProfile, tc);
+                for (const oc of o.channels) {
+                    const ocKey = getCanonicalAccountKey(o, oc);
+                    if (tcKey && ocKey && tcKey === ocKey) {
+                        return o;
+                    }
+                }
+            }
+        } else if (Array.isArray(o.channels)) {
+            for (const oc of o.channels) {
+                const ocKey = getCanonicalAccountKey(o, oc);
+                if (tKey && ocKey && tKey === ocKey) {
+                    return o;
+                }
+            }
+        } else if (Array.isArray(targetProfile.channels)) {
+            for (const tc of targetProfile.channels) {
+                const tcKey = getCanonicalAccountKey(targetProfile, tc);
+                if (tcKey && oKey && tcKey === oKey) {
+                    return o;
+                }
+            }
+        }
+    }
+    return null;
+}
+
 // State
 let currentTab = 'tab-auto-pipeline';
 let cachedGpmProfiles = [];
@@ -3229,6 +3304,20 @@ function renderGpmProfilesTable() {
             // Kênh mặc định / kênh chính
             const defCh = channelsList ? (channelsList.find(c => c.is_default) || channelsList[0]) : null;
 
+            const linkedOther = findLinkedCrossBrowserProfile(p, cachedGpmProfiles);
+            let crossBrowserBadge = '';
+            if (linkedOther) {
+                const otherBType = (linkedOther.browser_type || 'gpm').toLowerCase();
+                const otherBName = otherBType === 'genlogin' ? 'GEN' : (otherBType === 'adspower' ? 'AdsPower' : (otherBType === 'dolphin' ? 'Dolphin' : 'GPM'));
+                const otherIdOrName = linkedOther.name ? linkedOther.name : (linkedOther.gpm_id ? `#${linkedOther.gpm_id}` : '');
+                crossBrowserBadge = `
+                    <div style="margin-top:2px;">
+                        <span class="badge" style="background:rgba(234,179,8,0.14); color:#fbbf24; border:1px solid rgba(234,179,8,0.35); font-size:9px; padding:1px 5px; font-weight:600; display:inline-flex; align-items:center; gap:3px; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Trùng tài khoản với ${otherBName} (${escapeHtml(otherIdOrName)})">
+                            <i class="fa-solid fa-link" style="font-size:8.5px;"></i> Trùng với ${escapeHtml(otherIdOrName)}
+                        </span>
+                    </div>`;
+            }
+
             let usernameDisplay = '';
 
             if (plat === 'youtube') {
@@ -3256,15 +3345,18 @@ function renderGpmProfilesTable() {
                     usernameDisplay = `
                         <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
                             <div style="display:flex; align-items:center; gap:6px; min-width:0;">
-                                <a href="${escapeHtml(ytLink)}" target="_blank" class="table-text-truncate" style="max-width:145px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(chToShow.channel_name)} (${escapeHtml(chToShow.channel_id)})">
+                                <a href="${escapeHtml(ytLink)}" target="_blank" class="table-text-truncate" style="max-width:130px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(chToShow.channel_name)} (${escapeHtml(chToShow.channel_id)})">
                                     <i class="fa-brands fa-youtube" style="color:#ef4444; flex-shrink:0;"></i>
                                     <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(chToShow.channel_name)}</span>
                                 </a>
-                                <span class="badge" style="background:rgba(239,68,68,0.15); color:#f87171; font-size:9.5px; padding:1px 5px; font-weight:600;"><i class="fa-solid fa-star"></i> Mặc định</span>
+                                <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(chToShow.channel_url || chToShow.channel_name || '')}', ${chToShow.followers_count || p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'youtube', '${escapeHtml(chToShow.channel_id || '')}')" data-tooltip="Sửa nick &amp; chỉ số">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
                             </div>
-                            <div class="table-text-truncate text-muted" style="max-width:145px; font-size:11px; font-weight:500;" title="ID: ${escapeHtml(chToShow.channel_id)}">
+                            <div class="table-text-truncate text-muted" style="max-width:135px; font-size:11px; font-weight:500;" title="ID: ${escapeHtml(chToShow.channel_id)}">
                                 <i class="fa-solid fa-id-badge" style="font-size:10px; opacity:0.7;"></i> ${escapeHtml(ytHandle)}
                             </div>
+                            ${crossBrowserBadge}
                         </div>`;
                 } else {
                     const rawHandle = (p.channel_handle || p.tiktok_username || '').trim();
@@ -3291,11 +3383,12 @@ function renderGpmProfilesTable() {
                                 <a href="${escapeHtml(ytLink)}" target="_blank" class="table-text-truncate" style="max-width:150px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(cleanHandle)}">
                                     <i class="fa-brands fa-youtube" style="color:#ef4444; flex-shrink:0;"></i> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(cleanHandle)}</span>
                                 </a>
-                                <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(cleanHandle)}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'youtube')" data-tooltip="Sửa Kênh YouTube">
+                                <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(cleanHandle)}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'youtube')" data-tooltip="Sửa nick &amp; chỉ số">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
                             </div>
                             ${p.tiktok_nickname ? `<div class="table-text-truncate text-muted" style="max-width:165px; font-size:11.5px; font-weight:500;" title="${escapeHtml(p.tiktok_nickname)}"><i class="fa-solid fa-id-badge" style="font-size:10px; opacity:0.7;"></i> ${escapeHtml(p.tiktok_nickname)}</div>` : ''}
+                            ${crossBrowserBadge}
                         </div>` : `
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span class="text-muted" style="font-size:12px;"><i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Chưa gắn</span>
@@ -3313,11 +3406,13 @@ function renderGpmProfilesTable() {
                     usernameDisplay = `
                         <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
                             <div style="display:flex; align-items:center; gap:6px; min-width:0;">
-                                <a href="${escapeHtml(fbLink)}" target="_blank" class="table-text-truncate" style="max-width:145px; color:#60a5fa; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(pgToShow.channel_name)} (UID: ${escapeHtml(pgToShow.channel_id)})">
+                                <a href="${escapeHtml(fbLink)}" target="_blank" class="table-text-truncate" style="max-width:130px; color:#60a5fa; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(pgToShow.channel_name)} (UID: ${escapeHtml(pgToShow.channel_id)})">
                                     <i class="fa-brands fa-facebook" style="color:#1877f2; flex-shrink:0;"></i>
                                     <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(pgToShow.channel_name)}</span>
                                 </a>
-                                <span class="badge" style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:9.5px; padding:1px 5px; font-weight:600;"><i class="fa-solid fa-star"></i> Mặc định</span>
+                                <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(pgToShow.channel_id || p.fb_page_id || '')}', ${pgToShow.followers_count || p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'facebook', '${escapeHtml(pgToShow.channel_id || '')}')" data-tooltip="Sửa nick &amp; chỉ số">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
                             </div>
                             <div style="display:flex; align-items:center; gap:6px; font-size:11px;">
                                 <span class="badge" style="background:${isPage ? 'rgba(168,85,247,0.15)' : 'rgba(148,163,184,0.15)'}; color:${isPage ? '#c084fc' : '#94a3b8'}; font-size:9px; padding:0 4px;">
@@ -3327,6 +3422,7 @@ function renderGpmProfilesTable() {
                                     UID: ${escapeHtml(pgToShow.channel_id)}
                                 </span>
                             </div>
+                            ${crossBrowserBadge}
                         </div>`;
                 } else {
                     const fbId = p.fb_page_id || p.tiktok_username || '';
@@ -3337,11 +3433,12 @@ function renderGpmProfilesTable() {
                                 <a href="https://www.facebook.com/${escapeHtml(fbId)}" target="_blank" class="table-text-truncate" style="max-width:150px; color:#60a5fa; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="FB: ${escapeHtml(fbId)}">
                                     <i class="fa-brands fa-facebook" style="color:#1877f2; flex-shrink:0;"></i> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(fbDisplay)}</span>
                                 </a>
-                                <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(fbId)}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'facebook')" data-tooltip="Sửa Page/Nick Facebook">
+                                <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(fbId)}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'facebook')" data-tooltip="Sửa nick &amp; chỉ số">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
                             </div>
                             ${p.tiktok_nickname && fbId !== p.tiktok_nickname ? `<div class="table-text-truncate text-muted" style="max-width:165px; font-size:11.5px; font-weight:500;" title="UID: ${escapeHtml(fbId)}"><i class="fa-solid fa-id-badge" style="font-size:10px; opacity:0.7;"></i> UID: ${escapeHtml(fbId)}</div>` : ''}
+                            ${crossBrowserBadge}
                         </div>` : `
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span class="text-muted" style="font-size:12px;"><i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Chưa gắn</span>
@@ -3359,7 +3456,7 @@ function renderGpmProfilesTable() {
                             <a href="https://www.tiktok.com/@${escapeHtml(p.tiktok_username)}" target="_blank" class="table-text-truncate" style="max-width:150px; color:var(--accent-cyan); font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="@${escapeHtml(p.tiktok_username)}${p.tiktok_uid ? ' (UID: ' + escapeHtml(p.tiktok_uid) + ')' : ''}">
                                 <i class="fa-brands fa-tiktok" style="flex-shrink:0;"></i> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@${escapeHtml(p.tiktok_username)}</span>
                             </a>
-                            <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(p.tiktok_username || '')}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'tiktok')" data-tooltip="Sửa Nick TikTok & Chỉ Số">
+                            <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(p.tiktok_username || '')}', ${p.followers_count || 0}, '${escapeHtml(p.tiktok_nickname || '')}', '${escapeHtml(p.browser_type || 'gpm')}', 'tiktok')" data-tooltip="Sửa nick &amp; chỉ số">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
                         </div>
@@ -3415,7 +3512,7 @@ function renderGpmProfilesTable() {
                     const b = (p.browser_type || 'gpm').toLowerCase();
                     if (b === 'adspower') return '<span class="badge" style="background:rgba(249,115,22,0.15); color:#fb923c; font-size:10px;"><i class="fa-solid fa-bolt"></i> AdsPower</span>';
                     if (b === 'dolphin') return '<span class="badge" style="background:rgba(6,182,212,0.15); color:#22d3ee; font-size:10px;"><i class="fa-solid fa-water"></i> Dolphin</span>';
-                    if (b === 'genlogin') return '<span class="badge" style="background:rgba(34,197,94,0.15); color:#4ade80; font-size:10px;"><i class="fa-solid fa-shield"></i> GenLogin</span>';
+                    if (b === 'genlogin') return '<span class="badge" style="background:rgba(34,197,94,0.15); color:#4ade80; font-size:10px;"><i class="fa-solid fa-shield"></i> GEN</span>';
                     return '<span class="badge" style="background:rgba(59,130,246,0.15); color:#60a5fa; font-size:10px;"><i class="fa-solid fa-cube"></i> GPM</span>';
                 })()}
                         <strong ${hasMultiChannels ? `style="cursor:pointer;" onclick="toggleSubChannels('${escapeHtml(p.gpm_id)}', event)"` : ''}>${escapeHtml(p.name)}</strong>
@@ -3561,15 +3658,23 @@ function renderGpmProfilesTable() {
                         chNameHtml = `
                             <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
                                 <div style="display:flex; align-items:center; gap:6px; min-width:0;">
-                                    <a href="${escapeHtml(chLink)}" target="_blank" class="table-text-truncate" style="max-width:145px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(ch.channel_name)} (${escapeHtml(ch.channel_id)})">
+                                    <a href="${escapeHtml(chLink)}" target="_blank" class="table-text-truncate" style="max-width:130px; color:#ef4444; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(ch.channel_name)} (${escapeHtml(ch.channel_id)})">
                                         <i class="fa-brands fa-youtube" style="color:#ef4444; flex-shrink:0;"></i>
                                         <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(ch.channel_name)}</span>
                                     </a>
-                                    ${ch.is_default ? '<span class="badge" style="background:rgba(234,179,8,0.15); color:#eab308; font-size:9px; padding:1px 5px; font-weight:600;"><i class="fa-solid fa-star"></i> Mặc định</span>' : ''}
+                                    <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(ch.channel_url || ch.channel_name || '')}', ${ch.followers_count || 0}, '', '${escapeHtml(p.browser_type || 'gpm')}', 'youtube', '${escapeHtml(ch.channel_id)}')" data-tooltip="Sửa nick &amp; chỉ số">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
                                 </div>
-                                <span class="table-text-truncate text-muted" style="max-width:145px; font-size:10.5px;" title="ID: ${escapeHtml(ch.channel_id)}">
+                                <span class="table-text-truncate text-muted" style="max-width:135px; font-size:10.5px;" title="ID: ${escapeHtml(ch.channel_id)}">
                                     <i class="fa-solid fa-id-badge" style="font-size:9.5px; opacity:0.7;"></i> ${escapeHtml(subChHandle)}
                                 </span>
+                                ${(() => {
+                                    const subKey = getCanonicalAccountKey(p, ch);
+                                    const subOther = cachedGpmProfiles.find(o => o.id !== p.id && (o.platform || 'tiktok').toLowerCase() === plat && getCanonicalAccountKey(o, ch) === subKey);
+                                    if (!subOther) return '';
+                                    return `<span class="badge" style="background:rgba(234,179,8,0.14); color:#fbbf24; border:1px solid rgba(234,179,8,0.35); font-size:8.5px; padding:1px 5px; font-weight:600; margin-top:2px; display:inline-flex; align-items:center; gap:3px; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Trùng với ${escapeHtml(subOther.name || subOther.gpm_id)}"><i class="fa-solid fa-link" style="font-size:8px;"></i> Trùng với ${escapeHtml(subOther.name || subOther.gpm_id)}</span>`;
+                                })()}
                             </div>
                         `;
                     } else {
@@ -3580,15 +3685,23 @@ function renderGpmProfilesTable() {
                         chNameHtml = `
                             <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
                                 <div style="display:flex; align-items:center; gap:6px; min-width:0;">
-                                    <a href="${chLink}" target="_blank" class="table-text-truncate" style="max-width:145px; color:#60a5fa; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(ch.channel_name)} (UID: ${escapeHtml(ch.channel_id)})">
+                                    <a href="${chLink}" target="_blank" class="table-text-truncate" style="max-width:130px; color:#60a5fa; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="${escapeHtml(ch.channel_name)} (UID: ${escapeHtml(ch.channel_id)})">
                                         <i class="fa-brands fa-facebook" style="color:#1877f2; flex-shrink:0;"></i>
                                         <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(ch.channel_name)}</span>
                                     </a>
-                                    ${ch.is_default ? '<span class="badge" style="background:rgba(234,179,8,0.15); color:#eab308; font-size:9px; padding:1px 5px; font-weight:600;"><i class="fa-solid fa-star"></i> Mặc định</span>' : ''}
+                                    <button type="button" class="btn-inline-edit has-tooltip tooltip-top" onclick="openEditUsernameModal('${escapeHtml(p.gpm_id)}', '${escapeHtml(p.name)}', '${escapeHtml(ch.channel_id || '')}', ${ch.followers_count || 0}, '', '${escapeHtml(p.browser_type || 'gpm')}', 'facebook', '${escapeHtml(ch.channel_id)}')" data-tooltip="Sửa nick &amp; chỉ số">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
                                 </div>
-                                <span class="table-text-truncate text-muted" style="max-width:145px; font-size:10.5px;" title="UID: ${escapeHtml(ch.channel_id)}">
+                                <span class="table-text-truncate text-muted" style="max-width:135px; font-size:10.5px;" title="UID: ${escapeHtml(ch.channel_id)}">
                                     UID: ${escapeHtml(ch.channel_id)}
                                 </span>
+                                ${(() => {
+                                    const subKey = getCanonicalAccountKey(p, ch);
+                                    const subOther = cachedGpmProfiles.find(o => o.id !== p.id && (o.platform || 'tiktok').toLowerCase() === plat && getCanonicalAccountKey(o, ch) === subKey);
+                                    if (!subOther) return '';
+                                    return `<span class="badge" style="background:rgba(234,179,8,0.14); color:#fbbf24; border:1px solid rgba(234,179,8,0.35); font-size:8.5px; padding:1px 5px; font-weight:600; margin-top:2px; display:inline-flex; align-items:center; gap:3px; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Trùng với ${escapeHtml(subOther.name || subOther.gpm_id)}"><i class="fa-solid fa-link" style="font-size:8px;"></i> Trùng với ${escapeHtml(subOther.name || subOther.gpm_id)}</span>`;
+                                })()}
                             </div>
                         `;
                     }
@@ -7108,14 +7221,25 @@ function renderCampaignGpmCheckboxes(profiles) {
                 const shouldPreCheck = isMatchingPlat && matchingCheckedCount < 3;
                 if (shouldPreCheck) matchingCheckedCount++;
 
+                const bType = (p.browser_type || 'gpm').toLowerCase();
+                const bBadge = bType === 'genlogin'
+                    ? '<span class="badge" style="background:rgba(34,197,94,0.18); color:#4ade80; font-size:9px; padding:1px 4px; flex-shrink:0;">GEN</span>'
+                    : '<span class="badge" style="background:rgba(59,130,246,0.18); color:#93c5fd; font-size:9px; padding:1px 4px; flex-shrink:0;">GPM</span>';
+                const bLabel = bType === 'genlogin' ? 'GenLogin' : (bType === 'adspower' ? 'AdsPower' : (bType === 'dolphin' ? 'Dolphin' : 'GPMLogin'));
+                const accountKey = getCanonicalAccountKey(p, ch);
+                const isDup = profiles.some(o => o.id !== p.id && getCanonicalAccountKey(o, ch) === accountKey);
+                const dupBadge = isDup ? '<span class="badge" style="background:rgba(234,179,8,0.18); color:#eab308; font-size:9px; padding:1px 4px; flex-shrink:0;" title="Tài khoản này có mặt trên nhiều trình duyệt"><i class="fa-solid fa-link"></i> Trùng nick</span>' : '';
+
                 itemsHtml.push(`
                 <label class="multi-select-item" data-platform="${plat}" style="display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03); min-width:0;">
-                    <input type="checkbox" class="campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-channel-id="${escapeHtml(ch.channel_id || '')}" data-channel-name="${escapeHtml(ch.channel_name || '')}" data-platform="${plat}" ${shouldPreCheck ? 'checked' : ''} onchange="updateSelectedGpmCount(); if(this.checked && '${escapeHtml(ch.channel_id)}') handleChannelSelectionChange('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}')" style="flex-shrink:0;">
+                    <input type="checkbox" class="campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-account-key="${escapeHtml(accountKey)}" data-browser-label="${escapeHtml(bLabel)}" data-profile-name="${escapeHtml(p.name)}" data-channel-id="${escapeHtml(ch.channel_id || '')}" data-channel-name="${escapeHtml(chTitle)}" data-platform="${plat}" ${shouldPreCheck ? 'checked' : ''} onchange="syncCampaignDuplicateCheckboxes('new'); if(this.checked && '${escapeHtml(ch.channel_id)}') handleChannelSelectionChange('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}')" style="flex-shrink:0;">
                     <span style="flex-shrink:0; display:inline-flex; align-items:center;">${platIcon}</span>
                     <div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; overflow:hidden;">
+                        ${bBadge}
                         <span style="font-size:11px; flex-shrink:0; color:var(--text-secondary); background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:4px; white-space:nowrap;">${escapeHtml(p.name)}</span>
                         <span style="font-weight:600; color:#fff; min-width:0; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block;" title="${escapeHtml(chTitle)}">${escapeHtml(chTitle)}</span>
                         ${typeBadge}
+                        ${dupBadge}
                     </div>
                     <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0;">
                         <span style="font-size:11px; color:${platColor}; white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(chSub)}">${escapeHtml(chSub)}</span>
@@ -7142,11 +7266,24 @@ function renderCampaignGpmCheckboxes(profiles) {
             const shouldPreCheck = isMatchingPlat && matchingCheckedCount < 3;
             if (shouldPreCheck) matchingCheckedCount++;
 
+            const bType = (p.browser_type || 'gpm').toLowerCase();
+            const bBadge = bType === 'genlogin'
+                ? '<span class="badge" style="background:rgba(34,197,94,0.18); color:#4ade80; font-size:9px; padding:1px 4px; flex-shrink:0;">GEN</span>'
+                : '<span class="badge" style="background:rgba(59,130,246,0.18); color:#93c5fd; font-size:9px; padding:1px 4px; flex-shrink:0;">GPM</span>';
+            const bLabel = bType === 'genlogin' ? 'GenLogin' : (bType === 'adspower' ? 'AdsPower' : (bType === 'dolphin' ? 'Dolphin' : 'GPMLogin'));
+            const accountKey = getCanonicalAccountKey(p);
+            const isDup = profiles.some(o => o.id !== p.id && getCanonicalAccountKey(o) === accountKey);
+            const dupBadge = isDup ? '<span class="badge" style="background:rgba(234,179,8,0.18); color:#eab308; font-size:9px; padding:1px 4px; flex-shrink:0;" title="Tài khoản này có mặt trên nhiều trình duyệt"><i class="fa-solid fa-link"></i> Trùng nick</span>' : '';
+
             itemsHtml.push(`
             <label class="multi-select-item" data-platform="${plat}" style="display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03); min-width:0;">
-                <input type="checkbox" class="campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-channel-id="" data-platform="${plat}" ${shouldPreCheck ? 'checked' : ''} onchange="updateSelectedGpmCount()" style="flex-shrink:0;">
+                <input type="checkbox" class="campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-account-key="${escapeHtml(accountKey)}" data-browser-label="${escapeHtml(bLabel)}" data-profile-name="${escapeHtml(p.name)}" data-channel-id="" data-channel-name="${escapeHtml(displayName)}" data-platform="${plat}" ${shouldPreCheck ? 'checked' : ''} onchange="syncCampaignDuplicateCheckboxes('new');" style="flex-shrink:0;">
                 <span style="flex-shrink:0; display:inline-flex; align-items:center;">${platIcon}</span>
-                <span style="font-weight:600; color:#fff; min-width:0; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+                <div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; overflow:hidden;">
+                    ${bBadge}
+                    <span style="font-weight:600; color:#fff; min-width:0; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+                    ${dupBadge}
+                </div>
                 <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0;">
                     <span style="font-size:11px; color:${platColor}; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${displayName}">${displayName}</span>
                     <span class="badge ${p.eligible_10k ? 'badge-success' : 'badge-secondary'}" style="font-size:10px; white-space:nowrap;">${(p.followers_count || 0).toLocaleString()} flw</span>
@@ -7158,6 +7295,7 @@ function renderCampaignGpmCheckboxes(profiles) {
 
     gpmListEl.innerHTML = itemsHtml.join('');
     filterCampaignGpmAccounts('new');
+    syncCampaignDuplicateCheckboxes('new');
 }
 
 function updateSelectedChannelsCount() {
@@ -7270,14 +7408,27 @@ function selectAllCampaignChannels(select) {
 }
 
 function selectAllCampaignGpm(select) {
-    const boxes = document.querySelectorAll('.campaign-gpm-check');
-    boxes.forEach(b => {
-        const item = b.closest('label');
-        if (item && item.style.display !== 'none') {
-            b.checked = select;
-        }
-    });
-    updateSelectedGpmCount();
+    const listEl = document.getElementById('campaignGpmList');
+    if (!listEl) return;
+    const boxes = Array.from(listEl.querySelectorAll('.campaign-gpm-check'));
+    if (!select) {
+        boxes.forEach(b => { b.checked = false; });
+    } else {
+        const seenKeys = new Set();
+        boxes.forEach(b => {
+            const item = b.closest('label');
+            if (item && item.style.display !== 'none') {
+                const k = b.dataset.accountKey;
+                if (k && seenKeys.has(k)) {
+                    b.checked = false; // Không chọn duplicate account!
+                } else {
+                    b.checked = true;
+                    if (k) seenKeys.add(k);
+                }
+            }
+        });
+    }
+    syncCampaignDuplicateCheckboxes('new');
 }
 
 function filterCampaignChannelList(query) {
@@ -8078,14 +8229,25 @@ function renderEditCampaignGpmCheckboxes(profiles, selectedIds = []) {
                 const chSub = ch.channel_url || '';
                 const isChecked = selSet.has(String(p.id)) && (ch.is_default || p.channels.length === 1);
 
+                const bType = (p.browser_type || 'gpm').toLowerCase();
+                const bBadge = bType === 'genlogin'
+                    ? '<span class="badge" style="background:rgba(34,197,94,0.18); color:#4ade80; font-size:9px; padding:1px 4px; flex-shrink:0;">GEN</span>'
+                    : '<span class="badge" style="background:rgba(59,130,246,0.18); color:#93c5fd; font-size:9px; padding:1px 4px; flex-shrink:0;">GPM</span>';
+                const bLabel = bType === 'genlogin' ? 'GenLogin' : (bType === 'adspower' ? 'AdsPower' : (bType === 'dolphin' ? 'Dolphin' : 'GPMLogin'));
+                const accountKey = getCanonicalAccountKey(p, ch);
+                const isDup = profiles.some(o => o.id !== p.id && getCanonicalAccountKey(o, ch) === accountKey);
+                const dupBadge = isDup ? '<span class="badge" style="background:rgba(234,179,8,0.18); color:#eab308; font-size:9px; padding:1px 4px; flex-shrink:0;" title="Tài khoản này có mặt trên nhiều trình duyệt"><i class="fa-solid fa-link"></i> Trùng nick</span>' : '';
+
                 itemsHtml.push(`
                 <label class="multi-select-item" data-platform="${plat}" style="display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03); min-width:0;">
-                    <input type="checkbox" class="edit-campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-channel-id="${escapeHtml(ch.channel_id || '')}" data-channel-name="${escapeHtml(ch.channel_name || '')}" data-platform="${plat}" ${isChecked ? 'checked' : ''} onchange="updateEditSelectedGpmCount(); if(this.checked && '${escapeHtml(ch.channel_id)}') handleChannelSelectionChange('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}')" style="flex-shrink:0;">
+                    <input type="checkbox" class="edit-campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-account-key="${escapeHtml(accountKey)}" data-browser-label="${escapeHtml(bLabel)}" data-profile-name="${escapeHtml(p.name)}" data-channel-id="${escapeHtml(ch.channel_id || '')}" data-channel-name="${escapeHtml(chTitle)}" data-platform="${plat}" ${isChecked ? 'checked' : ''} onchange="syncCampaignDuplicateCheckboxes('edit'); if(this.checked && '${escapeHtml(ch.channel_id)}') handleChannelSelectionChange('${escapeHtml(p.gpm_id)}', '${escapeHtml(ch.channel_id)}')" style="flex-shrink:0;">
                     <span style="flex-shrink:0; display:inline-flex; align-items:center;">${platIcon}</span>
                     <div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; overflow:hidden;">
+                        ${bBadge}
                         <span style="font-size:11px; flex-shrink:0; color:var(--text-secondary); background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:4px; white-space:nowrap;">${escapeHtml(p.name)}</span>
                         <span style="font-weight:600; color:#fff; min-width:0; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block;" title="${escapeHtml(chTitle)}">${escapeHtml(chTitle)}</span>
                         ${typeBadge}
+                        ${dupBadge}
                     </div>
                     <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0;">
                         <span style="font-size:11px; color:${platColor}; white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(chSub)}">${escapeHtml(chSub)}</span>
@@ -8109,11 +8271,24 @@ function renderEditCampaignGpmCheckboxes(profiles, selectedIds = []) {
                 displayName = escapeHtml(p.tiktok_nickname || `FB: ${p.fb_page_id || p.tiktok_username || ''}`);
             }
 
+            const bType = (p.browser_type || 'gpm').toLowerCase();
+            const bBadge = bType === 'genlogin'
+                ? '<span class="badge" style="background:rgba(34,197,94,0.18); color:#4ade80; font-size:9px; padding:1px 4px; flex-shrink:0;">GEN</span>'
+                : '<span class="badge" style="background:rgba(59,130,246,0.18); color:#93c5fd; font-size:9px; padding:1px 4px; flex-shrink:0;">GPM</span>';
+            const bLabel = bType === 'genlogin' ? 'GenLogin' : (bType === 'adspower' ? 'AdsPower' : (bType === 'dolphin' ? 'Dolphin' : 'GPMLogin'));
+            const accountKey = getCanonicalAccountKey(p);
+            const isDup = profiles.some(o => o.id !== p.id && getCanonicalAccountKey(o) === accountKey);
+            const dupBadge = isDup ? '<span class="badge" style="background:rgba(234,179,8,0.18); color:#eab308; font-size:9px; padding:1px 4px; flex-shrink:0;" title="Tài khoản này có mặt trên nhiều trình duyệt"><i class="fa-solid fa-link"></i> Trùng nick</span>' : '';
+
             itemsHtml.push(`
             <label class="multi-select-item" data-platform="${plat}" style="display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03); min-width:0;">
-                <input type="checkbox" class="edit-campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-channel-id="" data-platform="${plat}" ${isChecked ? 'checked' : ''} onchange="updateEditSelectedGpmCount()" style="flex-shrink:0;">
+                <input type="checkbox" class="edit-campaign-gpm-check" value="${p.id}" data-gpm-id="${escapeHtml(p.gpm_id)}" data-account-key="${escapeHtml(accountKey)}" data-browser-label="${escapeHtml(bLabel)}" data-profile-name="${escapeHtml(p.name)}" data-channel-id="" data-channel-name="${escapeHtml(displayName)}" data-platform="${plat}" ${isChecked ? 'checked' : ''} onchange="syncCampaignDuplicateCheckboxes('edit');" style="flex-shrink:0;">
                 <span style="flex-shrink:0; display:inline-flex; align-items:center;">${platIcon}</span>
-                <span style="font-weight:600; color:#fff; min-width:0; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+                <div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; overflow:hidden;">
+                    ${bBadge}
+                    <span style="font-weight:600; color:#fff; min-width:0; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+                    ${dupBadge}
+                </div>
                 <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-shrink:0;">
                     <span style="font-size:11px; color:${platColor}; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${displayName}">${displayName}</span>
                     <span class="badge ${p.eligible_10k ? 'badge-success' : 'badge-secondary'}" style="font-size:10px; white-space:nowrap;">${(p.followers_count || 0).toLocaleString()} flw</span>
@@ -8125,6 +8300,7 @@ function renderEditCampaignGpmCheckboxes(profiles, selectedIds = []) {
 
     gpmListEl.innerHTML = itemsHtml.join('');
     filterCampaignGpmAccounts('edit');
+    syncCampaignDuplicateCheckboxes('edit');
 }
 
 function updateEditSelectedChannelsCount() {
@@ -8155,14 +8331,27 @@ function selectAllEditCampaignChannels(select) {
 }
 
 function selectAllEditCampaignGpm(select) {
-    const boxes = document.querySelectorAll('.edit-campaign-gpm-check');
-    boxes.forEach(b => {
-        const item = b.closest('label');
-        if (item && item.style.display !== 'none') {
-            b.checked = select;
-        }
-    });
-    updateEditSelectedGpmCount();
+    const listEl = document.getElementById('editCampaignGpmList');
+    if (!listEl) return;
+    const boxes = Array.from(listEl.querySelectorAll('.edit-campaign-gpm-check'));
+    if (!select) {
+        boxes.forEach(b => { b.checked = false; });
+    } else {
+        const seenKeys = new Set();
+        boxes.forEach(b => {
+            const item = b.closest('label');
+            if (item && item.style.display !== 'none') {
+                const k = b.dataset.accountKey;
+                if (k && seenKeys.has(k)) {
+                    b.checked = false; // Không chọn duplicate account!
+                } else {
+                    b.checked = true;
+                    if (k) seenKeys.add(k);
+                }
+            }
+        });
+    }
+    syncCampaignDuplicateCheckboxes('edit');
 }
 
 function filterEditCampaignChannelList(query) {
@@ -13826,3 +14015,78 @@ window.updateModalIntervalBadge = updateModalIntervalBadge;
 window.updateVoiceDropdownOptions = updateVoiceDropdownOptions;
 window.validateMinDurationInput = validateMinDurationInput;
 // ==== END AUTO-GENERATED WINDOW EXPOSURES ====
+
+
+// Tự động vô hiệu hóa (disable) và làm mờ các nick trùng lặp trên các trình duyệt khác nhau khi 1 nick đã được chọn
+function syncCampaignDuplicateCheckboxes(mode = 'new') {
+    const isNew = mode === 'new';
+    const listId = isNew ? 'campaignGpmList' : 'editCampaignGpmList';
+    const checkClass = isNew ? '.campaign-gpm-check' : '.edit-campaign-gpm-check';
+    const listEl = document.getElementById(listId);
+    if (!listEl) return;
+
+    const allBoxes = Array.from(listEl.querySelectorAll(checkClass));
+    const checkedMap = new Map();
+
+    allBoxes.forEach(b => {
+        if (b.checked && !b.disabled) {
+            const k = b.dataset.accountKey;
+            if (k && !checkedMap.has(k)) {
+                checkedMap.set(k, {
+                    browserLabel: b.dataset.browserLabel || 'GPMLogin',
+                    profileName: b.dataset.profileName || '',
+                    channelName: b.dataset.channelName || '',
+                    box: b
+                });
+            }
+        }
+    });
+
+    allBoxes.forEach(b => {
+        const k = b.dataset.accountKey;
+        const label = b.closest('label');
+        if (!label) return;
+
+        let noteBadge = label.querySelector('.dup-disabled-note');
+
+        if (k && checkedMap.has(k)) {
+            const source = checkedMap.get(k);
+            if (source.box !== b) {
+                b.checked = false;
+                b.disabled = true;
+                label.style.opacity = '0.45';
+                label.style.cursor = 'not-allowed';
+                label.setAttribute('data-duplicate-disabled', 'true');
+                const noteText = `Tài khoản này đã được chọn qua ${source.browserLabel} (${source.profileName})`;
+                if (!noteBadge) {
+                    noteBadge = document.createElement('span');
+                    noteBadge.className = 'badge dup-disabled-note';
+                    noteBadge.style.cssText = 'background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); font-size:9.5px; padding:1px 6px; font-weight:600; white-space:nowrap; margin-left:4px; flex-shrink:0;';
+                    const targetContainer = label.querySelector('div') || label;
+                    targetContainer.appendChild(noteBadge);
+                }
+                noteBadge.innerHTML = `<i class="fa-solid fa-lock"></i> Đã chọn qua ${escapeHtml(source.browserLabel)} (${escapeHtml(source.profileName)})`;
+                noteBadge.style.display = 'inline-flex';
+                label.title = noteText;
+            } else {
+                b.disabled = false;
+                label.style.opacity = '1';
+                label.style.cursor = 'pointer';
+                label.removeAttribute('data-duplicate-disabled');
+                label.removeAttribute('title');
+                if (noteBadge) noteBadge.style.display = 'none';
+            }
+        } else {
+            b.disabled = false;
+            label.style.opacity = '1';
+            label.style.cursor = 'pointer';
+            label.removeAttribute('data-duplicate-disabled');
+            label.removeAttribute('title');
+            if (noteBadge) noteBadge.style.display = 'none';
+        }
+    });
+
+    if (isNew) updateSelectedGpmCount();
+    else updateEditSelectedGpmCount();
+}
+window.syncCampaignDuplicateCheckboxes = syncCampaignDuplicateCheckboxes;

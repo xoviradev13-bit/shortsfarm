@@ -621,29 +621,114 @@ def enumerate_youtube_channels(profile_id: str) -> list:
     seen_ids = set()
     existing_map = {}
 
-    # 1. Kênh đã lưu trong DB trước đó
+    # 1. Tải ánh xạ kênh đã lưu trước đó trong DB để giữ lại metadata tùy chỉnh nếu có
     try:
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("SELECT channel_id, channel_name, channel_url, is_default, followers_count FROM profile_channels WHERE gpm_id = ? AND platform = 'youtube'", (profile_id,))
         for r in cur.fetchall():
             cid = str(r["channel_id"])
-            if cid not in seen_ids:
-                seen_ids.add(cid)
-                ch_obj = {
-                    "channel_id": cid,
-                    "channel_name": r["channel_name"],
-                    "channel_url": r["channel_url"],
-                    "is_default": r["is_default"],
-                    "followers_count": r["followers_count"] or 0
-                }
-                channels.append(ch_obj)
-                existing_map[cid] = ch_obj
+            existing_map[cid] = {
+                "channel_id": cid,
+                "channel_name": r["channel_name"],
+                "channel_url": r["channel_url"],
+                "is_default": r["is_default"],
+                "followers_count": r["followers_count"] or 0
+            }
         conn.close()
     except Exception as e:
         log_event("WARNING", f"[GPMProfileReader] Lỗi đọc kênh YT từ DB cho {profile_id}: {e}")
 
-    # 2. Quét từ YouTube Studio HTML
+    # 2. Quét trực tiếp TẤT CẢ sub-channels qua YouTube InnerTube API (accounts_list)
+    sapisid = next((c.get("value") for c in all_cookies if isinstance(c, dict) and c.get("name") in ("SAPISID", "__Secure-3PAPISID", "__Secure-1PAPISID")), None)
+    if sapisid and any("youtube" in c.get("domain", "") or "google" in c.get("domain", "") for c in all_cookies if isinstance(c, dict)):
+        try:
+            import hashlib, time
+            sess_yt = requests.Session()
+            sess_yt.headers.update({
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Origin": "https://www.youtube.com",
+                "Referer": "https://www.youtube.com/channel_switcher"
+            })
+            for c in all_cookies:
+                if isinstance(c, dict) and ("youtube" in c.get("domain", "") or "google" in c.get("domain", "")):
+                    domain = c.get("domain", "")
+                    d = domain if domain.startswith(".") or "." in domain else f".{domain}"
+                    sess_yt.cookies.set(c.get("name"), c.get("value"), domain=d, path=c.get("path", "/"))
+
+            r_sw = sess_yt.get("https://www.youtube.com/channel_switcher", timeout=10)
+            if r_sw.status_code == 200:
+                m_key = re.search(r'"INNERTUBE_API_KEY"\s*:\s*"([^"]+)"', r_sw.text)
+                if m_key:
+                    yt_key = m_key.group(1)
+                    now_ts = int(time.time())
+                    sha1_hash = hashlib.sha1(f"{now_ts} {sapisid} https://www.youtube.com".encode()).hexdigest()
+                    sess_yt.headers.update({
+                        "Authorization": f"SAPISIDHASH {now_ts}_{sha1_hash}",
+                        "X-Origin": "https://www.youtube.com",
+                        "X-Youtube-Client-Name": "1",
+                        "X-Youtube-Client-Version": "2.20240101.00.00"
+                    })
+                    post_data = {
+                        "context": {
+                            "client": {
+                                "clientName": "WEB",
+                                "clientVersion": "2.20240101.00.00",
+                                "hl": "vi",
+                                "gl": "VN"
+                            }
+                        },
+                        "requestType": "ACCOUNTS_LIST_REQUEST_TYPE_CHANNEL_SWITCHER"
+                    }
+                    r_acc = sess_yt.post(f"https://www.youtube.com/youtubei/v1/account/accounts_list?key={yt_key}", json=post_data, timeout=10)
+                    if r_acc.status_code == 200:
+                        acc_data = r_acc.json()
+                        def extract_renderers(obj):
+                            items = []
+                            if isinstance(obj, dict):
+                                if "accountItemRenderer" in obj:
+                                    items.append(obj["accountItemRenderer"])
+                                for val in obj.values():
+                                    items.extend(extract_renderers(val))
+                            elif isinstance(obj, list):
+                                for itm in obj:
+                                    items.extend(extract_renderers(itm))
+                            return items
+
+                        for renderer in extract_renderers(acc_data):
+                            ch_title = renderer.get("accountName", {}).get("simpleText") or ""
+                            ch_handle = renderer.get("channelHandle", {}).get("simpleText") or ""
+                            cid = None
+                            tokens = renderer.get("serviceEndpoint", {}).get("selectActiveIdentityEndpoint", {}).get("supportedTokens", [])
+                            for tok in tokens:
+                                cache_key = tok.get("offlineCacheKeyToken", {}).get("clientCacheKey", "")
+                                if cache_key:
+                                    cid = f"UC{cache_key}" if not cache_key.startswith("UC") else cache_key
+                                    break
+                            sub_text = renderer.get("accountByline", {}).get("simpleText", "")
+                            sub_num = parse_yt_sub_count(sub_text)
+                            is_sel = 1 if renderer.get("isSelected") else 0
+
+                            if cid and cid not in seen_ids:
+                                seen_ids.add(cid)
+                                ch_item = {
+                                    "channel_id": cid,
+                                    "channel_name": ch_title or cid,
+                                    "channel_url": ch_handle or f"https://www.youtube.com/channel/{cid}",
+                                    "is_default": is_sel,
+                                    "followers_count": sub_num
+                                }
+                                channels.append(ch_item)
+                                existing_map[cid] = ch_item
+
+            if channels:
+                # Đã lấy được danh sách kênh chính xác từ YouTube InnerTube API (Channel Switcher)
+                return channels
+        except Exception as e:
+            log_event("WARNING", f"[GPMProfileReader] Lỗi đọc YouTube accounts_list cho {profile_id}: {e}")
+
+    # 2.2 Quét bổ sung từ YouTube Studio HTML
     if any('youtube' in c.get('domain', '') or 'google' in c.get('domain', '') for c in all_cookies if isinstance(c, dict)):
         try:
             sess_yt = requests.Session()
@@ -699,16 +784,16 @@ def enumerate_youtube_channels(profile_id: str) -> list:
     has_default = any(c.get("is_default") for c in existing_map.values())
 
     for idx, cid in enumerate(seen_ids):
-        if cid in existing_map and existing_map[cid].get("channel_name") and existing_map[cid]["channel_name"] != cid:
-            final_list.append(existing_map[cid])
-            continue
+        ch_name = existing_map.get(cid, {}).get("channel_name") or cid
+        handle = existing_map.get(cid, {}).get("channel_url") or f"https://www.youtube.com/channel/{cid}"
+        sub_count = existing_map.get(cid, {}).get("followers_count", 0) or 0
+        is_deleted = False
 
-        ch_name = cid
-        handle = f"https://www.youtube.com/channel/{cid}"
-        sub_count = 0
         try:
             r_ch = requests.get(f"https://www.youtube.com/channel/{cid}", headers=public_headers, timeout=8)
-            if r_ch.status_code == 200:
+            if r_ch.status_code == 404 or any(x in r_ch.text for x in ["This channel does not exist", "Trang này không tồn tại", "Kênh này không tồn tại", "Channel does not exist"]):
+                is_deleted = True
+            elif r_ch.status_code == 200:
                 m_t = re.search(r'<meta property="og:title" content="([^"]+)">', r_ch.text)
                 if m_t:
                     ch_name = m_t.group(1)
@@ -738,6 +823,10 @@ def enumerate_youtube_channels(profile_id: str) -> list:
                     sub_count = parse_yt_sub_count(m_sub.group(1))
         except Exception:
             pass
+
+        if is_deleted:
+            # Kênh đã bị người dùng xóa trên YouTube, bỏ qua và không đưa vào danh sách
+            continue
 
         is_def = 1 if (not has_default and idx == 0) else existing_map.get(cid, {}).get("is_default", 0)
         final_list.append({
@@ -861,6 +950,25 @@ def enumerate_facebook_pages(profile_id: str) -> list:
                 "is_default": 0
             })
 
+    # 2.1 Quét Fanpages từ Facebook Web profile_switcher_eligible_profiles
+    if c_user and fb_cookies:
+        try:
+            fb_cookie_dict = {c['name']: c['value'] for c in fb_cookies if 'name' in c and 'value' in c}
+            r_pages = requests.get("https://www.facebook.com/pages/?category=your_pages", cookies=fb_cookie_dict, headers=headers, timeout=10)
+            if r_pages.status_code == 200:
+                m_nodes = re.findall(r'\{\s*"profile"\s*:\s*\{\s*"is_profile_plus"\s*:\s*(?:true|false)\s*,\s*"id"\s*:\s*"(\d+)"\s*,\s*"name"\s*:\s*"([^"]+)"', r_pages.text)
+                for pid, pname in m_nodes:
+                    if pid != c_user and pid not in seen_ids:
+                        seen_ids.add(pid)
+                        channels.append({
+                            "channel_id": pid,
+                            "channel_name": pname,
+                            "channel_url": f"https://www.facebook.com/profile.php?id={pid}",
+                            "is_default": 0
+                        })
+        except Exception as e:
+            log_event("WARNING", f"[GPMProfileReader] Lỗi đọc Facebook your_pages cho {profile_id}: {e}")
+
     # 3. Quét Chrome History để tìm thêm Fanpage đã quản lý / truy cập
     if hist_file and os.path.exists(hist_file):
         import tempfile
@@ -915,6 +1023,31 @@ def sync_profile_channels(profile_id: str) -> dict:
 
     conn = get_connection()
     cursor = conn.cursor()
+
+    # Tự động dọn dẹp các kênh cũ khi đổi tài khoản hoặc khi xóa kênh trên YouTube / Facebook
+    from backend.database import get_linked_profile_ids
+    cursor.execute("SELECT id FROM gpm_profiles WHERE gpm_id = ?", (profile_id,))
+    p_init_row = cursor.fetchone()
+    p_init_id = p_init_row["id"] if p_init_row else None
+    linked_gpm_list = [profile_id]
+    if p_init_id:
+        linked_pids = get_linked_profile_ids(cursor, p_init_id)
+        if linked_pids:
+            ph_l = ",".join("?" for _ in linked_pids)
+            cursor.execute(f"SELECT gpm_id FROM gpm_profiles WHERE id IN ({ph_l})", tuple(linked_pids))
+            linked_gpm_list = list(set([profile_id] + [r["gpm_id"] for r in cursor.fetchall()]))
+
+    ph_gpms = ",".join("?" for _ in linked_gpm_list)
+
+    if yt_channels:
+        active_cids = [ch["channel_id"] for ch in yt_channels]
+        ph_yt = ",".join("?" for _ in active_cids)
+        cursor.execute(f"DELETE FROM profile_channels WHERE gpm_id IN ({ph_gpms}) AND platform = 'youtube' AND channel_id NOT IN ({ph_yt})", (*linked_gpm_list, *active_cids))
+
+    if fb_pages:
+        active_pids = [pg["channel_id"] for pg in fb_pages]
+        ph_fb = ",".join("?" for _ in active_pids)
+        cursor.execute(f"DELETE FROM profile_channels WHERE gpm_id IN ({ph_gpms}) AND platform = 'facebook' AND channel_id NOT IN ({ph_fb})", (*linked_gpm_list, *active_pids))
 
     synced = 0
     for ch in yt_channels:
@@ -971,6 +1104,21 @@ def sync_profile_channels(profile_id: str) -> dict:
         effective_f = max(def_f, max_f)
         is_eligible = 1 if effective_f >= target_th else 0
         
+        # Khử trùng lặp cảnh báo Telegram qua nhiều trình duyệt
+        from backend.database import get_linked_profile_ids
+        p_row_id = p_row.get("id") if isinstance(p_row, dict) and "id" in p_row else None
+        if not p_row_id:
+            cursor.execute("SELECT id FROM gpm_profiles WHERE gpm_id = ?", (profile_id,))
+            _p_id_row = cursor.fetchone()
+            p_row_id = _p_id_row["id"] if _p_id_row else None
+
+        linked_ids = get_linked_profile_ids(cursor, p_row_id) if p_row_id else []
+        if linked_ids:
+            ph = ",".join("?" for _ in linked_ids)
+            cursor.execute(f"SELECT COUNT(*) FROM gpm_profiles WHERE id IN ({ph}) AND LOWER(COALESCE(notify_status, '')) = 'sent'", tuple(linked_ids))
+            if cursor.fetchone()[0] > 0:
+                curr_notify = "sent"
+
         new_notify = curr_notify
         should_alert = False
         if is_eligible == 1 and curr_notify == "tracking":
@@ -986,8 +1134,15 @@ def sync_profile_channels(profile_id: str) -> dict:
         if p_plat == "youtube":
             cursor.execute("SELECT channel_url, channel_name FROM profile_channels WHERE gpm_id = ? AND is_default = 1 LIMIT 1", (profile_id,))
             def_yt = cursor.fetchone()
-            if def_yt and def_yt["channel_url"]:
-                cursor.execute("UPDATE gpm_profiles SET channel_handle = ?, tiktok_username = ? WHERE gpm_id = ?", (def_yt["channel_url"], def_yt["channel_url"], profile_id))
+            if def_yt:
+                u_handle = def_yt["channel_url"] or ""
+                u_name = def_yt["channel_name"] or u_handle
+                cursor.execute("UPDATE gpm_profiles SET channel_handle = ?, tiktok_username = ?, tiktok_nickname = ? WHERE gpm_id = ?", (u_handle, u_handle, u_name, profile_id))
+        elif p_plat == "facebook":
+            cursor.execute("SELECT channel_url, channel_name FROM profile_channels WHERE gpm_id = ? AND is_default = 1 LIMIT 1", (profile_id,))
+            def_fb = cursor.fetchone()
+            if def_fb and def_fb["channel_name"]:
+                cursor.execute("UPDATE gpm_profiles SET tiktok_nickname = ? WHERE gpm_id = ?", (def_fb["channel_name"], profile_id))
 
         if should_alert:
             log_event("INFO", f"🎉 [ProfileChannels] Kênh/Trang của {p_name} ({p_plat}) đạt {effective_f:,} (ngưỡng {target_th:,})! Gửi cảnh báo Telegram...")
@@ -1001,6 +1156,9 @@ def sync_profile_channels(profile_id: str) -> dict:
                 platform=p_plat,
                 threshold=target_th
             )
+            if linked_ids:
+                ph = ",".join("?" for _ in linked_ids)
+                cursor.execute(f"UPDATE gpm_profiles SET notify_status = 'sent' WHERE id IN ({ph})", tuple(linked_ids))
     elif def_row and def_row[0] is not None:
         cursor.execute("UPDATE gpm_profiles SET followers_count = ? WHERE gpm_id = ?", (def_row[0], profile_id))
 
@@ -1008,7 +1166,59 @@ def sync_profile_channels(profile_id: str) -> dict:
     conn.close()
 
     log_event("INFO", f"[ProfileChannels] Đồng bộ {len(yt_channels)} kênh YouTube + {len(fb_pages)} trang Facebook cho profile {profile_id}")
+    try:
+        propagate_linked_profile_channels()
+    except Exception:
+        pass
     return {"youtube": yt_channels, "facebook": fb_pages, "total": synced}
+
+
+def propagate_linked_profile_channels():
+    """
+    Tự động đồng bộ và nhân bản danh sách kênh con (YouTube) và Fanpage (Facebook)
+    giữa các profile đăng nhập song song trên các trình duyệt khác nhau (GPMLogin & GenLogin).
+    Đảm bảo cả 2 bên đều có đầy đủ các kênh con/fanpage để chọn và quản lý.
+    """
+    from backend.database import get_connection, get_linked_profile_ids
+    try:
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id, gpm_id, browser_type, platform, name FROM gpm_profiles")
+            all_profs = {r["id"]: dict(r) for r in cur.fetchall()}
+            
+            visited_groups = set()
+            for p_id, p_info in all_profs.items():
+                linked_ids = tuple(sorted(get_linked_profile_ids(cur, p_id)))
+                if len(linked_ids) <= 1 or linked_ids in visited_groups:
+                    continue
+                visited_groups.add(linked_ids)
+                
+                linked_gpm_ids = [all_profs[lid]["gpm_id"] for lid in linked_ids if lid in all_profs]
+                ph = ",".join("?" for _ in linked_gpm_ids)
+                cur.execute(f"SELECT * FROM profile_channels WHERE gpm_id IN ({ph})", tuple(linked_gpm_ids))
+                group_channels = [dict(r) for r in cur.fetchall()]
+                
+                unique_channels = {}
+                for ch in group_channels:
+                    cid = ch["channel_id"]
+                    if cid not in unique_channels or (ch.get("is_default") and not unique_channels[cid].get("is_default")):
+                        unique_channels[cid] = ch
+                
+                for lid in linked_ids:
+                    tgt_gpm = all_profs[lid]["gpm_id"]
+                    cur.execute("SELECT channel_id FROM profile_channels WHERE gpm_id = ?", (tgt_gpm,))
+                    existing_cids = {r["channel_id"] for r in cur.fetchall()}
+                    
+                    for cid, ch in unique_channels.items():
+                        if cid not in existing_cids:
+                            cur.execute("""
+                                INSERT INTO profile_channels (gpm_id, platform, channel_id, channel_name, channel_url, is_default, followers_count, notify_status)
+                                VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+                            """, (tgt_gpm, ch["platform"], ch["channel_id"], ch.get("channel_name", ""), ch.get("channel_url", ""), ch.get("followers_count", 0), ch.get("notify_status", "tracking")))
+                            existing_cids.add(cid)
+            conn.commit()
+    except Exception as e:
+        log_event("WARNING", f"[ProfileChannels] Lỗi đồng bộ kênh con liên kết chéo: {e}")
 
 
 def list_gpm_profiles_status() -> Dict[str, Any]:

@@ -795,6 +795,89 @@ def is_save_by_channel_folder_enabled() -> bool:
     except Exception:
         return True
 
+def get_linked_profile_ids(cursor, profile_id: int) -> List[int]:
+    """
+    Tìm tất cả các ID profile (trong bảng gpm_profiles) cùng đăng nhập vào 1 tài khoản mạng xã hội
+    (ví dụ: 1 profile bên GPMLogin và 1 profile bên GenLogin cùng đăng nhập 1 kênh YouTube, TikTok hoặc Facebook).
+    Dựa trên:
+    - YouTube: channel_id (UC...) hoặc channel_handle (@handle)
+    - TikTok: tiktok_uid (UID 19 số) hoặc tiktok_username
+    - Facebook: fb_page_id hoặc tiktok_username (UID cá nhân)
+    - Hoặc channel_id trong bảng profile_channels
+    """
+    if not profile_id:
+        return []
+    try:
+        cursor.execute("""
+            SELECT id, gpm_id, platform, tiktok_username, tiktok_uid, channel_handle, fb_page_id
+            FROM gpm_profiles WHERE id = ?
+        """, (profile_id,))
+        p = cursor.fetchone()
+        if not p:
+            return [profile_id]
+
+        plat = (p["platform"] or "tiktok").lower()
+        gpm_id = p["gpm_id"]
+        u_name = (p["tiktok_username"] or "").strip().lower().lstrip("@")
+        u_uid = (p["tiktok_uid"] or "").strip()
+        c_handle = (p["channel_handle"] or "").strip().lower()
+        fb_id = (p["fb_page_id"] or "").strip()
+
+        # Lấy thêm các channel_id từ profile_channels của gpm_id này
+        cursor.execute("SELECT channel_id FROM profile_channels WHERE gpm_id = ?", (gpm_id,))
+        ch_ids = [r[0].strip() for r in cursor.fetchall() if r[0] and r[0].strip()]
+
+        linked_ids = {profile_id}
+
+        # 1. Tìm theo channel_id trong profile_channels (nếu có)
+        if ch_ids:
+            ph = ",".join("?" for _ in ch_ids)
+            cursor.execute(f"""
+                SELECT gp.id FROM profile_channels pc
+                JOIN gpm_profiles gp ON pc.gpm_id = gp.gpm_id
+                WHERE pc.channel_id IN ({ph})
+            """, tuple(ch_ids))
+            for r in cursor.fetchall():
+                linked_ids.add(r[0])
+
+        # 2. Tìm theo các trường định danh trong gpm_profiles
+        conditions = []
+        params = []
+
+        if u_uid and len(u_uid) > 3:
+            conditions.append("tiktok_uid = ?")
+            params.append(u_uid)
+
+        if plat == "youtube":
+            if c_handle and len(c_handle) > 2:
+                conditions.append("LOWER(channel_handle) = ?")
+                params.append(c_handle)
+            if u_name and len(u_name) > 2:
+                conditions.append("LOWER(REPLACE(tiktok_username, '@', '')) = ?")
+                params.append(u_name)
+        elif plat == "facebook":
+            if fb_id and len(fb_id) > 3:
+                conditions.append("fb_page_id = ?")
+                params.append(fb_id)
+            if u_name and len(u_name) > 3:
+                conditions.append("tiktok_username = ?")
+                params.append(u_name)
+        elif plat == "tiktok":
+            if u_name and len(u_name) > 2:
+                conditions.append("LOWER(REPLACE(tiktok_username, '@', '')) = ?")
+                params.append(u_name)
+
+        if conditions:
+            sql = f"SELECT id FROM gpm_profiles WHERE platform = ? AND ({' OR '.join(conditions)})"
+            cursor.execute(sql, (plat, *params))
+            for r in cursor.fetchall():
+                linked_ids.add(r[0])
+
+        return sorted(list(linked_ids))
+    except Exception as e:
+        log_event("WARNING", f"Lỗi tìm linked profiles cho #{profile_id}: {e}")
+        return [profile_id]
+
 # Khởi tạo DB ngay khi nạp module
 init_db()
 

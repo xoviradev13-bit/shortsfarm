@@ -3,6 +3,7 @@ import time
 import json
 import random
 import threading
+import concurrent.futures
 from datetime import datetime, timedelta
 from backend.database import log_event, get_connection
 from backend.modules.yt_monitor import yt_monitor
@@ -72,6 +73,12 @@ class BackgroundScheduler:
         self.stuck_timeout_minutes = 15
         # Giãn cách an toàn tối thiểu giữa các lần đăng trên cùng 1 tài khoản (phút)
         self.min_account_cooldown_minutes = 60
+        # Cấu hình đa luồng tải lên song song đa tài khoản (GPM & GenLogin farm)
+        # Mặc định an toàn là 1 luồng để laptop 8GB RAM hoạt động mượt mà, không bị tràn RAM
+        self.max_parallel_uploads = 1
+        self._active_uploading_profiles = set()
+        self._active_upload_lock = threading.Lock()
+        self._upload_pool = concurrent.futures.ThreadPoolExecutor(max_workers=6, thread_name_prefix="UploadWorker")
         
         # Cấu hình quét follower định kỳ & giờ cố định hàng ngày
         self.follower_scan_enabled = True
@@ -118,6 +125,11 @@ class BackgroundScheduler:
                 self.min_account_cooldown_minutes = max(15, int(db_settings["min_account_cooldown_minutes"]))
             elif "min_post_interval_minutes" in db_settings:
                 self.min_account_cooldown_minutes = max(15, int(db_settings["min_post_interval_minutes"]))
+            if "max_parallel_uploads" in db_settings:
+                try:
+                    self.max_parallel_uploads = max(1, min(6, int(db_settings["max_parallel_uploads"])))
+                except Exception:
+                    pass
             if "follower_scan_enabled" in db_settings:
                 self.follower_scan_enabled = db_settings["follower_scan_enabled"] == "1"
             if "follower_scan_mode" in db_settings:
@@ -131,7 +143,8 @@ class BackgroundScheduler:
     def update_config(self, interval_minutes=None, upload_interval_seconds=None, auto_download=None, auto_render=None,
                       max_videos_per_scan=None, channel_delay_seconds=None, save_by_channel_folder=None,
                       auto_retry_enabled=None, max_retries=None, retry_delay_minutes=None,
-                      watchdog_enabled=None, stuck_timeout_minutes=None, min_account_cooldown_minutes=None):
+                      watchdog_enabled=None, stuck_timeout_minutes=None, min_account_cooldown_minutes=None,
+                      max_parallel_uploads=None):
         """Cập nhật cấu hình runtime ngay lập tức"""
         if interval_minutes is not None:
             self.rss_interval_minutes = max(1, int(interval_minutes))
@@ -159,6 +172,8 @@ class BackgroundScheduler:
             self.stuck_timeout_minutes = max(5, int(stuck_timeout_minutes))
         if min_account_cooldown_minutes is not None:
             self.min_account_cooldown_minutes = max(15, int(min_account_cooldown_minutes))
+        if max_parallel_uploads is not None:
+            self.max_parallel_uploads = max(1, min(6, int(max_parallel_uploads)))
     def update_follower_config(self, enabled=None, mode=None, times=None, interval_hours=None):
         """Cập nhật cấu hình quét follower runtime"""
         if enabled is not None:
@@ -481,17 +496,25 @@ class BackgroundScheduler:
     def _process_pending_uploads(self):
         if not self.is_running:
             return
+
+        with self._active_upload_lock:
+            available_slots = max(0, self.max_parallel_uploads - len(self._active_uploading_profiles))
+        if available_slots <= 0:
+            return
+
         conn = get_connection()
         cursor = conn.cursor()
         now_dt = datetime.now()
         now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+
         # Lấy các task đang ở trạng thái queued và tới giờ đăng (thỏa mãn cả scheduled_time và retry_after)
         cursor.execute('''
         SELECT ut.id, ut.video_id, ut.title, ut.tags, 
                COALESCE(NULLIF(ut.video_path, ''), v.rendered_path) as rendered_path, 
                gp.gpm_id, ut.gpm_profile_id, COALESCE(ut.retry_count, 0) as retry_count,
                v.channel_id, COALESCE(ut.part_number, 1) as part_number,
-               gp.tiktok_username, COALESCE(ut.variant_tag, '') as variant_tag
+               gp.tiktok_username, COALESCE(ut.variant_tag, '') as variant_tag,
+               COALESCE(ut.hook_copy, '') as hook_copy
         FROM upload_tasks ut
         JOIN videos v ON ut.video_id = v.id
         JOIN gpm_profiles gp ON ut.gpm_profile_id = gp.id
@@ -499,15 +522,30 @@ class BackgroundScheduler:
           AND (ut.scheduled_time IS NULL OR ut.scheduled_time <= ?)
           AND (ut.retry_after IS NULL OR ut.retry_after <= ?)
         ORDER BY ut.scheduled_time ASC, ut.id ASC
-        LIMIT 10
+        LIMIT 30
         ''', (now_str, now_str))
         candidates = cursor.fetchall()
-        task = None
+        
+        from backend.modules.tiktok_tracker import is_profile_busy
+        from backend.database import get_linked_profile_ids
+
+        tasks_to_dispatch = []
+        dispatched_profiles = set()
+
         for cand_row in candidates:
             cand = dict(cand_row)
+            gpm_id = cand["gpm_id"]
             cand_profile_id = cand["gpm_profile_id"]
             cand_video_id = cand["video_id"]
             cand_part_num = cand["part_number"] or 1
+
+            # Bỏ qua nếu profile này đang được worker khác upload hoặc đang bận
+            with self._active_upload_lock:
+                if gpm_id in self._active_uploading_profiles:
+                    continue
+            if gpm_id in dispatched_profiles or is_profile_busy(gpm_id):
+                continue
+
             # 1. Bảo vệ chỉ số 30 phút đầu (First 30 Minutes Rule / Peak Traffic Guard):
             # Tuyệt đối không đăng vào khung giờ chết ban đêm (00:00 - 06:45) khi lượng người dùng hoạt động thấp nhất.
             current_hour = now_dt.hour
@@ -518,6 +556,7 @@ class BackgroundScheduler:
                 conn.commit()
                 log_event("INFO", f"[UPLOAD WORKER] 🌙 Khung giờ chết ({current_hour:02d}:{now_dt.minute:02d}). Tự động hoãn Task #{cand['id']} tới khung giờ vàng buổi sáng ({morning_str}) để tối ưu tương tác 30 phút đầu.")
                 continue
+
             # Khóa tuần tự Part (Series Sequencing Lock):
             # Nếu task này là Part 2, Part 3... thì BẮT BUỘC các Part trước của cùng video_id phải đã đăng thành công ('completed')
             if cand_part_num > 1:
@@ -529,6 +568,7 @@ class BackgroundScheduler:
                 if uncompleted_prev > 0:
                     # Part trước chưa upload xong -> Bỏ qua task này, nhường lượt cho Part trước hoặc video khác
                     continue
+
             # Ưu tiên lấy cấu hình giãn cách riêng của Chiến dịch (nếu có), nếu không có thì dùng Cấu hình toàn cục (Global)
             cooldown_mins = self.min_account_cooldown_minutes
             try:
@@ -546,12 +586,11 @@ class BackgroundScheduler:
                         cooldown_mins = max(15, int(c_row["min_post_interval_minutes"]))
             except Exception:
                 pass
-            from backend.database import get_linked_profile_ids
+
             linked_ids = get_linked_profile_ids(cursor, cand_profile_id)
             ph_linked = ",".join("?" for _ in linked_ids)
 
             # A. Chống đăng trùng tuyệt đối (Duplicate Clip Guard across Browsers):
-            # Nếu clip này (cùng video_id và part_number) đã từng đăng thành công qua bất kỳ profile nào cùng nick (GPM hoặc GenLogin) -> Bỏ qua
             cursor.execute(f"""
                 SELECT ut.id, ut.uploaded_at, gp.name FROM upload_tasks ut
                 JOIN gpm_profiles gp ON ut.gpm_profile_id = gp.id
@@ -570,7 +609,6 @@ class BackgroundScheduler:
                 continue
 
             # B. Khóa đồng thời kênh (Channel Concurrency Lock):
-            # Không cho phép 2 profile (1 GPM, 1 GenLogin) cùng mở và upload vào cùng 1 kênh cùng lúc
             cursor.execute(f"""
                 SELECT ut.id, gp.name FROM upload_tasks ut
                 JOIN gpm_profiles gp ON ut.gpm_profile_id = gp.id
@@ -582,7 +620,6 @@ class BackgroundScheduler:
                 continue
 
             # C. Giãn cách tối thiểu liên trình duyệt (Cross-Browser Cooldown Guard):
-            # Kiểm tra thời điểm đăng bài hoàn tất gần nhất của TẤT CẢ profile cùng nick này (GPMLogin + GenLogin)
             cursor.execute(f"""
                 SELECT ut.uploaded_at, gp.name FROM upload_tasks ut
                 JOIN gpm_profiles gp ON ut.gpm_profile_id = gp.id
@@ -603,43 +640,28 @@ class BackgroundScheduler:
                         continue
                 except Exception:
                     pass
-            # Profile này an toàn và đủ điều kiện để đăng
-            task = cand
-            break
-        if task:
-            if not self.is_running:
-                conn.close()
-                return
-            task_id = task["id"]
-            video_path = task["rendered_path"]
-            gpm_id = task["gpm_id"]
-            title = task["title"]
-            tags = task["tags"]
-            cur_retries = task["retry_count"]
+
             # Chốt chặn kiểm tra file video render thực tế trên đĩa (tránh mở GPM vô ích nếu file hỏng/rỗng)
+            video_path = cand["rendered_path"]
             if not video_path or not os.path.exists(video_path) or os.path.getsize(video_path) < 1024:
                 err_text = f"File video không tồn tại hoặc bị lỗi rỗng (<1KB): {video_path}"
-                log_event("ERROR", f"[UPLOAD WORKER] Hủy Task #{task_id}: {err_text}")
-                cursor.execute("UPDATE upload_tasks SET status = 'failed', error_message = ? WHERE id = ?", (err_text, task_id))
+                log_event("ERROR", f"[UPLOAD WORKER] Hủy Task #{cand['id']}: {err_text}")
+                cursor.execute("UPDATE upload_tasks SET status = 'failed', error_message = ? WHERE id = ?", (err_text, cand["id"]))
                 conn.commit()
-                conn.close()
-                return
-            # Kiểm tra an toàn: Nếu profile đang bận quét follower thì tạm hoãn để không gây xung đột browser
-            from backend.modules.tiktok_tracker import is_profile_busy
-            if is_profile_busy(gpm_id):
-                conn.close()
-                return
-            # Lấy thông tin platform và browser_type của profile
-            cursor.execute("SELECT platform, browser_type FROM gpm_profiles WHERE gpm_id = ? LIMIT 1", (gpm_id,))
-            p_row = cursor.fetchone()
-            p_platform = (p_row["platform"] if p_row and p_row["platform"] else "tiktok").lower()
-            p_browser = (p_row["browser_type"] if p_row and p_row["browser_type"] else "auto").lower()
+                continue
 
-            # Tự động đảm bảo trình duyệt sẵn sàng
-            from backend.modules.browser_adapters import browser_manager
-            adapter = browser_manager.get_adapter(p_browser if p_browser != "auto" else "gpm")
-            if adapter and hasattr(adapter, "ensure_running"):
-                adapter.ensure_running()
+            # Profile này an toàn và đủ điều kiện để đăng
+            tasks_to_dispatch.append(cand)
+            dispatched_profiles.add(gpm_id)
+            if len(tasks_to_dispatch) >= available_slots:
+                break
+
+        # Khởi chạy đa luồng cho các task đã chọn
+        for task in tasks_to_dispatch:
+            task_id = task["id"]
+            gpm_id = task["gpm_id"]
+            with self._active_upload_lock:
+                self._active_uploading_profiles.add(gpm_id)
 
             cursor.execute("""
                 UPDATE upload_tasks 
@@ -647,7 +669,41 @@ class BackgroundScheduler:
                 WHERE id = ?
             """, (now_str, task_id))
             conn.commit()
+
+            # Submit task to worker thread pool
+            self._upload_pool.submit(self._execute_single_upload_task, task)
+
+        conn.close()
+
+    def _execute_single_upload_task(self, task: dict):
+        """Thực thi một tác vụ tải lên video hoàn chỉnh trong worker thread riêng"""
+        task_id = task["id"]
+        video_path = task["rendered_path"]
+        gpm_id = task["gpm_id"]
+        title = task["title"]
+        tags = task["tags"]
+        cur_retries = task["retry_count"]
+        now_dt = datetime.now()
+        now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+
+            # Lấy thông tin platform và browser_type của profile
+            cursor.execute("SELECT platform, browser_type FROM gpm_profiles WHERE gpm_id = ? LIMIT 1", (gpm_id,))
+            p_row = cursor.fetchone()
+            p_platform = (p_row["platform"] if p_row and p_row["platform"] else "tiktok").lower()
+            p_browser = (p_row["browser_type"] if p_row and p_row["browser_type"] else "auto").lower()
             conn.close()
+
+            # Tự động đảm bảo trình duyệt sẵn sàng
+            from backend.modules.browser_adapters import browser_manager
+            adapter = browser_manager.get_adapter(p_browser if p_browser != "auto" else "gpm")
+            if adapter and hasattr(adapter, "ensure_running"):
+                adapter.ensure_running()
+
+            log_event("INFO", f"[UPLOAD WORKER] 🚀 Bắt đầu đăng Task #{task_id} qua profile '{gpm_id}' (Nền tảng: {p_platform.upper()}, Trình duyệt: {p_browser.upper()})...")
 
             # Thực thi upload qua MultiPlatformUploader (hỗ trợ TikTok, YouTube, Facebook x GPM, GenLogin)
             try:
@@ -659,10 +715,12 @@ class BackgroundScheduler:
                     title=title,
                     tags=tags,
                     browser_type=p_browser,
-                    auto_post=True
+                    auto_post=True,
+                    close_browser_on_finish=True
                 )
             except Exception as ex:
                 res = {"success": False, "message": f"Ngoại lệ khi upload: {str(ex)}"}
+
             conn = get_connection()
             try:
                 cursor = conn.cursor()
@@ -678,14 +736,14 @@ class BackgroundScheduler:
                     if task.get("video_id"):
                         cursor.execute("UPDATE videos SET status = 'uploaded' WHERE id = ?", (task["video_id"],))
                     conn.commit()
-                    # Gap 4: Kích hoạt Auto-Pilot Golden 30-Minute Engagement Protocol
+
                     vtag = task.get("variant_tag", "")
                     vtag_str = f" ({vtag})" if vtag else ""
                     log_event(
                         "SUCCESS", 
-                        f"🚀 [GOLDEN 30-MIN] Video #{task.get('video_id')}{vtag_str} đã đăng thành công lên @{gpm_id} (Task #{task_id}) lúc {now_str}! "
-                        f"Checklist 30 phút đầu: 1️⃣ Ghim comment mồi thảo luận; 2️⃣ Trả lời 3-5 comment đầu; 3️⃣ Mồi tín hiệu chia sẻ."
+                        f"🚀 [GOLDEN 30-MIN] Video #{task.get('video_id')}{vtag_str} đã đăng thành công lên @{gpm_id} (Task #{task_id}) lúc {now_str}!"
                     )
+
                     try:
                         ch_id = task.get("channel_id")
                         cursor.execute("""
@@ -699,19 +757,13 @@ class BackgroundScheduler:
                         if camp_cfg and camp_cfg["auto_engagement_enabled"]:
                             camp_id = camp_cfg["id"]
                             p_url = res.get("post_url", "") or ""
-                            # 1. Lên lịch ghim comment mồi (Follower Trap) với Human Timing & Anti-Spam Shield
                             if camp_cfg["auto_pin_comment"] != 0:
-                                # Anti-Spam Shield: Chỉ ghim ở ~80% số video để phá vỡ pattern bot cứng nhắc
                                 should_pin = (random.random() < 0.80)
-                                if not should_pin:
-                                    log_event("INFO", f"🛡️ [ANTI-SPAM SHIELD] Bỏ qua ghim comment cho Task #{task_id} để tạo hành vi ngẫu nhiên tự nhiên (Human-like variation).")
-                                else:
-                                    # Human Timing: Chờ từ 3 đến 8 phút sau khi đăng
+                                if should_pin:
                                     delay_p = random.randint(3, 8)
                                     pin_dt = now_dt + timedelta(minutes=delay_p, seconds=random.randint(0, 59))
                                     pin_str = pin_dt.strftime("%Y-%m-%d %H:%M:%S")
 
-                                    # Xác định chính xác trạng thái Part (Part 1, Part giữa, Part cuối, hoặc Video đơn)
                                     curr_part = task.get("part_number") or 1
                                     vid_id = task.get("video_id")
                                     total_p = 1
@@ -733,37 +785,33 @@ class BackgroundScheduler:
                                         ai_provider=camp_cfg["ai_provider"] or "default",
                                         ai_model=camp_cfg["ai_model"] or "default"
                                     )
-                                payload_json = json.dumps({
-                                    "comment_text": seed_dict.get("comment", ""),
-                                    "language": seed_dict.get("language", "vi"),
-                                    "created_reason": "auto_pilot_campaign"
-                                }, ensure_ascii=False)
-                                # Guard: chỉ tạo nếu chưa có pin_comment task nào cho upload_task này
-                                cursor.execute("""
-                                    SELECT COUNT(*) as cnt FROM engagement_tasks
-                                    WHERE upload_task_id = ? AND task_type = 'pin_comment'
-                                """, (task_id,))
-                                if cursor.fetchone()["cnt"] == 0:
+                                    payload_json = json.dumps({
+                                        "comment_text": seed_dict.get("comment", ""),
+                                        "language": seed_dict.get("language", "vi"),
+                                        "created_reason": "auto_pilot_campaign"
+                                    }, ensure_ascii=False)
                                     cursor.execute("""
-                                        INSERT INTO engagement_tasks (
-                                            upload_task_id, campaign_id, gpm_profile_id, post_url,
-                                            task_type, status, scheduled_time, payload
-                                        ) VALUES (?, ?, ?, ?, 'pin_comment', 'pending', ?, ?)
-                                    """, (task_id, camp_id, task.get("gpm_profile_id"), p_url, pin_str, payload_json))
-                                    conn.commit()
-                                    log_event("SUCCESS", f"🔥 [GOLDEN 30-MIN] Đã lên lịch tự động Ghim comment mồi cho Task #{task_id} lúc {pin_str}: '{seed_dict.get('comment')}'")
-                                else:
-                                    log_event("INFO", f"🛡️ [DEDUP] pin_comment task cho upload #{task_id} đã tồn tại — bỏ qua tạo trùng.")
-                            # 2. Lên lịch tự động trả lời comment khán giả sau 20 phút (hoặc cấu hình)
+                                        SELECT COUNT(*) as cnt FROM engagement_tasks
+                                        WHERE upload_task_id = ? AND task_type = 'pin_comment'
+                                    """, (task_id,))
+                                    if cursor.fetchone()["cnt"] == 0:
+                                        cursor.execute("""
+                                            INSERT INTO engagement_tasks (
+                                                upload_task_id, campaign_id, gpm_profile_id, post_url,
+                                                task_type, status, scheduled_time, payload
+                                            ) VALUES (?, ?, ?, ?, 'pin_comment', 'pending', ?, ?)
+                                        """, (task_id, camp_id, task.get("gpm_profile_id"), p_url, pin_str, payload_json))
+                                        conn.commit()
+                                        log_event("SUCCESS", f"🔥 [GOLDEN 30-MIN] Đã lên lịch tự động Ghim comment mồi cho Task #{task_id} lúc {pin_str}: '{seed_dict.get('comment')}'")
+
                             if camp_cfg["auto_reply_comments"] != 0:
                                 delay_r = max(5, camp_cfg["reply_comments_delay_mins"] or 20)
                                 rep_dt = now_dt + timedelta(minutes=delay_r, seconds=random.randint(0, 120))
                                 rep_str = rep_dt.strftime("%Y-%m-%d %H:%M:%S")
-                                # Guard: chỉ tạo nếu chưa có reply_comments task nào cho upload_task này
                                 cursor.execute("""
                                     SELECT COUNT(*) as cnt FROM engagement_tasks
                                     WHERE upload_task_id = ? AND task_type = 'reply_comments'
-                                """, (task_id,))
+                                Lonely: """, (task_id,))
                                 if cursor.fetchone()["cnt"] == 0:
                                     cursor.execute("""
                                         INSERT INTO engagement_tasks (
@@ -772,11 +820,10 @@ class BackgroundScheduler:
                                         ) VALUES (?, ?, ?, ?, 'reply_comments', 'pending', ?)
                                     """, (task_id, camp_id, task.get("gpm_profile_id"), p_url, rep_str))
                                     conn.commit()
-                                    log_event("SUCCESS", f"💬 [GOLDEN 30-MIN] Đã lên lịch tự động Rep bình luận khán giả cho Task #{task_id} lúc {rep_str} (sau {delay_r} phút)")
-                                else:
-                                    log_event("INFO", f"🛡️ [DEDUP] reply_comments task cho upload #{task_id} đã tồn tại — bỏ qua tạo trùng.")
+                                    log_event("SUCCESS", f"💬 [GOLDEN 30-MIN] Đã lên lịch tự động Rep bình luận khán giả cho Task #{task_id} lúc {rep_str}")
                     except Exception as ex_eng:
                         log_event("WARNING", f"Lỗi khởi tạo Golden Engagement Tasks: {ex_eng}")
+
                     # Gửi thông báo nhắc nhở checklist tới Telegram
                     try:
                         from backend.modules.notifier import notifier
@@ -792,14 +839,6 @@ class BackgroundScheduler:
                             },
                             daemon=True
                         ).start()
-                    except Exception as ex_chk:
-                        log_event("WARNING", f"Lỗi gửi Telegram checklist 30 phút: {ex_chk}")
-                    try:
-                        cursor.execute("SELECT value FROM settings WHERE key = 'cleanup_retention_mode'")
-                        s_row = cursor.fetchone()
-                        if s_row and s_row["value"] in ("0", "immediate"):
-                            from backend.app import cleanup_uploaded_files
-                            cleanup_uploaded_files(retention_mode="0")
                     except Exception:
                         pass
                 else:
@@ -829,7 +868,7 @@ class BackgroundScheduler:
                             task_id
                         ))
                         conn.commit()
-                        log_event("WARNING", f"Tác vụ đăng bài #{task_id} (GPM: {gpm_id}) gặp sự cố tạm thời: {fail_msg}. Hệ thống sẽ tự động thử lại lần {next_retry}/{self.max_retries} vào lúc {retry_time}.")
+                        log_event("WARNING", f"Tác vụ đăng bài #{task_id} (GPM: {gpm_id}) gặp sự cố: {fail_msg}. Sẽ thử lại lần {next_retry}/{self.max_retries} vào lúc {retry_time}.")
                     else:
                         cursor.execute("""
                             UPDATE upload_tasks 
@@ -839,28 +878,30 @@ class BackgroundScheduler:
                             WHERE id = ?
                         """, (fail_msg, task_id))
                         conn.commit()
-                        log_event("WARNING", f"Tác vụ đăng bài #{task_id} (GPM: {gpm_id}) thất bại hẳn (hoặc không đủ điều kiện thử lại): {fail_msg}")
-                        # Tự động gửi cảnh báo sự cố kèm cách xử lý tới các kênh Telegram có bật notify_issues
+                        log_event("WARNING", f"Tác vụ đăng bài #{task_id} (GPM: {gpm_id}) thất bại hẳn: {fail_msg}")
                         try:
                             from backend.modules.notifier import notifier
                             solution = notifier.get_solution_for_error(fail_msg, category="upload")
                             threading.Thread(
                                 target=notifier.send_issue_alert,
                                 kwargs={
-                                    "title": f"Lỗi Đăng Video TikTok #{task_id}",
-                                    "message": f"Tác vụ tải video lên profile GPMLogin '{gpm_id}' không thành công.\nNguyên nhân: {fail_msg}",
+                                    "title": f"Lỗi Đăng Video #{task_id}",
+                                    "message": f"Tác vụ tải video lên profile '{gpm_id}' không thành công.\nNguyên nhân: {fail_msg}",
                                     "solution": solution,
                                     "severity": "HIGH",
-                                    "details": f"Tiêu đề: {title} | Profile GPM: {gpm_id} | Đã thử: {cur_retries}/{self.max_retries}"
+                                    "details": f"Tiêu đề: {title} | Profile: {gpm_id} | Đã thử: {cur_retries}/{self.max_retries}"
                                 },
                                 daemon=True
                             ).start()
-                        except Exception as n_err:
-                            log_event("WARNING", f"Lỗi gửi cảnh báo sự cố upload qua Telegram: {n_err}")
+                        except Exception:
+                            pass
             finally:
                 conn.close()
-        else:
-            conn.close()
+        except Exception as e_task:
+            log_event("ERROR", f"[UPLOAD WORKER] Lỗi thực thi Task #{task_id}: {e_task}")
+        finally:
+            with self._active_upload_lock:
+                self._active_uploading_profiles.discard(gpm_id)
     def _process_pending_engagements(self):
         """Worker quét và thực thi các nhiệm vụ Golden 30-Minute Engagement tới hạn"""
         if not self.is_running:

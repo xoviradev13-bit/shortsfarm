@@ -2653,6 +2653,18 @@ def sync_local_videos_with_db():
     cursor.execute("SELECT * FROM videos")
     existing_rows = [dict(r) for r in cursor.fetchall()]
 
+    # Tối ưu hóa hiệu năng cao cho hàng ngàn video: Quét thư mục đĩa một lần duy nhất (Single-pass scan)
+    rendered_filenames = set()
+    for d in [RENDERED_DIR, Path("data/test_renders")]:
+        if d.exists():
+            try:
+                for root, _, files in os.walk(d):
+                    for f in files:
+                        if f.lower().endswith(".mp4"):
+                            rendered_filenames.add(f)
+            except Exception:
+                pass
+
     for r in existing_rows:
         has_raw = bool(r.get("download_path") and os.path.exists(r["download_path"]))
         has_ren = bool(r.get("rendered_path") and os.path.exists(r["rendered_path"]))
@@ -2668,16 +2680,14 @@ def sync_local_videos_with_db():
             except Exception:
                 pass
 
-        # Kiểm tra thêm part renders (hỗ trợ mọi thư mục và subfolder qua rglob)
+        # Kiểm tra thêm part renders qua bộ đệm tên file (O(1) thay vì O(N) disk I/O)
         any_parts = False
         if vid_id:
-            check_dirs = [RENDERED_DIR, Path("data/test_renders")]
-            if r.get("rendered_path") and os.path.exists(r["rendered_path"]):
-                check_dirs.append(Path(r["rendered_path"]).parent)
-            for d in check_dirs:
-                if d.exists() and list(d.rglob(f"*{vid_id}*.mp4")):
+            any_parts = any(vid_id in fn for fn in rendered_filenames)
+            if not any_parts and r.get("rendered_path"):
+                p_dir = Path(r["rendered_path"]).parent
+                if p_dir.exists() and any(p_dir.glob(f"*{vid_id}*.mp4")):
                     any_parts = True
-                    break
 
         if not has_raw and not has_ren and not any_parts:
             # File đã bị xóa hoàn toàn khỏi thư mục đĩa -> Xóa bản ghi
@@ -2835,66 +2845,79 @@ def list_videos(sync: bool = True):
     conn.close()
 
     from backend.config import RENDERED_DIR
+
+    # Tối ưu hóa hiệu năng cao cho hàng ngàn video: Index thư mục đĩa một lần duy nhất (Single-pass file cache)
+    all_check_dirs = {RENDERED_DIR}
+    for r in rows:
+        if r.get("rendered_path"):
+            all_check_dirs.add(Path(r["rendered_path"]).parent)
+        if r.get("ch_render_dir"):
+            all_check_dirs.add(Path(r["ch_render_dir"]))
+
+    indexed_mp4_files = []
+    for d in all_check_dirs:
+        if os.path.exists(d):
+            try:
+                for root, _, files in os.walk(d):
+                    for fn in files:
+                        if fn.lower().endswith(".mp4"):
+                            fp = os.path.join(root, fn)
+                            try:
+                                mt = os.path.getmtime(fp)
+                            except Exception:
+                                mt = 0
+                            indexed_mp4_files.append((fn, fp, mt))
+            except Exception:
+                pass
+
+    pending_db_updates = []
+
     for r in rows:
         vid_id = r.get("yt_video_id") or ""
-        # Quét toàn bộ các file Part đã render từ video này
+        # Lấy toàn bộ các file Part đã render từ video này từ bộ nhớ đệm O(1)
         rendered_parts = []
-        dirs_to_check = []
-        if r.get("rendered_path") and os.path.exists(r["rendered_path"]):
-            parent_dir = Path(r["rendered_path"]).parent
-            if parent_dir not in dirs_to_check:
-                dirs_to_check.append(parent_dir)
-        if r.get("ch_render_dir") and os.path.exists(r["ch_render_dir"]):
-            ch_dir = Path(r["ch_render_dir"])
-            if ch_dir not in dirs_to_check:
-                dirs_to_check.append(ch_dir)
-        if RENDERED_DIR not in dirs_to_check and RENDERED_DIR.exists():
-            dirs_to_check.append(RENDERED_DIR)
-
-        found_files = set()
-        for d in dirs_to_check:
-            if vid_id and os.path.exists(d):
-                for p in Path(d).rglob(f"*{vid_id}*.mp4"):
-                    if str(p) not in found_files:
-                        found_files.add(str(p))
-                        part_m = re.search(r'Part(\d+)', p.name, re.IGNORECASE)
-                        p_num = int(part_m.group(1)) if part_m else 1
-                        rendered_parts.append({
+        if vid_id:
+            matched_files = [item for item in indexed_mp4_files if vid_id in item[0]]
+            part_map = {}
+            for fn, fp, mt in matched_files:
+                part_m = re.search(r'Part(\d+)', fn, re.IGNORECASE)
+                p_num = int(part_m.group(1)) if part_m else 1
+                if p_num not in part_map or mt > part_map[p_num]["mtime"]:
+                    part_map[p_num] = {
+                        "rp": {
                             "part": p_num,
-                            "filename": p.name,
-                            "path": str(p),
+                            "filename": fn,
+                            "path": fp,
                             "url": f"/api/video/stream/{r['id']}?type=rendered&part={p_num}"
-                        })
-
-        # Deduplicate rendered parts by part number, keeping newest file
-        part_map = {}
-        for rp in rendered_parts:
-            p_num = rp["part"]
-            mtime = os.path.getmtime(rp["path"]) if os.path.exists(rp["path"]) else 0
-            if p_num not in part_map or mtime > part_map[p_num]["mtime"]:
-                part_map[p_num] = {"rp": rp, "mtime": mtime}
-        rendered_parts = [v["rp"] for k, v in sorted(part_map.items())]
+                        },
+                        "mtime": mt
+                    }
+            rendered_parts = [v["rp"] for k, v in sorted(part_map.items())]
         r["rendered_parts"] = rendered_parts
 
         has_raw = bool(r.get("download_path") and os.path.exists(r["download_path"]))
         has_rendered = len(rendered_parts) > 0 or bool(r.get("rendered_path") and os.path.exists(r["rendered_path"]))
 
-        # Fallback: nếu rendered_path trống nhưng có rendered_parts, tự động gán đường dẫn part đầu tiên và lưu vào DB
+        # Fallback: nếu rendered_path trống nhưng có rendered_parts, chuẩn bị cập nhật DB theo batch
         if (not r.get("rendered_path") or not os.path.exists(r.get("rendered_path") or "")) and rendered_parts:
             r["rendered_path"] = rendered_parts[0]["path"]
-            try:
-                up_conn = get_connection()
-                up_cur = up_conn.cursor()
-                up_cur.execute("UPDATE videos SET rendered_path = ?, status = 'rendered' WHERE id = ?", (rendered_parts[0]["path"], r["id"]))
-                up_conn.commit()
-                up_conn.close()
-            except Exception:
-                pass
+            pending_db_updates.append((rendered_parts[0]["path"], r["id"]))
 
         r["has_raw"] = has_raw
         r["has_rendered"] = has_rendered
         r["raw_url"] = f"/api/video/stream/{r['id']}?type=original" if has_raw else ""
         r["media_url"] = rendered_parts[0]["url"] if rendered_parts else (r["raw_url"] if has_raw else "")
+
+    # Thực thi cập nhật DB theo batch (1 kết nối duy nhất thay vì N kết nối)
+    if pending_db_updates:
+        try:
+            up_conn = get_connection()
+            up_cur = up_conn.cursor()
+            up_cur.executemany("UPDATE videos SET rendered_path = ?, status = 'rendered' WHERE id = ?", pending_db_updates)
+            up_conn.commit()
+            up_conn.close()
+        except Exception:
+            pass
 
     return rows
 
@@ -4349,6 +4372,7 @@ class UpdateSchedulerSettingsRequest(BaseModel):
     watchdog_enabled: bool = True
     stuck_timeout_minutes: int = 15
     min_account_cooldown_minutes: Optional[int] = 60
+    max_parallel_uploads: Optional[int] = 1
 
 @app.get("/api/settings/defaults")
 def get_default_settings():
@@ -4394,6 +4418,7 @@ def get_scheduler_settings():
         "watchdog_enabled": settings_dict.get("watchdog_enabled", "1" if getattr(scheduler, "watchdog_enabled", True) else "0") == "1",
         "stuck_timeout_minutes": int(settings_dict.get("upload_stuck_timeout_minutes", getattr(scheduler, "stuck_timeout_minutes", 15))),
         "min_account_cooldown_minutes": int(settings_dict.get("min_account_cooldown_minutes", getattr(scheduler, "min_account_cooldown_minutes", 60))),
+        "max_parallel_uploads": int(settings_dict.get("max_parallel_uploads", getattr(scheduler, "max_parallel_uploads", 1))),
         "scheduler_running": scheduler.is_running
     }
 
@@ -4416,6 +4441,8 @@ def update_scheduler_settings(req: UpdateSchedulerSettingsRequest):
         raise HTTPException(status_code=400, detail="Thời gian timeout chống treo phải từ 5 đến 180 phút!")
     if req.min_account_cooldown_minutes is not None and (req.min_account_cooldown_minutes < 15 or req.min_account_cooldown_minutes > 1440):
         raise HTTPException(status_code=400, detail="Giãn cách tối thiểu giữa 2 lần đăng bài trên cùng 1 tài khoản phải từ 15 đến 1440 phút!")
+    if req.max_parallel_uploads is not None and (req.max_parallel_uploads < 1 or req.max_parallel_uploads > 6):
+        raise HTTPException(status_code=400, detail="Số luồng upload song song phải từ 1 đến 6 luồng (khuyến nghị 1 luồng cho máy 8GB RAM)!")
 
     scheduler.update_config(
         interval_minutes=req.interval_minutes,
@@ -4430,7 +4457,8 @@ def update_scheduler_settings(req: UpdateSchedulerSettingsRequest):
         retry_delay_minutes=req.retry_delay_minutes,
         watchdog_enabled=req.watchdog_enabled,
         stuck_timeout_minutes=req.stuck_timeout_minutes,
-        min_account_cooldown_minutes=req.min_account_cooldown_minutes
+        min_account_cooldown_minutes=req.min_account_cooldown_minutes,
+        max_parallel_uploads=req.max_parallel_uploads
     )
     try:
         conn = get_connection()
@@ -4449,12 +4477,14 @@ def update_scheduler_settings(req: UpdateSchedulerSettingsRequest):
         cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('upload_stuck_timeout_minutes', ?)", (str(req.stuck_timeout_minutes),))
         if req.min_account_cooldown_minutes is not None:
             cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('min_account_cooldown_minutes', ?)", (str(req.min_account_cooldown_minutes),))
+        if req.max_parallel_uploads is not None:
+            cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('max_parallel_uploads', ?)", (str(req.max_parallel_uploads),))
         conn.commit()
         conn.close()
     except Exception as e:
         log_event("WARNING", f"Lỗi lưu cấu hình scheduler vào DB: {e}")
 
-    log_event("INFO", f"Đã cập nhật cấu hình tự động: Quét RSS {req.interval_minutes}p/lần, kiểm tra Upload {req.upload_interval_seconds}s, Giãn cách đăng nick {req.min_account_cooldown_minutes or 60}p, Auto-Retry: {'BẬT' if req.auto_retry_enabled else 'TẮT'} ({req.max_retries} lần, cách {req.retry_delay_minutes}p), Watchdog: {'BẬT' if req.watchdog_enabled else 'TẮT'} ({req.stuck_timeout_minutes}p).")
+    log_event("INFO", f"Đã cập nhật cấu hình tự động: Quét RSS {req.interval_minutes}p/lần, kiểm tra Upload {req.upload_interval_seconds}s, Upload song song: {req.max_parallel_uploads or 1} luồng, Giãn cách đăng nick {req.min_account_cooldown_minutes or 60}p, Auto-Retry: {'BẬT' if req.auto_retry_enabled else 'TẮT'} ({req.max_retries} lần, cách {req.retry_delay_minutes}p), Watchdog: {'BẬT' if req.watchdog_enabled else 'TẮT'} ({req.stuck_timeout_minutes}p).")
     return {
         "status": "success",
         "message": f"Đã lưu cấu hình tự động quét ({req.interval_minutes} phút/lần) và Auto-Retry/Watchdog thành công!",

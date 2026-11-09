@@ -43,44 +43,50 @@ class MultiPlatformUploader:
         """
         Hàm đăng tổng quát tự động điều hướng theo nền tảng:
         platform: 'tiktok' | 'youtube' | 'facebook'
+        Tự động quản lý khóa Profile Busy Lock để tránh tranh chấp browser đa luồng.
         """
-        p = platform.lower()
-        if p == "tiktok":
-            return self.tiktok.upload_via_gpm(
-                gpm_profile_id=profile_id,
-                video_path=video_path,
-                title=title,
-                tags=tags,
-                auto_post=auto_post,
-                close_browser_on_finish=close_browser_on_finish,
-                browser_type=browser_type,
-                enable_warmup=kwargs.get("enable_warmup", True),
-                warmup_minutes=kwargs.get("warmup_minutes", None)
-            )
-        elif p in ["youtube", "yt", "shorts"]:
-            return self.upload_to_youtube(
-                profile_id=profile_id,
-                video_path=video_path,
-                title=title,
-                tags=tags,
-                browser_type=browser_type,
-                auto_post=auto_post,
-                close_browser_on_finish=close_browser_on_finish,
-                channel_id=kwargs.get("channel_id", "")
-            )
-        elif p in ["facebook", "fb", "reels"]:
-            return self.upload_to_facebook(
-                profile_id=profile_id,
-                video_path=video_path,
-                title=title,
-                tags=tags,
-                browser_type=browser_type,
-                auto_post=auto_post,
-                close_browser_on_finish=close_browser_on_finish,
-                page_id=kwargs.get("page_id", "")
-            )
-        else:
-            return {"success": False, "message": f"Nền tảng chưa được hỗ trợ: {platform}"}
+        from backend.modules.tiktok_tracker import set_profile_busy
+        set_profile_busy(profile_id, True)
+        try:
+            p = platform.lower()
+            if p == "tiktok":
+                return self.tiktok.upload_via_gpm(
+                    gpm_profile_id=profile_id,
+                    video_path=video_path,
+                    title=title,
+                    tags=tags,
+                    auto_post=auto_post,
+                    close_browser_on_finish=close_browser_on_finish,
+                    browser_type=browser_type,
+                    enable_warmup=kwargs.get("enable_warmup", True),
+                    warmup_minutes=kwargs.get("warmup_minutes", None)
+                )
+            elif p in ["youtube", "yt", "shorts"]:
+                return self.upload_to_youtube(
+                    profile_id=profile_id,
+                    video_path=video_path,
+                    title=title,
+                    tags=tags,
+                    browser_type=browser_type,
+                    auto_post=auto_post,
+                    close_browser_on_finish=close_browser_on_finish,
+                    channel_id=kwargs.get("channel_id", "")
+                )
+            elif p in ["facebook", "fb", "reels"]:
+                return self.upload_to_facebook(
+                    profile_id=profile_id,
+                    video_path=video_path,
+                    title=title,
+                    tags=tags,
+                    browser_type=browser_type,
+                    auto_post=auto_post,
+                    close_browser_on_finish=close_browser_on_finish,
+                    page_id=kwargs.get("page_id", "")
+                )
+            else:
+                return {"success": False, "message": f"Nền tảng chưa được hỗ trợ: {platform}"}
+        finally:
+            set_profile_busy(profile_id, False)
 
     def upload_to_youtube(
         self,
@@ -239,6 +245,12 @@ class MultiPlatformUploader:
         except Exception as e:
             logger.error(f"Lỗi đăng YouTube: {e}")
             return {"success": False, "message": f"YouTube Upload Error: {str(e)}"}
+        finally:
+            if close_browser_on_finish and 'adapter' in locals() and adapter:
+                try:
+                    adapter.stop_profile(profile_id)
+                except Exception:
+                    pass
 
     def upload_to_facebook(
         self,
@@ -353,6 +365,12 @@ class MultiPlatformUploader:
         except Exception as e:
             logger.error(f"Lỗi đăng Facebook: {e}")
             return {"success": False, "message": f"Facebook Upload Error: {str(e)}"}
+        finally:
+            if close_browser_on_finish and 'adapter' in locals() and adapter:
+                try:
+                    adapter.stop_profile(profile_id)
+                except Exception:
+                    pass
 
 # Singleton toàn cục
 multi_uploader = MultiPlatformUploader()

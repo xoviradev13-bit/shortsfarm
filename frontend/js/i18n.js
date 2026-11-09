@@ -95,7 +95,8 @@
             "action_close": "Đóng",
             "action_delete": "Xóa",
             "action_edit": "Chỉnh Sửa",
-            "action_search": "Tìm Kiếm"
+            "action_search": "Tìm Kiếm",
+            "settings_concurrent_uploads_title": "Số Luồng Đăng Bài Song Song:"
         },
         en: {
             "nav_auto_pipeline_title": "AUTOMATED PIPELINE",
@@ -181,7 +182,8 @@
             "action_close": "Close",
             "action_delete": "Delete",
             "action_edit": "Edit",
-            "action_search": "Search"
+            "action_search": "Search",
+            "settings_concurrent_uploads_title": "Concurrent Upload Threads:"
         },
         zh: {
             "nav_auto_pipeline_title": "自动化流程",
@@ -267,12 +269,27 @@
             "action_close": "关闭",
             "action_delete": "删除",
             "action_edit": "编辑",
-            "action_search": "搜索"
+            "action_search": "搜索",
+            "settings_concurrent_uploads_title": "并发上传线程数:"
         }
     };
 
     // ─── MASTER PHRASE MAP (Static Phrases) ──────────────────────────────────
     const phraseMap = {
+        "Số Luồng Đăng Bài Song Song:": { en: "Concurrent Upload Threads:", zh: "并发上传线程数:" },
+        "Số Luồng Đăng Bài Song Song": { en: "Concurrent Upload Threads", zh: "并发上传线程数" },
+        "1 Luồng (8GB RAM)": { en: "1 Thread (8GB RAM)", zh: "1 线程 (8GB 内存)" },
+        "2 Luồng (16GB RAM)": { en: "2 Threads (16GB RAM)", zh: "2 线程 (16GB 内存)" },
+        "3 Luồng (32GB RAM)": { en: "3 Threads (32GB RAM)", zh: "3 线程 (32GB 内存)" },
+        "4–5 Luồng (Farm Pro)": { en: "4–5 Threads (Farm Pro)", zh: "4–5 线程 (专业矩阵)" },
+        "4-5 Luồng (Farm Pro)": { en: "4–5 Threads (Farm Pro)", zh: "4–5 线程 (专业矩阵)" },
+        "tài khoản upload đồng thời": { en: "concurrent account uploads", zh: "个账号同时上传" },
+        "Khuyến nghị mặc định cho laptop 8GB RAM, không bị tràn bộ nhớ": { en: "Default recommendation for 8GB RAM laptops to avoid memory exhaustion", zh: "8GB 内存笔记本默认推荐，防止内存溢出" },
+        "Phù hợp máy 16GB RAM, đăng 2 profile cùng lúc": { en: "Recommended for 16GB RAM systems, upload 2 profiles concurrently", zh: "适合 16GB 内存设备，同时上传 2 个配置文件" },
+        "Phù hợp máy 32GB RAM, tốc độ cao": { en: "Suitable for 32GB RAM machines, high speed throughput", zh: "适合 32GB 内存设备，高速并发" },
+        "Dành cho máy trạm / Farm chuyên dụng": { en: "Designed for high-end workstations and dedicated account farms", zh: "适合专业工作站及大型矩阵机房" },
+        "Mặc định 1 luồng": { en: "Default: 1 thread", zh: "默认 1 个线程" },
+        "để đảm bảo laptop 8GB RAM chạy mượt mà, không bị lag đơ hoặc crash trình duyệt. Nếu máy tính của bạn có 16GB - 32GB+ RAM, hãy nâng lên 2-4 luồng để tăng tốc độ đăng bài song song cho dàn nick.": { en: "to ensure 8GB RAM laptops run smoothly without freezing or browser crashes. If your PC has 16GB - 32GB+ RAM, upgrade to 2-4 threads to accelerate parallel uploads across accounts.", zh: "确保 8GB 内存笔记本流畅运行，避免浏览器卡死或崩溃。若电脑拥有 16GB - 32GB+ 内存，可调至 2-4 线程以提升多账号并发上传效率。" },
         "Telegram Bot & Cảnh Báo Tăng Trưởng": { en: "Telegram Bot & Growth Milestone Alerts", zh: "Telegram 机器人与增长预警" },
         "Cấu hình Bot, quản lý kênh nhận cảnh báo và ngưỡng số lượng người theo dõi/đăng ký để kích hoạt thông báo.": { en: "Configure Bot, manage alert channels, and set follower/subscriber thresholds to trigger notifications.", zh: "配置机器人，管理预警频道，并设置触发通知的粉丝/订阅数阈值。" },
         "Lưu ý:": { en: "Note:", zh: "注意：" },

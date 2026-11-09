@@ -5,9 +5,17 @@ from typing import Dict, Any, List, Optional
 from backend.config import DB_PATH
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    conn = sqlite3.connect(DB_PATH, timeout=60.0)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA busy_timeout = 30000")
+    conn.execute("PRAGMA busy_timeout = 60000")
+    try:
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA synchronous = NORMAL")
+        conn.execute("PRAGMA cache_size = -64000")
+        conn.execute("PRAGMA temp_store = MEMORY")
+        conn.execute("PRAGMA mmap_size = 268435456")
+    except Exception:
+        pass
     return conn
 
 def init_db():
@@ -480,10 +488,23 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_upload_tasks_status_sched ON upload_tasks(status, scheduled_time)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_upload_tasks_profile_status ON upload_tasks(gpm_profile_id, status)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_upload_tasks_video_part ON upload_tasks(video_id, part_number)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_upload_tasks_video_id ON upload_tasks(video_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_upload_tasks_status ON upload_tasks(status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_upload_tasks_uploaded_at ON upload_tasks(uploaded_at)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_campaign_logs_camp_id ON campaign_logs(campaign_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_campaign_logs_created ON campaign_logs(created_at DESC)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_system_logs_created ON system_logs(created_at)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_channel_status ON videos(channel_id, status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_yt_id ON videos(yt_video_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_status ON videos(status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_created ON videos(created_at DESC)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_channels_active ON channels(is_active, auto_download)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_gpm_profiles_gpm_id ON gpm_profiles(gpm_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_gpm_profiles_platform ON gpm_profiles(platform)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_gpm_profiles_browser_type ON gpm_profiles(browser_type)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_gpm_profiles_status ON gpm_profiles(status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_gpm_profiles_followers ON gpm_profiles(followers_count DESC)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_profile_channels_gpm ON profile_channels(gpm_id, platform)")
 
     conn.commit()
     conn.close()

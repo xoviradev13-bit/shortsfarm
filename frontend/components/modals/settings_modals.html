@@ -175,9 +175,9 @@
                         và các thông số tự động</p>
                 </div>
             </div>
-            <button type="button" class="modal-corner-close has-tooltip tooltip-side-left"
-                onclick="closeSchedulerSettingsModal()" data-tooltip="Đóng cửa sổ"
-                style="position: absolute; top: 14px; right: 18px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;">
+            <button type="button" class="modal-corner-close"
+                onclick="closeSchedulerSettingsModal()" title="Đóng cửa sổ" aria-label="Đóng cửa sổ"
+                style="position: absolute; top: 14px; right: 18px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px;">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -298,6 +298,82 @@
                     </div>
                     <small class="form-hint">Khoảng cách tối thiểu giữa 2 lần đăng bài trên cùng 1 tài khoản TikTok.
                         Nếu chiến dịch không chỉ định riêng, hệ thống sẽ tự động dùng mốc toàn cục này.</small>
+                </div>
+
+                <!-- Số luồng tải lên song song (Concurrent Upload Workers) -->
+                <div class="form-group full-width" style="background: rgba(168, 85, 247, 0.05); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="font-weight:600; margin:0;">
+                            <i class="fa-solid fa-layer-group" style="color:#c084fc;"></i> <span data-i18n="settings_concurrent_uploads_title">Số Luồng Đăng Bài Song Song:</span>
+                        </label>
+                        <span id="modalParallelUploadsBadge" class="badge" style="background:rgba(168,85,247,0.2); color:#c084fc; font-size:11.5px; font-weight:700;">1 Luồng (8GB RAM)</span>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+                        <input type="number" id="modalMaxParallelUploads" class="input-field" min="1" max="6" value="1"
+                            oninput="updateModalParallelUploadsBadge(this.value)"
+                            style="width:120px; font-size:15px; font-weight:700; color:#c084fc; text-align:center;">
+                        <span style="font-size:12.5px; color:var(--text-muted); font-weight:600;">tài khoản upload đồng thời</span>
+                    </div>
+                    <!-- Presets for RAM -->
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+                        <button type="button" class="btn btn-sm btn-primary has-tooltip tooltip-top tooltip-right" id="btnParallelPreset1"
+                            onclick="setParallelUploadsPreset(1)" data-tooltip="Khuyến nghị mặc định cho laptop 8GB RAM, không bị tràn bộ nhớ">
+                            <i class="fa-solid fa-laptop"></i> 1 Luồng (8GB RAM)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary has-tooltip tooltip-top tooltip-left" id="btnParallelPreset2"
+                            onclick="setParallelUploadsPreset(2)" data-tooltip="Phù hợp máy 16GB RAM, đăng 2 profile cùng lúc">
+                            <i class="fa-solid fa-server"></i> 2 Luồng (16GB RAM)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary has-tooltip tooltip-top tooltip-right" id="btnParallelPreset3"
+                            onclick="setParallelUploadsPreset(3)" data-tooltip="Phù hợp máy 32GB RAM, tốc độ cao">
+                            <i class="fa-solid fa-bolt"></i> 3 Luồng (32GB RAM)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary has-tooltip tooltip-top tooltip-left" id="btnParallelPreset4"
+                            onclick="setParallelUploadsPreset(4)" data-tooltip="Dành cho máy trạm / Farm chuyên dụng">
+                            4–5 Luồng (Farm Pro)
+                        </button>
+                    </div>
+                    <small class="form-hint" style="margin-top:6px; margin-bottom:0; line-height:1.4;">
+                        🛡️ <b>Mặc định 1 luồng</b> để đảm bảo laptop 8GB RAM chạy mượt mà, không bị lag đơ hoặc crash trình duyệt. Nếu máy tính của bạn có 16GB - 32GB+ RAM, hãy nâng lên 2-4 luồng để tăng tốc độ đăng bài song song cho dàn nick.
+                    </small>
+                </div>
+
+                <!-- Số luồng tải lên song song (Concurrent Upload Workers) -->
+                <div class="form-group full-width" style="background: rgba(168, 85, 247, 0.05); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="font-weight:600; margin:0;">
+                            <i class="fa-solid fa-layer-group" style="color:#c084fc;"></i> <span data-i18n="settings_concurrent_uploads_title">Số Luồng Đăng Bài Song Song:</span>
+                        </label>
+                        <span id="modalParallelUploadsBadge" class="badge" style="background:rgba(168,85,247,0.2); color:#c084fc; font-size:11.5px; font-weight:700;">1 Luồng (8GB RAM)</span>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+                        <input type="number" id="modalMaxParallelUploads" class="input-field" min="1" max="6" value="1"
+                            oninput="updateModalParallelUploadsBadge(this.value)"
+                            style="width:120px; font-size:15px; font-weight:700; color:#c084fc; text-align:center;">
+                        <span style="font-size:12.5px; color:var(--text-muted); font-weight:600;">tài khoản upload đồng thời</span>
+                    </div>
+                    <!-- Presets for RAM -->
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+                        <button type="button" class="btn btn-sm btn-primary has-tooltip tooltip-top tooltip-right" id="btnParallelPreset1"
+                            onclick="setParallelUploadsPreset(1)" data-tooltip="Khuyến nghị mặc định cho laptop 8GB RAM, không bị tràn bộ nhớ">
+                            <i class="fa-solid fa-laptop"></i> 1 Luồng (8GB RAM)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary has-tooltip tooltip-top tooltip-left" id="btnParallelPreset2"
+                            onclick="setParallelUploadsPreset(2)" data-tooltip="Phù hợp máy 16GB RAM, đăng 2 profile cùng lúc">
+                            <i class="fa-solid fa-server"></i> 2 Luồng (16GB RAM)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary has-tooltip tooltip-top tooltip-right" id="btnParallelPreset3"
+                            onclick="setParallelUploadsPreset(3)" data-tooltip="Phù hợp máy 32GB RAM, tốc độ cao">
+                            <i class="fa-solid fa-bolt"></i> 3 Luồng (32GB RAM)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary has-tooltip tooltip-top tooltip-left" id="btnParallelPreset4"
+                            onclick="setParallelUploadsPreset(4)" data-tooltip="Dành cho máy trạm / Farm chuyên dụng">
+                            4–5 Luồng (Farm Pro)
+                        </button>
+                    </div>
+                    <small class="form-hint" style="margin-top:6px; margin-bottom:0; line-height:1.4;">
+                        🛡️ <b>Mặc định 1 luồng</b> để đảm bảo laptop 8GB RAM chạy mượt mà, không bị lag đơ hoặc crash trình duyệt. Nếu máy tính của bạn có 16GB - 32GB+ RAM, hãy nâng lên 2-4 luồng để tăng tốc độ đăng bài song song cho dàn nick.
+                    </small>
                 </div>
             </div>
 

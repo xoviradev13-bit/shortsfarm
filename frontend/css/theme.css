@@ -1240,6 +1240,7 @@ body.light-mode #btnSyncGpmTopbar * {
     opacity: 1 !important;
     text-shadow: none !important;
 }
+
 body.light-mode #btnSyncGpmTopbar:hover,
 body.light-mode #btnSyncGpmTopbar:hover * {
     background: #0369a1 !important;
@@ -1255,6 +1256,7 @@ body.light-mode .data-table {
     background: #ffffff !important;
     color: #0f172a !important;
 }
+
 body.light-mode #ytChannelsTable th,
 body.light-mode #savedChannelsTable th,
 body.light-mode .data-table th {
@@ -1263,28 +1265,33 @@ body.light-mode .data-table th {
     font-weight: 700 !important;
     border-bottom: 2px solid #cbd5e1 !important;
 }
+
 body.light-mode #ytChannelsTable td,
 body.light-mode #savedChannelsTable td,
 body.light-mode .data-table td {
     color: #1e293b !important;
     border-bottom: 1px solid #e2e8f0 !important;
 }
+
 body.light-mode #ytChannelsTable td div,
 body.light-mode #savedChannelsTable td div,
 body.light-mode .data-table td div {
     color: #1e293b !important;
 }
+
 body.light-mode .badge-ratio {
     background: #fef3c7 !important;
     color: #92400e !important;
     border: 1px solid #fcd34d !important;
     font-weight: 700 !important;
 }
+
 body.light-mode .badge-ratio.good {
     background: #d1fae5 !important;
     color: #065f46 !important;
     border: 1px solid #6ee7b7 !important;
 }
+
 body.light-mode .badge-ratio.high {
     background: #fee2e2 !important;
     color: #991b1b !important;
@@ -1294,11 +1301,12 @@ body.light-mode .badge-ratio.high {
 /* ElevenLabs Voice Cards High Contrast */
 body.light-mode .voice-card,
 body.light-mode .voice-preview-card,
-body.light-mode .voice-library-grid > div {
+body.light-mode .voice-library-grid>div {
     background: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
 }
+
 body.light-mode .voice-card h4,
 body.light-mode .voice-card p,
 body.light-mode .voice-card span,
@@ -1316,11 +1324,13 @@ body.light-mode #localTracksTable td div,
 body.light-mode #localTracksTable td span {
     color: #1e293b !important;
 }
+
 body.light-mode .audio-category-chip {
     background: #f1f5f9 !important;
     border: 1px solid #cbd5e1 !important;
     color: #334155 !important;
 }
+
 body.light-mode .audio-category-chip.active {
     background: #0284c7 !important;
     color: #ffffff !important;
@@ -1332,15 +1342,18 @@ body.light-mode .logs-subnav {
     background: #e2e8f0 !important;
     border: 1px solid #cbd5e1 !important;
 }
+
 body.light-mode .btn-subtab {
     color: #334155 !important;
     font-weight: 600 !important;
     background: transparent !important;
 }
+
 body.light-mode .btn-subtab:hover {
     color: #0f172a !important;
     background: #f8fafc !important;
 }
+
 body.light-mode .btn-subtab.active {
     background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
     color: #ffffff !important;
@@ -1348,6 +1361,7 @@ body.light-mode .btn-subtab.active {
     border: 1px solid #0284c7 !important;
     box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35) !important;
 }
+
 body.light-mode .btn-subtab.active * {
     color: #ffffff !important;
 }
@@ -1357,22 +1371,27 @@ body.light-mode .slider {
     background-color: #cbd5e1 !important;
     border: 1px solid #94a3b8 !important;
 }
-body.light-mode input:checked + .slider {
+
+body.light-mode input:checked+.slider {
     background-color: #6366f1 !important;
     border-color: #4f46e5 !important;
 }
+
 body.light-mode .slider:before {
     background-color: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
 }
+
 body.light-mode .tele-toggle-slider {
     background-color: #cbd5e1 !important;
     border: 1px solid #94a3b8 !important;
 }
-body.light-mode .tele-toggle-switch input:checked + .tele-toggle-slider {
+
+body.light-mode .tele-toggle-switch input:checked+.tele-toggle-slider {
     background-color: #10b981 !important;
     border-color: #059669 !important;
 }
+
 body.light-mode .tele-toggle-slider:before {
     background-color: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
@@ -2134,13 +2153,13 @@ body.light-mode .subnav-tab-btn.active i {
 }
 
 /* 4. AI Cost Center 4 Stat Cards */
-body.light-mode #tab-ai-usage div[style*="minmax(210px"] > div {
+body.light-mode #tab-ai-usage div[style*="minmax(210px"]>div {
     background: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
 }
 
-body.light-mode #tab-ai-usage div[style*="minmax(210px"] > div span:first-child {
+body.light-mode #tab-ai-usage div[style*="minmax(210px"]>div span:first-child {
     color: #334155 !important;
     font-weight: 700 !important;
     letter-spacing: 0.5px !important;
@@ -2301,7 +2320,11 @@ body.light-mode .has-tooltip.tooltip-left::before {
 }
 
 /* Arrow for top-positioned tooltips (pointing DOWN to element) */
-body.light-mode .has-tooltip.tooltip-top::before {
+body.light-mode .has-tooltip.tooltip-top::before,
+body.light-mode .has-tooltip.tooltip-top-left::before,
+body.light-mode .has-tooltip.tooltip-top-right::before,
+body.light-mode .has-tooltip.tooltip-top.tooltip-left::before,
+body.light-mode .has-tooltip.tooltip-top.tooltip-right::before {
     border-color: #0f172a transparent transparent transparent !important;
 }
 
@@ -2390,6 +2413,7 @@ body.light-mode #btnSyncGpmTopbar * {
     opacity: 1 !important;
     text-shadow: none !important;
 }
+
 body.light-mode #btnSyncGpmTopbar:hover,
 body.light-mode #btnSyncGpmTopbar:hover * {
     background: #0369a1 !important;
@@ -2405,6 +2429,7 @@ body.light-mode .data-table {
     background: #ffffff !important;
     color: #0f172a !important;
 }
+
 body.light-mode #ytChannelsTable th,
 body.light-mode #savedChannelsTable th,
 body.light-mode .data-table th {
@@ -2413,28 +2438,33 @@ body.light-mode .data-table th {
     font-weight: 700 !important;
     border-bottom: 2px solid #cbd5e1 !important;
 }
+
 body.light-mode #ytChannelsTable td,
 body.light-mode #savedChannelsTable td,
 body.light-mode .data-table td {
     color: #1e293b !important;
     border-bottom: 1px solid #e2e8f0 !important;
 }
+
 body.light-mode #ytChannelsTable td div,
 body.light-mode #savedChannelsTable td div,
 body.light-mode .data-table td div {
     color: #1e293b !important;
 }
+
 body.light-mode .badge-ratio {
     background: #fef3c7 !important;
     color: #92400e !important;
     border: 1px solid #fcd34d !important;
     font-weight: 700 !important;
 }
+
 body.light-mode .badge-ratio.good {
     background: #d1fae5 !important;
     color: #065f46 !important;
     border: 1px solid #6ee7b7 !important;
 }
+
 body.light-mode .badge-ratio.high {
     background: #fee2e2 !important;
     color: #991b1b !important;
@@ -2444,11 +2474,12 @@ body.light-mode .badge-ratio.high {
 /* ElevenLabs Voice Cards High Contrast */
 body.light-mode .voice-card,
 body.light-mode .voice-preview-card,
-body.light-mode .voice-library-grid > div {
+body.light-mode .voice-library-grid>div {
     background: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
 }
+
 body.light-mode .voice-card h4,
 body.light-mode .voice-card p,
 body.light-mode .voice-card span,
@@ -2466,11 +2497,13 @@ body.light-mode #localTracksTable td div,
 body.light-mode #localTracksTable td span {
     color: #1e293b !important;
 }
+
 body.light-mode .audio-category-chip {
     background: #f1f5f9 !important;
     border: 1px solid #cbd5e1 !important;
     color: #334155 !important;
 }
+
 body.light-mode .audio-category-chip.active {
     background: #0284c7 !important;
     color: #ffffff !important;
@@ -2482,15 +2515,18 @@ body.light-mode .logs-subnav {
     background: #e2e8f0 !important;
     border: 1px solid #cbd5e1 !important;
 }
+
 body.light-mode .btn-subtab {
     color: #334155 !important;
     font-weight: 600 !important;
     background: transparent !important;
 }
+
 body.light-mode .btn-subtab:hover {
     color: #0f172a !important;
     background: #f8fafc !important;
 }
+
 body.light-mode .btn-subtab.active {
     background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
     color: #ffffff !important;
@@ -2498,6 +2534,7 @@ body.light-mode .btn-subtab.active {
     border: 1px solid #0284c7 !important;
     box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35) !important;
 }
+
 body.light-mode .btn-subtab.active * {
     color: #ffffff !important;
 }
@@ -2507,22 +2544,27 @@ body.light-mode .slider {
     background-color: #cbd5e1 !important;
     border: 1px solid #94a3b8 !important;
 }
-body.light-mode input:checked + .slider {
+
+body.light-mode input:checked+.slider {
     background-color: #6366f1 !important;
     border-color: #4f46e5 !important;
 }
+
 body.light-mode .slider:before {
     background-color: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
 }
+
 body.light-mode .tele-toggle-slider {
     background-color: #cbd5e1 !important;
     border: 1px solid #94a3b8 !important;
 }
-body.light-mode .tele-toggle-switch input:checked + .tele-toggle-slider {
+
+body.light-mode .tele-toggle-switch input:checked+.tele-toggle-slider {
     background-color: #10b981 !important;
     border-color: #059669 !important;
 }
+
 body.light-mode .tele-toggle-slider:before {
     background-color: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;

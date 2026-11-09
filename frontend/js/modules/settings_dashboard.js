@@ -1173,6 +1173,38 @@ function setSchedulerPreset(minutes, isModal) {
     }
 }
 
+function updateModalParallelUploadsBadge(val) {
+    const badge = document.getElementById('modalParallelUploadsBadge');
+    if (!badge) return;
+    const num = parseInt(val, 10) || 1;
+    let text = '';
+    if (num === 1) text = '1 Luồng (8GB RAM)';
+    else if (num === 2) text = '2 Luồng (16GB RAM)';
+    else if (num === 3) text = '3 Luồng (32GB RAM)';
+    else text = `${num} Luồng (Farm Pro)`;
+    badge.textContent = text;
+    if (window.i18n && typeof window.i18n.translateElement === 'function') {
+        window.i18n.translateElement(badge);
+    }
+}
+
+function setParallelUploadsPreset(count) {
+    const num = Math.max(1, Math.min(6, parseInt(count, 10) || 1));
+    const inp = document.getElementById('modalMaxParallelUploads');
+    if (inp) {
+        inp.value = num;
+    }
+    updateModalParallelUploadsBadge(num);
+    [1, 2, 3, 4].forEach(n => {
+        const btn = document.getElementById(`btnParallelPreset${n}`);
+        if (btn) {
+            const isActive = (n === num) || (n === 4 && num >= 4);
+            btn.classList.toggle('btn-primary', isActive);
+            btn.classList.toggle('btn-secondary', !isActive);
+        }
+    });
+}
+
 async function loadSchedulerSettings() {
     try {
         const res = await fetch('/api/settings/scheduler');
@@ -1223,6 +1255,10 @@ async function loadSchedulerSettings() {
         const mStuckTimeout = document.getElementById('modalStuckTimeout');
         if (mStuckTimeout) mStuckTimeout.value = stuckTimeout;
 
+        // Concurrent Upload Workers
+        const maxParallel = data.max_parallel_uploads !== undefined ? data.max_parallel_uploads : 1;
+        setParallelUploadsPreset(maxParallel);
+
         // Populate Settings Tab Fields
         const sInterval = document.getElementById('settingSchedulerInterval');
         if (sInterval) sInterval.value = interval;
@@ -1249,7 +1285,7 @@ async function saveSchedulerSettings(btn, fromModal = true) {
     const original = btn ? btn.innerHTML : '';
 
     let intervalInput, uploadInput, maxVidsInput, delayInput, autoDl, autoRd, saveByFolder;
-    let autoRetry = true, maxRetries = 2, retryDelay = 15, watchdog = true, stuckTimeout = 15, minAccountCooldown = 60;
+    let autoRetry = true, maxRetries = 2, retryDelay = 15, watchdog = true, stuckTimeout = 15, minAccountCooldown = 60, maxParallelUploads = 1;
 
     if (fromModal) {
         intervalInput = document.getElementById('modalSchedulerInterval');
@@ -1265,6 +1301,7 @@ async function saveSchedulerSettings(btn, fromModal = true) {
         watchdog = document.getElementById('modalWatchdogToggle')?.checked ?? true;
         stuckTimeout = parseInt(document.getElementById('modalStuckTimeout')?.value, 10) || 15;
         minAccountCooldown = parseInt(document.getElementById('modalMinAccountCooldown')?.value, 10) || 60;
+        maxParallelUploads = Math.max(1, Math.min(6, parseInt(document.getElementById('modalMaxParallelUploads')?.value || 1, 10)));
     } else {
         intervalInput = document.getElementById('settingSchedulerInterval');
         uploadInput = document.getElementById('settingUploadInterval');
@@ -1332,7 +1369,8 @@ async function saveSchedulerSettings(btn, fromModal = true) {
         retry_delay_minutes: retryDelay,
         watchdog_enabled: watchdog,
         stuck_timeout_minutes: stuckTimeout,
-        min_account_cooldown_minutes: minAccountCooldown
+        min_account_cooldown_minutes: minAccountCooldown,
+        max_parallel_uploads: maxParallelUploads
     };
 
     try {
@@ -1846,6 +1884,7 @@ window.saveDownloadFilterSettings = saveDownloadFilterSettings;
 window.saveSchedulerSettings = saveSchedulerSettings;
 window.saveTelegramChannelModal = saveTelegramChannelModal;
 window.saveThresholdSettingsOnly = saveThresholdSettingsOnly;
+window.setParallelUploadsPreset = setParallelUploadsPreset;
 window.setSchedulerPreset = setSchedulerPreset;
 window.testTelegramChannel = testTelegramChannel;
 window.testTelegramChannelMode = testTelegramChannelMode;
@@ -1861,4 +1900,5 @@ window.togglePasswordVisibility = togglePasswordVisibility;
 window.toggleTelegramChannel = toggleTelegramChannel;
 window.triggerManualCleanup = triggerManualCleanup;
 window.updateModalIntervalBadge = updateModalIntervalBadge;
+window.updateModalParallelUploadsBadge = updateModalParallelUploadsBadge;
 window.validateMinDurationInput = validateMinDurationInput;

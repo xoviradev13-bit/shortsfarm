@@ -6,6 +6,7 @@ import unicodedata
 import subprocess
 import shutil
 import random
+import threading
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 from backend.config import (
@@ -27,6 +28,9 @@ from backend.modules.ai_addon.whisper_transcriber import whisper_transcriber
 from backend.modules.ai_addon.ass_subtitle import ass_subtitle_generator
 from backend.modules.ai_addon.ai_story_engine import ai_story_engine
 from backend.modules.audio_manager import audio_manager
+
+# Concurrency Limiter: Ngăn chặn quá tải CPU/RAM khi xử lý hàng ngàn video đồng thời
+RENDER_SEMAPHORE = threading.BoundedSemaphore(value=2)
 
 def sanitize_filename(text: Optional[str], max_length: int = 30) -> str:
     """Loại bỏ emoji, ký tự cấm của Windows và ký tự gây lỗi FFmpeg/URL, giữ ký tự an toàn và rút gọn độ dài"""
@@ -597,47 +601,48 @@ class AIVideoEngine:
             gc.collect()
             logger.debug(f"Thực thi lệnh FFmpeg render: {' '.join(cmd[:12])}...")
             cflags = 0x08000000 if sys.platform == "win32" else 0  # CREATE_NO_WINDOW
-            process = subprocess.run(cmd, capture_output=True, timeout=900, creationflags=cflags)
-            stderr_text = process.stderr.decode("utf-8", errors="replace") if process.stderr else ""
-            stdout_text = process.stdout.decode("utf-8", errors="replace") if process.stdout else ""
-
-            # Nếu chạy bằng NVENC mà bị crash/lỗi encoder -> Fallback tự động sang CPU libx264
-            if process.returncode != 0 and "nvenc" in " ".join(encoder_flags).lower():
-                logger.warning("NVENC GPU Render thất bại. Đang tự động chuyển sang CPU libx264 fallback...")
-                cpu_flags = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p"]
-                if has_bgm:
-                    fallback_cmd = [
-                        self.ffmpeg_bin, "-y",
-                        "-ss", str(start_time),
-                        "-t", str(duration),
-                        "-i", input_file,
-                        "-ss", str(bgm_start_offset),
-                        "-stream_loop", "-1",
-                        "-i", selected_bgm,
-                        "-filter_complex", full_filter_complex,
-                        "-map", f"[{out_map}]",
-                        "-map", "[a_out]"
-                    ]
-                else:
-                    fallback_cmd = [
-                        self.ffmpeg_bin, "-y",
-                        "-ss", str(start_time),
-                        "-t", str(duration),
-                        "-i", input_file,
-                        "-filter_complex", filter_complex,
-                        "-map", f"[{out_map}]",
-                        "-map", "0:a",
-                        "-af", audio_filter
-                    ]
-                fallback_cmd.extend(cpu_flags)
-                fallback_cmd.extend([
-                    "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
-                    "-t", str(duration),
-                    "-map_metadata", "-1", "-movflags", "+faststart",
-                    output_file
-                ])
-                process = subprocess.run(fallback_cmd, capture_output=True, timeout=900, creationflags=cflags)
+            with RENDER_SEMAPHORE:
+                process = subprocess.run(cmd, capture_output=True, timeout=900, creationflags=cflags)
                 stderr_text = process.stderr.decode("utf-8", errors="replace") if process.stderr else ""
+                stdout_text = process.stdout.decode("utf-8", errors="replace") if process.stdout else ""
+
+                # Nếu chạy bằng NVENC mà bị crash/lỗi encoder -> Fallback tự động sang CPU libx264
+                if process.returncode != 0 and "nvenc" in " ".join(encoder_flags).lower():
+                    logger.warning("NVENC GPU Render thất bại. Đang tự động chuyển sang CPU libx264 fallback...")
+                    cpu_flags = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p"]
+                    if has_bgm:
+                        fallback_cmd = [
+                            self.ffmpeg_bin, "-y",
+                            "-ss", str(start_time),
+                            "-t", str(duration),
+                            "-i", input_file,
+                            "-ss", str(bgm_start_offset),
+                            "-stream_loop", "-1",
+                            "-i", selected_bgm,
+                            "-filter_complex", full_filter_complex,
+                            "-map", f"[{out_map}]",
+                            "-map", "[a_out]"
+                        ]
+                    else:
+                        fallback_cmd = [
+                            self.ffmpeg_bin, "-y",
+                            "-ss", str(start_time),
+                            "-t", str(duration),
+                            "-i", input_file,
+                            "-filter_complex", filter_complex,
+                            "-map", f"[{out_map}]",
+                            "-map", "0:a",
+                            "-af", audio_filter
+                        ]
+                    fallback_cmd.extend(cpu_flags)
+                    fallback_cmd.extend([
+                        "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+                        "-t", str(duration),
+                        "-map_metadata", "-1", "-movflags", "+faststart",
+                        output_file
+                    ])
+                    process = subprocess.run(fallback_cmd, capture_output=True, timeout=900, creationflags=cflags)
+                    stderr_text = process.stderr.decode("utf-8", errors="replace") if process.stderr else ""
 
             if process.returncode == 0 and os.path.exists(output_file):
                 # Kiểm tra chất lượng (Quality Check)

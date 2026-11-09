@@ -1,0 +1,110 @@
+            <section id="tab-pipeline-queue" class="tab-pane">
+                <div class="glass-panel mb-4">
+                    <div class="panel-header">
+                        <div>
+                            <h3><i class="fa-solid fa-list-check text-cyan"></i> Hàng Đợi Xử Lý 4 Công Đoạn</h3>
+                            <p class="panel-sub">Theo dõi tiến trình của từng video qua các giai đoạn tự động hóa
+                            </p>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="btn btn-sm btn-primary" onclick="triggerProcessUploads()"><i
+                                    class="fa-solid fa-paper-plane"></i> Đăng Ngay Hàng Đợi</button>
+                            <button class="btn btn-sm btn-secondary has-tooltip" onclick="triggerManualCleanup(this)"
+                                data-tooltip="Dọn dẹp các file MP4 của video đã đăng thành công">
+                                <i class="fa-solid fa-broom text-cyan"></i> Dọn File Đã Đăng
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="loadPipelineStatus()"><i
+                                    class="fa-solid fa-rotate"></i> Làm Mới</button>
+                        </div>
+                    </div>
+
+                    <!-- 4-Stage Kanban Board -->
+                    <div class="kanban-board mt-3">
+                        <!-- Col 1: Mới tải về -->
+                        <div class="kanban-col">
+                            <div class="kanban-col-header">
+                                <h4><i class="fa-solid fa-cloud-arrow-down text-cyan"></i> 1. Mới Tải Về</h4>
+                                <span class="kanban-count-badge" id="kanbanCountDownloaded">0</span>
+                            </div>
+                            <div class="kanban-col-body" id="kanbanColDownloaded">
+                                <div class="text-center py-4 text-muted" style="font-size:11px;">Không có video chờ
+                                    render</div>
+                            </div>
+                        </div>
+
+                        <!-- Col 2: Đã render 9:16 -->
+                        <div class="kanban-col">
+                            <div class="kanban-col-header">
+                                <h4><i class="fa-solid fa-wand-magic-sparkles text-purple"></i> 2. Đã Render 9:16</h4>
+                                <span class="kanban-count-badge" id="kanbanCountRendered">0</span>
+                            </div>
+                            <div class="kanban-col-body" id="kanbanColRendered">
+                                <div class="text-center py-4 text-muted" style="font-size:11px;">Không có video sẵn sàng
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Col 3: Chờ giờ đăng -->
+                        <div class="kanban-col">
+                            <div class="kanban-col-header">
+                                <h4><i class="fa-solid fa-clock text-gold"></i> 3. Chờ Giờ Đăng</h4>
+                                <span class="kanban-count-badge" id="kanbanCountScheduled">0</span>
+                            </div>
+                            <div class="kanban-col-body" id="kanbanColScheduled">
+                                <div class="text-center py-4 text-muted" style="font-size:11px;">Không có video lên lịch
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Col 4: Đã đăng thành công -->
+                        <div class="kanban-col">
+                            <div class="kanban-col-header">
+                                <h4><i class="fa-solid fa-circle-check text-success"></i> 4. Đã Đăng</h4>
+                                <span class="kanban-count-badge" id="kanbanCountUploaded">0</span>
+                            </div>
+                            <div class="kanban-col-body" id="kanbanColUploaded">
+                                <div class="text-center py-4 text-muted" style="font-size:11px;">Chưa có bài đăng</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Raw Queue Table -->
+                <div class="glass-panel">
+                    <div class="panel-header">
+                        <h3><i class="fa-solid fa-table-list"></i> Bảng Lịch Sử & Chi Tiết Tác Vụ</h3>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-sm btn-secondary has-tooltip tooltip-top"
+                                onclick="exportPipelineVideosCsv()"
+                                data-tooltip="Xuất lịch sử tiến trình video ra file CSV">
+                                <i class="fa-solid fa-file-csv" style="color:var(--accent-cyan);"></i> Xuất CSV
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="loadPipelineStatus()"><i
+                                    class="fa-solid fa-rotate"></i> Cập Nhật</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive mt-3">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Video</th>
+                                    <th>Kênh Nguồn</th>
+                                    <th>Thời Lượng</th>
+                                    <th>Trạng Thái Luồng</th>
+                                    <th>Thời Gian Tạo</th>
+                                    <th>Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pipelineTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">Đang tải trạng thái tiến
+                                        trình...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: GPM LOGIN FARM & UPLOADER -->

@@ -1,0 +1,137 @@
+            <section id="tab-logs" class="tab-pane">
+                <div class="glass-panel">
+                    <div class="panel-header"
+                        style="flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                            <h3 style="margin: 0;"><i class="fa-solid fa-terminal text-accent"></i> Nhật Ký & Chẩn Đoán
+                                Hệ Thống</h3>
+                            <div class="logs-subnav" style="display: flex; gap: 6px; padding: 4px; border-radius: 8px;">
+                                <button type="button" class="btn btn-xs btn-subtab active" id="btnTabFileLogs"
+                                    onclick="switchLogsSubTab('file')">
+                                    <i class="fa-solid fa-file-code"></i> Debug File Log (app.log)
+                                </button>
+                                <button type="button" class="btn btn-xs btn-subtab" id="btnTabLiveLogs"
+                                    onclick="switchLogsSubTab('live')">
+                                    <i class="fa-solid fa-bolt"></i> Sự Kiện Live (DB)
+                                </button>
+                                <button type="button" class="btn btn-xs btn-subtab" id="btnTabDiagnostics"
+                                    onclick="switchLogsSubTab('diag')">
+                                    <i class="fa-solid fa-stethoscope"></i> Chẩn Đoán Cài Đặt
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUBTAB 1: DEBUG FILE LOG (APP.LOG) -->
+                    <div id="subtabFileLogsView" class="logs-subview">
+                        <!-- Subtab Action Toolbar: Buttons on the LEFT, app.log info on the RIGHT -->
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                            <div id="fileLogActionButtons" style="display: inline-flex; gap: 8px; align-items: center;">
+                                <button class="btn btn-sm btn-secondary" onclick="loadFileLogs()"><i
+                                        class="fa-solid fa-rotate"></i> Làm Mới</button>
+                                <button class="btn btn-sm btn-primary has-tooltip" onclick="downloadLogFile()"
+                                    data-tooltip="Chọn thư mục và lưu file log (.log) ra máy tính">
+                                    <i class="fa-solid fa-download"></i> Tải File Log (.log)
+                                </button>
+                                <button class="btn btn-sm btn-secondary has-tooltip" onclick="openLogFolder()"
+                                    data-tooltip="Mở thư mục chứa file log trên Windows Explorer">
+                                    <i class="fa-regular fa-folder-open"></i> Mở Thư Mục Log
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="confirmClearFileLog()"><i
+                                        class="fa-solid fa-trash-can"></i> Xóa Log</button>
+                            </div>
+
+                            <div id="fileLogHeaderActions" style="display: inline-flex; align-items: center;">
+                                <span id="fileLogMetaInfo"
+                                    style="font-size: 11.5px; color: var(--text-muted); font-family: 'JetBrains Mono', 'Consolas', monospace; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); padding: 0 12px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; box-sizing: border-box;">Đang
+                                    đọc file...</span>
+                            </div>
+                        </div>
+                        <div class="log-filter-bar"
+                            style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;"><i
+                                        class="fa-regular fa-calendar-days text-accent"></i> Ngày / File:</label>
+                                <select id="fileLogDateSelect" class="input-field"
+                                    style="padding: 4px 10px; font-size: 12px; width: auto; height: 32px; font-weight: 600;"
+                                    onchange="loadFileLogs()">
+                                    <option value="today" selected>Hôm nay (Theo ngày)</option>
+                                    <option value="all">Toàn bộ (app.log)</option>
+                                </select>
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Mức
+                                    Log:</label>
+                                <select id="fileLogLevelFilter" class="input-field"
+                                    style="padding: 4px 10px; font-size: 12px; width: auto; height: 32px;"
+                                    onchange="loadFileLogs()">
+                                    <option value="ALL">Tất Cả Mức</option>
+                                    <option value="ERROR">Chỉ Lỗi</option>
+                                    <option value="WARNING">Cảnh Báo & Lỗi (WARN+ERR)</option>
+                                    <option value="INFO">Thông Tin (INFO+)</option>
+                                    <option value="DEBUG">Chi Tiết Debug</option>
+                                </select>
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 200px;">
+                                <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;"><i
+                                        class="fa-solid fa-magnifying-glass"></i></label>
+                                <input type="text" id="fileLogSearchInput" class="input-field"
+                                    placeholder="Tìm kiếm từ khóa, module, exception, proxy..."
+                                    style="padding: 4px 10px; font-size: 12px; height: 32px;"
+                                    onkeyup="handleFileLogSearch(event)">
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <label
+                                    style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                    <input type="checkbox" id="chkAutoScrollFileLog" checked> Tự cuộn xuống cuối
+                                </label>
+                                <select id="fileLogLimitSelect" class="input-field"
+                                    style="padding: 4px 8px; font-size: 12px; width: auto; height: 32px;"
+                                    onchange="loadFileLogs()">
+                                    <option value="200">200 dòng</option>
+                                    <option value="500" selected>500 dòng</option>
+                                    <option value="1000">1000 dòng</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="log-terminal enhanced-terminal" id="fileLogTerminal"
+                            style="height: 520px; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.6; padding: 14px; background: #090c10; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div class="log-line info">[INIT] Đang tải nội dung file data/logs/app.log...</div>
+                        </div>
+                    </div>
+
+                    <!-- SUBTAB 2: LIVE SYSTEM EVENTS (DB) -->
+                    <div id="subtabLiveLogsView" class="logs-subview" style="display: none;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <span style="font-size: 13px; color: var(--text-muted);">20 sự kiện hệ thống gần nhất được
+                                lưu vào bảng SQLite system_logs</span>
+                            <button class="btn btn-sm btn-secondary" onclick="loadDashboardStats()"><i
+                                    class="fa-solid fa-rotate"></i> Làm mới</button>
+                        </div>
+                        <div class="log-terminal" id="logTerminal" style="height: 480px; overflow-y: auto;">
+                            <div class="log-line info">[INIT] Hệ thống ShortsStack & AI Engine đã khởi động thành công.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUBTAB 3: SYSTEM SETUP DIAGNOSTICS -->
+                    <div id="subtabDiagnosticsView" class="logs-subview" style="display: none;">
+                        <div id="diagnosticsContentArea">
+                            <div style="text-align: center; padding: 40px;">
+                                <i class="fa-solid fa-spinner fa-spin fa-2x text-accent"></i>
+                                <p class="mt-2" style="color: var(--text-muted);">Đang thực hiện kiểm tra chẩn đoán hệ
+                                    thống...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- TAB SETTINGS: API KEY MANAGEMENT -->

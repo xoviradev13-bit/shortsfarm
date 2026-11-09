@@ -402,3 +402,18 @@ function quickAssignVoiceToChannel(channelId) {
     }
 }
 
+// Module Window Exposures
+window.loadElevenLabsStudio = loadElevenLabsStudio;
+window.loadElevenLabsSubscription = loadElevenLabsSubscription;
+window.loadElevenLabsKeyStatus = loadElevenLabsKeyStatus;
+window.saveElevenLabsKeyStudio = saveElevenLabsKeyStudio;
+window.loadElevenLabsVoicesGallery = loadElevenLabsVoicesGallery;
+window.renderVoiceGalleryCards = renderVoiceGalleryCards;
+window.filterVoiceGallery = filterVoiceGallery;
+window.playVoiceDemoSample = playVoiceDemoSample;
+window.selectVoiceForStudio = selectVoiceForStudio;
+window.generateElevenStudioAudio = generateElevenStudioAudio;
+window.loadChannelsVoiceBinding = loadChannelsVoiceBinding;
+window.bindVoiceToChannelAction = bindVoiceToChannelAction;
+window.quickAssignVoiceToChannel = quickAssignVoiceToChannel;
+

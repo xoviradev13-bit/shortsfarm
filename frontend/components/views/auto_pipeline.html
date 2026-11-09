@@ -1,0 +1,137 @@
+            <section id="tab-auto-pipeline" class="tab-pane active">
+                <!-- Master Automation Banner -->
+                <div class="auto-master-banner mb-4">
+                    <div class="master-status-left">
+                        <div class="master-pulse-icon" id="masterSchedulerLed"></div>
+                        <div>
+                            <div class="master-title-row">
+                                <h3 id="masterSchedulerTitle">HỆ THỐNG TỰ ĐỘNG: ĐANG HOẠT ĐỘNG</h3>
+                                <span class="badge badge-success" id="masterSchedulerBadge">Auto-Pilot Active</span>
+                            </div>
+                            <p class="panel-sub" style="margin:0;" id="masterSchedulerDesc">Chu kỳ quét RSS (15 phút)
+                                &rarr; Tự động tải MP4
+                                &rarr; AI Render 9:16 Beta &rarr; Tự đăng lên tài khoản</p>
+                        </div>
+                    </div>
+                    <div class="master-status-right"
+                        style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-secondary has-tooltip" id="btnToggleSchedulerMaster"
+                            onclick="toggleMasterScheduler(this)"
+                            data-tooltip="Tạm dừng / Bật chạy ngầm tự động (15p/lần)">
+                            <i class="fa-solid fa-pause"></i> <span>Tạm Dừng</span>
+                        </button>
+                        <button class="btn btn-primary has-tooltip" id="btnScanAllMaster"
+                            onclick="scanAllChannelsPipeline(this)"
+                            data-tooltip="Quét tìm video mới ngay lập tức không cần chờ">
+                            <i class="fa-solid fa-bolt"></i> <span>Quét Ngay</span>
+                        </button>
+                        <button class="btn btn-accent has-tooltip" onclick="openNewCampaignModal()"
+                            data-tooltip="Tạo luồng tự động: Kênh YouTube → Thư mục & Edit → Dàn Account"
+                            style="background:linear-gradient(135deg, #8b5cf6 0%, #00f2fe 100%); color:#0a0d14; font-weight:700;">
+                            <i class="fa-solid fa-plus"></i> <span>Tạo Chiến Dịch</span>
+                        </button>
+                        <button class="btn btn-secondary has-tooltip tooltip-left" id="btnSchedulerConfig"
+                            onclick="openSchedulerSettingsModal()"
+                            data-tooltip="Cấu hình chu kỳ quét, bật/tắt RSS & cài đặt tự động ngầm">
+                            <i class="fa-solid fa-sliders"></i> <span>Cài Đặt</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4-Stage Visual Steps Indicator -->
+                <div class="glass-panel mb-4">
+                    <div class="panel-header">
+                        <div>
+                            <h3><i class="fa-solid fa-diagram-project text-cyan"></i> Quy Trình Tự Động Hóa
+                            </h3>
+                            <p class="panel-sub">Video mới sẽ di chuyển liên tục qua 4 công đoạn hoàn toàn tự động</p>
+                        </div>
+                        <div class="scheduler-badge-wrap">
+                            <span class="badge badge-cyan" id="pipelineSchedulerStatus"><i
+                                    class="fa-solid fa-circle-dot"></i> Scheduler: Đang Chạy</span>
+                        </div>
+                    </div>
+
+                    <div class="pipeline-flow-grid mt-3">
+                        <div class="flow-step-card">
+                            <div class="flow-step-num">1</div>
+                            <div class="flow-step-icon bg-blue"><i class="fa-solid fa-rss"></i></div>
+                            <div class="flow-step-content">
+                                <h4>Quét RSS Kênh Nguồn</h4>
+                                <p class="flow-step-meta" id="pipeRssIntervalMeta">Mỗi 15 phút qua XML YouTube</p>
+                                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:4px;">
+                                    <span class="flow-badge" id="pipeActiveChannels">0 Kênh Active</span>
+                                    <span class="badge badge-success" id="step1RssBadge" style="font-size:10px;"><i
+                                            class="fa-solid fa-signal"></i> RSS: BẬT</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                        <div class="flow-step-card">
+                            <div class="flow-step-num">2</div>
+                            <div class="flow-step-icon bg-cyan"><i class="fa-solid fa-cloud-arrow-down"></i></div>
+                            <div class="flow-step-content">
+                                <h4>Tải Video Gốc (yt-dlp)</h4>
+                                <p class="flow-step-meta">Tự động kéo MP4 vào hàng đợi</p>
+                                <span class="flow-badge" id="pipeDownloadedCount">0 Video Đã Tải</span>
+                            </div>
+                        </div>
+                        <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                        <div class="flow-step-card">
+                            <div class="flow-step-num">3</div>
+                            <div class="flow-step-icon bg-purple"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                            <div class="flow-step-content">
+                                <h4>AI Transformer Render</h4>
+                                <p class="flow-step-meta">Dọc 9:16, speed x1.03, lật hình</p>
+                                <span class="flow-badge" id="pipeRenderedCount">0 Video Đã Render</span>
+                            </div>
+                        </div>
+                        <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                        <div class="flow-step-card">
+                            <div class="flow-step-num">4</div>
+                            <div class="flow-step-icon bg-gold"><i class="fa-brands fa-tiktok"></i></div>
+                            <div class="flow-step-content">
+                                <h4>Đăng Lên Tài Khoản</h4>
+                                <p class="flow-step-meta">Hàng đợi upload tự động mỗi 60s</p>
+                                <span class="flow-badge" id="pipeUploadedCount">0 Video Đã Đăng</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Campaigns Section -->
+                <div class="glass-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3><i class="fa-solid fa-layer-group text-primary"></i> Danh Sách Chiến Dịch Đang Chạy
+                            </h3>
+                            <p class="panel-sub">Mỗi chiến dịch kết nối: Kênh YouTube &rarr; Mẫu Edit &rarr; Dàn Nick
+                                nhận bài</p>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-sm btn-secondary has-tooltip" onclick="loadCampaigns()"
+                                data-tooltip="Làm mới danh sách chiến dịch"><i class="fa-solid fa-rotate"></i> Làm
+                                Mới</button>
+                            <button class="btn btn-sm btn-primary has-tooltip" onclick="openNewCampaignModal()"
+                                data-tooltip="Tạo chiến dịch tự động hóa mới"><i class="fa-solid fa-plus"></i> Thêm
+                                Chiến Dịch</button>
+                        </div>
+                    </div>
+
+                    <div class="campaign-flow-grid" id="campaignsFlowGrid">
+                        <!-- Dynamic Campaign Cards rendered by app.js -->
+                        <div class="card-empty-state">
+                            <i class="fa-solid fa-robot"></i>
+                            <h4>Chưa có chiến dịch tự động nào</h4>
+                            <p>Hãy tạo chiến dịch đầu tiên để kết nối Kênh YouTube nguồn với công thức Edit và Nick
+                                TikTok nhận video.</p>
+                            <button class="btn btn-primary mt-3" onclick="openNewCampaignModal()"
+                                style="display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+                                <i class="fa-solid fa-plus"></i> <span>Tạo Chiến Dịch Tự Động Đầu Tiên</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: VIDEO STUDIO & RECIPE (EDIT Ở ĐÂU & MÔ PHỎNG XEM TRƯỚC) -->

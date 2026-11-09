@@ -423,19 +423,17 @@ async function deleteVideoLibraryItem(id) {
     }
 }
 
-// Lắng nghe sự kiện chuyển Tab để nạp dữ liệu
-document.addEventListener('DOMContentLoaded', () => {
-    loadRssScanMode();
-    loadElevenLabsInfo();
-    loadVideoLibraryTable();
-
-    // Hook tab clicks
-    document.querySelectorAll('[data-tab="tab-video-manager"]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            loadRssScanMode();
-            loadElevenLabsInfo();
-            loadVideoLibraryTable();
-        });
-    });
-});
+// Module Window Exposures
+window.loadRssScanMode = loadRssScanMode;
+window.toggleRssScanMode = toggleRssScanMode;
+window.scanSelectedFolder = scanSelectedFolder;
+window.ingestScannedVideos = ingestScannedVideos;
+window.triggerMultiDownload = triggerMultiDownload;
+window.loadElevenLabsInfo = loadElevenLabsInfo;
+window.saveElevenApiKey = saveElevenApiKey;
+window.previewElevenVoiceAudio = previewElevenVoiceAudio;
+window.bindVoiceToSelectedChannel = bindVoiceToSelectedChannel;
+window.generateTestTtsSpeech = generateTestTtsSpeech;
+window.loadVideoLibraryTable = loadVideoLibraryTable;
+window.deleteVideoLibraryItem = deleteVideoLibraryItem;
 

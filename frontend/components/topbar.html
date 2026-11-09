@@ -1,0 +1,50 @@
+    <main class="main-content">
+        <!-- Top Navigation Bar (Sticky across all views) -->
+        <header class="topbar">
+            <div class="topbar-title">
+                <h1 id="pageTitle">Chiến Dịch Tự Động Hóa</h1>
+                <p class="subtitle" id="pageSubtitle">Quy trình khép kín: Quét RSS Kênh → Tải MP4 → AI Render 9:16 → Tự
+                    Đăng Tài Khoản</p>
+            </div>
+            <div class="topbar-actions">
+                <div class="lang-selector-wrapper">
+                    <select id="selectAppLanguage" class="btn btn-secondary btn-sm lang-select"
+                        onchange="window.setAppLanguage(this.value)" data-i18n-tooltip="topbar_lang_tooltip"
+                        title="Chọn ngôn ngữ / Select Language / 选择语言">
+                        <option value="vi">VI - Tiếng Việt</option>
+                        <option value="en">EN - English</option>
+                        <option value="zh">ZH - 简体中文</option>
+                    </select>
+                </div>
+                <button class="btn btn-secondary btn-sm theme-toggle-btn has-tooltip tooltip-left" id="themeToggleBtn"
+                    onclick="window.toggleAppTheme()" data-i18n-tooltip="topbar_theme_tooltip_light"
+                    data-tooltip="Chuyển sang giao diện Sáng">
+                    <i class="fa-solid fa-sun" id="themeToggleIcon"></i>
+                    <span id="themeToggleText" data-i18n="topbar_theme_light">Sáng</span>
+                </button>
+                <button class="btn btn-info btn-sm has-tooltip tooltip-left" id="btnUpdateAvailable"
+                    onclick="window.LicenseManager.openUpdateModal()" style="display:none;"
+                    data-tooltip="Đã có phiên bản mới! Bấm để xem chi tiết và tải về">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> <span id="updateBadgeText">v1.0.1 Mới</span>
+                </button>
+                <div class="browser-selector-wrapper">
+                    <select id="selectActiveBrowser" class="btn btn-secondary btn-sm"
+                        onchange="changeActiveBrowser(this.value)"
+                        title="Chọn trình duyệt Antidetect để đồng bộ và điều khiển">
+                        <option value="gpm" selected>🌐 GPMLogin</option>
+                        <option value="genlogin">🚀 GenLogin</option>
+                        <option value="adspower" style="display: none;">AdsPower</option>
+                        <option value="dolphin" style="display: none;">Dolphin Anty</option>
+                    </select>
+                </div>
+                <button class="btn btn-secondary btn-sm has-tooltip tooltip-left" id="btnSyncGpmTopbar"
+                    onclick="syncGPMProfiles(this)" data-tooltip="Đồng bộ lại danh sách Profiles từ Trình Duyệt">
+                    <i class="fa-solid fa-rotate"></i> <span data-i18n="topbar_sync">Đồng Bộ</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Tabs Container -->
+        <div class="content-body">
+
+            <!-- TAB 1: OVERVIEW -->

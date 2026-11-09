@@ -1,3 +1,4 @@
+import sys
 import socket
 import os
 import re
@@ -7,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, BackgroundTasks, HTTPException, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from backend.config import (
@@ -1424,6 +1425,20 @@ def scan_channel_now(req: ScanChannelRequest):
     result = yt_monitor.scan_single_channel(req.channel_id, max_videos=req.max_videos)
     return result
 
+@app.post("/api/youtube/channels/scan-stop")
+def stop_youtube_channel_scan():
+    """Dừng khẩn cấp tiến trình quét và tải video YouTube"""
+    terminated = False
+    if sys.platform == "win32":
+        try:
+            import subprocess
+            res = subprocess.run(["taskkill", "/F", "/IM", "yt-dlp.exe", "/T"], capture_output=True, text=True)
+            terminated = (res.returncode == 0)
+        except Exception:
+            pass
+    log_event("WARNING", "Người dùng đã gửi lệnh DỪNG khẩn cấp quét kênh YouTube.")
+    return {"status": "success", "message": "Đã gửi lệnh dừng tiến trình quét kênh YouTube.", "terminated": terminated}
+
 @app.post("/api/youtube/channels/refresh-stats")
 def refresh_channel_stats_endpoint(req: RefreshChannelStatsRequest):
     cid = (req.channel_id or "").strip()
@@ -2512,6 +2527,20 @@ def test_run_campaign(campaign_id: int, bg_tasks: BackgroundTasks):
     bg_tasks.add_task(_do_campaign_scan)
     return {"status": "success", "message": f"Đang kích hoạt quét và kiểm tra chạy thử cho chiến dịch '{camp['name']}'..."}
 
+@app.post("/api/campaigns/{campaign_id}/stop")
+def stop_campaign(campaign_id: int):
+    """Dừng khẩn cấp tiến trình chạy thử hoặc quét chiến dịch"""
+    log_campaign_event(campaign_id, "WARNING", "control", "Người dùng đã gửi lệnh DỪNG thực thi chiến dịch.")
+    terminated = False
+    if sys.platform == "win32":
+        try:
+            import subprocess
+            res = subprocess.run(["taskkill", "/F", "/IM", "ffmpeg.exe", "/T"], capture_output=True, text=True)
+            terminated = (res.returncode == 0)
+        except Exception:
+            pass
+    return {"status": "success", "message": "Đã gửi lệnh dừng chiến dịch thành công.", "terminated": terminated}
+
 @app.post("/api/campaigns/{campaign_id}/toggle")
 def toggle_campaign(campaign_id: int):
     conn = get_connection()
@@ -3452,6 +3481,19 @@ def render_smart_ai_video(req: SmartRenderVideoRequest):
 
     return result
 
+@app.post("/api/video/render-stop")
+def stop_video_render():
+    """Dừng khẩn cấp tiến trình Render video (FFmpeg) đang chạy"""
+    terminated = False
+    if sys.platform == "win32":
+        try:
+            import subprocess
+            res = subprocess.run(["taskkill", "/F", "/IM", "ffmpeg.exe", "/T"], capture_output=True, text=True)
+            terminated = (res.returncode == 0)
+        except Exception as e:
+            logger.warning(f"Lỗi khi dừng ffmpeg: {e}")
+    return {"status": "success", "message": "Đã gửi lệnh dừng tiến trình Render video.", "terminated": terminated}
+
 
 # --- TikTok Upload API ---
 @app.post("/api/tiktok/upload")
@@ -3474,6 +3516,14 @@ def upload_tiktok(req: UploadVideoRequest):
         auto_post=True
     )
     return result
+
+@app.post("/api/tiktok/upload-stop")
+def stop_tiktok_upload():
+    """Dừng khẩn cấp tiến trình đăng video lên TikTok"""
+    from backend.modules.tiktok_uploader import tiktok_uploader
+    tiktok_uploader.cancel_upload()
+    log_event("WARNING", "Người dùng đã gửi lệnh DỪNG khẩn cấp tiến trình đăng TikTok.")
+    return {"status": "success", "message": "Đã gửi lệnh dừng đăng bài và đóng profile thành công."}
 
 # --- Profile Stats & 10k Alert API ---
 @app.post("/api/profiles/stats")
@@ -3511,6 +3561,8 @@ def scan_all_profiles_now(bg_tasks: BackgroundTasks):
 @app.post("/api/profiles/scan-stop")
 def stop_all_profiles_scan():
     res = tiktok_tracker.stop_scan()
+    if isinstance(res, dict) and "status" not in res:
+        res["status"] = "success" if res.get("success") else "error"
     return res
 
 @app.get("/api/profiles/scan-progress")
@@ -4788,12 +4840,45 @@ if RENDERED_DIR.exists():
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
+    _cached_composed_html = None
+
+    def compose_frontend_html() -> str:
+        global _cached_composed_html
+        if getattr(sys, "frozen", False) and _cached_composed_html:
+            return _cached_composed_html
+
+        index_path = FRONTEND_DIR / "index.html"
+        if not index_path.exists():
+            return "<html><body><h3>Frontend file not found</h3></body></html>"
+        
+        template_text = index_path.read_text(encoding="utf-8")
+        if "<!-- include:" not in template_text:
+            _cached_composed_html = template_text
+            return template_text
+
+        def replacer(match):
+            rel_path = match.group(1).strip()
+            comp_file = FRONTEND_DIR / rel_path
+            if comp_file.exists():
+                return comp_file.read_text(encoding="utf-8")
+            logger.warning(f"Frontend component missing: {rel_path}")
+            return f"<!-- Missing component: {rel_path} -->"
+
+        pattern = re.compile(r'<!--\s*include:\s*([^\s>]+)\s*-->')
+        composed = pattern.sub(replacer, template_text)
+        _cached_composed_html = composed
+        return composed
+
+    @app.get("/", response_class=HTMLResponse)
+    def serve_frontend():
+        return HTMLResponse(content=compose_frontend_html())
+
+    @app.get("/index.html", response_class=HTMLResponse)
+    def serve_frontend_index():
+        return HTMLResponse(content=compose_frontend_html())
+
 if LOGO_DIR.exists():
     app.mount("/logo", StaticFiles(directory=str(LOGO_DIR)), name="logo")
-
-    @app.get("/")
-    def serve_frontend():
-        return FileResponse(str(FRONTEND_DIR / "index.html"))
 
 # --- Mount V2 Routes (Multi-Browser, Multi-Downloader, Multi-Uploader, Local Ingest, Licensing) ---
 try:

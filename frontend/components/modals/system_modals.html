@@ -1,0 +1,145 @@
+    <div class="modal" id="modalSystemIssues">
+        <div class="modal-content glass-panel modal-lg"
+            style="max-width: 820px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation text-warning" style="font-size: 20px;"></i>
+                    <div>
+                        <h3 style="margin: 0;">Trung Tâm Cảnh Báo & Xử Lý Sự Cố</h3>
+                        <p class="modal-sub" style="margin: 2px 0 0 0;">Phát hiện tự động các cảnh báo proxy, tài khoản
+                            cấm/hạn chế, lỗi tải video và giới hạn AI.</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-corner-close" onclick="closeSystemIssuesModal()" title="Đóng">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="systemIssuesModalBody" style="flex: 1; overflow-y: auto; padding: 18px 22px;">
+                <div style="text-align: center; padding: 30px;">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x text-accent"></i>
+                    <p class="mt-2" style="color: var(--text-muted);">Đang tổng hợp các sự cố hệ thống...</p>
+                </div>
+            </div>
+            <div class="modal-footer"
+                style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+                <span id="issuesSummaryBadge" style="font-size: 12px; color: var(--text-muted);"></span>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" onclick="loadSystemIssues()"><i
+                            class="fa-solid fa-rotate"></i> Quét Lại</button>
+                    <button type="button" class="btn btn-primary" onclick="closeSystemIssuesModal()">Đã Hiểu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: SETUP DIAGNOSTICS -->
+    <div class="modal" id="modalDiagnostics">
+        <div class="modal-content glass-panel modal-lg"
+            style="max-width: 860px; max-height: 88vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-stethoscope text-accent" style="font-size: 20px;"></i>
+                    <div>
+                        <h3 style="margin: 0;">Chẩn Đoán Môi Trường & Cài Đặt Máy Tính</h3>
+                        <p class="modal-sub" style="margin: 2px 0 0 0;">Kiểm tra Python, FFmpeg, Node.js (yt-dlp),
+                            Playwright, Local API, AI Keys và thư mục lưu trữ.</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-corner-close" onclick="closeDiagnosticsModal()" title="Đóng">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="diagnosticsModalBody" style="flex: 1; overflow-y: auto; padding: 20px 24px;">
+                <div style="text-align: center; padding: 30px;">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x text-accent"></i>
+                    <p class="mt-2" style="color: var(--text-muted);">Đang thực hiện kiểm tra chẩn đoán hệ thống...</p>
+                </div>
+            </div>
+            <div class="modal-footer"
+                style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+                <span id="diagLastCheckedTime" style="font-size: 12px; color: var(--text-muted);"></span>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" onclick="sendDiagnosticsIssueAlertToTelegram(this)"
+                        title="Gửi thông báo các lỗi này qua Telegram">
+                        <i class="fa-brands fa-telegram text-cyan"></i> Bắn Lỗi Qua Telegram
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="runDiagnosticsCheck()"><i
+                            class="fa-solid fa-rotate"></i> Chạy Lại Kiểm Tra</button>
+                    <button type="button" class="btn btn-primary" onclick="closeDiagnosticsModal()">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDIT AUDIO CATEGORY -->
+
+
+    <div class="modal" id="modalGlobalConfirm" style="z-index: 99999;">
+        <div class="modal-content glass-panel"
+            style="max-width: 470px; width: 92%; border: 1px solid rgba(239, 68, 68, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.7); position: relative; overflow: hidden;">
+            <div class="modal-header"
+                style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 14px 20px; position: relative;">
+                <div style="display:flex; align-items:center; gap:10px; max-width: calc(100% - 36px); min-width: 0;">
+                    <i id="globalConfirmIcon" class="fa-solid fa-triangle-exclamation text-danger"
+                        style="font-size:18px; flex-shrink:0;"></i>
+                    <h3 id="globalConfirmTitle"
+                        style="margin:0; font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-primary);">
+                        Xác Nhận Hành Động</h3>
+                </div>
+                <button type="button" class="modal-corner-close" id="btnGlobalConfirmClose" title="Đóng"
+                    style="top: 10px; right: 16px;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body"
+                style="padding: 18px 22px; word-break: break-word; overflow-wrap: anywhere; max-width: 100%;">
+                <p id="globalConfirmMessage"
+                    style="font-size:13.5px; line-height:1.55; margin:0 0 8px 0; font-weight:600; color:var(--text-primary); word-break: break-word; overflow-wrap: anywhere; max-width: 100%;">
+                    Bạn có chắc chắn muốn thực hiện thao tác này?
+                </p>
+                <p id="globalConfirmDetails"
+                    style="font-size:12px; color:var(--text-muted); line-height:1.45; margin:0; word-break: break-word; overflow-wrap: anywhere; max-width: 100%;">
+                </p>
+            </div>
+            <div class="modal-footer"
+                style="display:flex; justify-content:flex-end; gap:10px; padding: 12px 22px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+                <button type="button" class="btn btn-secondary" id="btnGlobalConfirmCancel">Hủy Bỏ</button>
+                <button type="button" class="btn btn-danger" id="btnGlobalConfirmOk">
+                    <i class="fa-solid fa-check"></i> Xác Nhận
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHỈNH SỬA VIDEO STUDIO -->
+    <div class="modal" id="modalEditStudioVideo">
+        <div class="modal-content glass-panel" style="max-width: 480px;">
+            <div class="modal-header" style="position:relative;">
+                <div>
+                    <h3><i class="fa-solid fa-pen-to-square text-cyan"></i> Chỉnh Sửa Video</h3>
+                    <p class="modal-sub">Thay đổi tiêu đề hiển thị và tên gợi nhớ của video</p>
+                </div>
+                <button type="button" class="close-btn" onclick="closeEditStudioVideoModal()" title="Đóng"
+                    style="position:absolute; top:14px; right:18px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 16px 22px;">
+                <input type="hidden" id="editStudioVideoId">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-heading text-purple"></i> Tiêu Đề Video:</label>
+                    <textarea id="editStudioVideoTitle" class="input-field" rows="3" placeholder="Nhập tiêu đề video..."
+                        style="resize:vertical; line-height:1.45;"></textarea>
+                    <small class="form-hint">Tiêu đề này sẽ được dùng khi biên tập và đặt tên Part render.</small>
+                </div>
+            </div>
+            <div class="modal-footer"
+                style="display:flex; justify-content:flex-end; gap:10px; padding: 12px 22px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+                <button type="button" class="btn btn-secondary" onclick="closeEditStudioVideoModal()">Hủy</button>
+                <button type="button" class="btn btn-primary" id="btnSaveStudioVideoEdit"
+                    onclick="saveStudioVideoEdit(this)">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHI TIẾT VIDEO KÊNH NGUỒN -->

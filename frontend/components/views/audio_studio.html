@@ -1,0 +1,269 @@
+            <section id="tab-audio-studio" class="tab-pane">
+                <div class="audio-tabs-header-wrap mb-4"
+                    style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:12px;">
+                    <div class="sources-subnav-tabs">
+                        <button type="button" class="subnav-tab-btn active" id="btnAudioSubnavSearch"
+                            onclick="switchAudioSubTab('search')">
+                            <i class="fa-brands fa-youtube" style="color:#ff0000;"></i> Tìm Kiếm YouTube
+                        </button>
+                        <button type="button" class="subnav-tab-btn" id="btnAudioSubnavLibrary"
+                            onclick="switchAudioSubTab('library')">
+                            <i class="fa-solid fa-folder-open" style="color:var(--accent-cyan);"></i> Thư Viện Playlist
+                            (<span id="audioLibraryTotalCountBadge">0</span>)
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-audio-settings-header has-tooltip tooltip-side-left"
+                            id="btnAudioSettings" onclick="openAudioSettingsModal()"
+                            data-tooltip="Cài đặt thư mục lưu, dung lượng tối đa và cấu hình Audio">
+                            <i class="fa-solid fa-gear"></i> Cài Đặt Audio
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SUB-VIEW 1: SEARCH YOUTUBE NO-COPYRIGHT AUDIO -->
+                <div id="audioSubViewSearch">
+                    <div class="glass-panel">
+                        <div class="panel-header"
+                            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h3><i class="fa-brands fa-youtube" style="color:#ff0000;"></i> Tìm Kiếm Nhạc
+                                    No-Copyright Trên YouTube</h3>
+                                <p class="panel-sub">Tìm kiếm bài hát Creative Commons/NCS, nghe thử trực tiếp và
+                                    1-click tải MP3 vào Playlist theo chủ đề.</p>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-primary btn-sm has-tooltip tooltip-side-left"
+                                    id="btnOpenDownloadFromUrlModal"
+                                    onclick="openDownloadAudioCategoryModal('', '', '', true)"
+                                    data-tooltip="Nhập link YouTube để tải MP3 vào Playlist">
+                                    <i class="fa-solid fa-cloud-arrow-down"></i> Tải Từ Link
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Search Bar Container -->
+                        <div class="search-bar-container">
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="audioSearchKeyword"
+                                    placeholder="Nhập thể loại nhạc (ví dụ: horror ambient, lofi chill hip hop, phonk workout, sad piano)..."
+                                    value="lofi hip hop chill beats">
+                            </div>
+                            <select id="audioSearchLimit" class="custom-select">
+                                <option value="20">20 Bài</option>
+                                <option value="50" selected>50 Bài</option>
+                                <option value="100">100 Bài</option>
+                                <option value="200">200 Bài</option>
+                            </select>
+                            <button class="btn btn-primary" id="btnSearchAudio" onclick="searchYouTubeAudio()">
+                                <i class="fa-solid fa-bolt"></i> Bắt Đầu Tìm
+                            </button>
+                        </div>
+
+                        <!-- Table Controls Toolbar (Sort, Filter, Search in results) -->
+                        <div class="table-toolbar mt-3" id="audioTableToolbar">
+                            <div class="toolbar-multi">
+                                <div class="toolbar-row">
+                                    <div class="toolbar-group">
+                                        <!-- Sort -->
+                                        <div class="sort-control">
+                                            <label for="audioSortSelect"><i
+                                                    class="fa-solid fa-arrow-down-short-wide"></i> Sắp xếp:</label>
+                                            <select id="audioSortSelect" class="custom-select sort-select"
+                                                onchange="handleAudioSortChange(this.value)">
+                                                <option value="default">Mặc định (Độ liên quan)</option>
+                                                <option value="duration">Thời Lượng</option>
+                                                <option value="view_count">Lượt Xem (Phổ Biến)</option>
+                                                <option value="upload_date">Ngày Đăng</option>
+                                                <option value="title">Tên Bài Hát</option>
+                                            </select>
+                                            <button type="button"
+                                                class="btn btn-sm btn-secondary sort-dir-btn has-tooltip"
+                                                id="btnAudioSortDirection" onclick="toggleAudioSortDirection()"
+                                                data-tooltip="Chuyển đổi Tăng dần / Giảm dần">
+                                                <i class="fa-solid fa-arrow-down-wide-short" id="audioSortDirIcon"></i>
+                                                <span id="audioSortDirText">Giảm dần</span>
+                                            </button>
+                                        </div>
+
+                                        <!-- Filter Duration -->
+                                        <div class="sort-control">
+                                            <label for="audioFilterDurationSelect"><i class="fa-regular fa-clock"></i>
+                                                Thời lượng:</label>
+                                            <select id="audioFilterDurationSelect" class="custom-select sort-select"
+                                                onchange="handleAudioFilterDurationChange(this.value)">
+                                                <option value="all">Tất cả thời lượng</option>
+                                                <option value="short">&lt; 2 phút (Clip ngắn)</option>
+                                                <option value="medium">2 - 5 phút (Chuẩn)</option>
+                                                <option value="long">&gt; 5 phút (Vòng lặp dài)</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Filter Download Status -->
+                                        <div class="sort-control">
+                                            <label for="audioFilterDownloadSelect"><i
+                                                    class="fa-solid fa-circle-check"></i> Trạng thái:</label>
+                                            <select id="audioFilterDownloadSelect" class="custom-select sort-select"
+                                                onchange="handleAudioFilterDownloadChange(this.value)">
+                                                <option value="all">Tất cả bài</option>
+                                                <option value="downloaded">Đã tải về máy</option>
+                                                <option value="not_downloaded">Chưa tải</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="toolbar-row mt-2">
+                                    <div class="toolbar-group">
+                                        <div class="table-search-box">
+                                            <i class="fa-solid fa-filter"></i>
+                                            <input type="text" id="audioFilterKeywordInput"
+                                                placeholder="Lọc nhanh tiêu đề bài hát, kênh, nghệ sĩ..."
+                                                oninput="handleAudioFilterKeywordChange(this.value)">
+                                        </div>
+                                        <span class="badge badge-info" id="audioSearchResultsCount">0 Bài Hát</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Audio Search Results Table -->
+                        <div class="table-responsive mt-3">
+                            <table class="data-table" id="audioSearchTable">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" id="th-audio-title"
+                                            onclick="handleAudioHeaderSort('title')" title="Bấm để sắp xếp theo Bài Hát"
+                                            style="min-width: 260px;">
+                                            Bài Hát / Video <i class="fa-solid fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" id="th-audio-uploader"
+                                            onclick="handleAudioHeaderSort('uploader')"
+                                            title="Bấm để sắp xếp theo Kênh / Nghệ Sĩ">
+                                            Kênh / Nghệ Sĩ <i class="fa-solid fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" id="th-audio-duration"
+                                            onclick="handleAudioHeaderSort('duration')"
+                                            title="Bấm để sắp xếp theo Thời Lượng" style="width: 100px;">
+                                            Thời Lượng <i class="fa-solid fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" id="th-audio-views"
+                                            onclick="handleAudioHeaderSort('view_count')"
+                                            title="Bấm để sắp xếp theo Lượt Xem" style="width: 110px;">
+                                            Lượt Xem <i class="fa-solid fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" id="th-audio-date"
+                                            onclick="handleAudioHeaderSort('upload_date')"
+                                            title="Bấm để sắp xếp theo Ngày Đăng" style="width: 110px;">
+                                            Ngày Đăng <i class="fa-solid fa-sort sort-icon"></i>
+                                        </th>
+                                        <th style="width: 90px;" class="text-center">Nghe Thử</th>
+                                        <th style="width: 130px;" class="text-center">Tải Vào Playlist</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audioSearchResultsBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5 text-muted">
+                                            <i class="fa-solid fa-music fa-2x mb-2" style="opacity:0.4;"></i><br>
+                                            Nhập từ khóa và bấm "Bắt Đầu Tìm" để quét nhạc No-Copyright từ YouTube.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> <!-- /#audioSubViewSearch -->
+
+                <!-- SUB-VIEW 2: LOCAL LIBRARY & UPLOAD -->
+                <div id="audioSubViewLibrary" style="display:none;">
+                    <div class="glass-panel mb-4">
+                        <div class="panel-header"
+                            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h3><i class="fa-solid fa-folder-music text-cyan"></i> Thư Viện Playlist Nhạc Nền Local
+                                </h3>
+                                <p class="panel-sub">Quản lý bài hát theo thể loại, tải file MP3 từ máy tính hoặc dán
+                                    link YouTube trích xuất trực tiếp.</p>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                    onclick="openCreateAudioCategoryModal()">
+                                    <i class="fa-solid fa-folder-plus text-cyan"></i> Tạo Thư Mục Mới
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="refreshAudioLibrary()">
+                                    <i class="fa-solid fa-rotate"></i> Làm Mới
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Category Selector Chips / Tabs -->
+                        <div class="audio-category-chips mb-3" id="audioCategoryChipsContainer"
+                            style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <!-- Category chips rendered dynamically -->
+                        </div>
+
+                        <!-- Drag & Drop Upload Zone -->
+                        <div class="audio-dropzone-card" id="audioUploadDropzone"
+                            onclick="document.getElementById('audioFileInput').click()"
+                            style="width:100%; box-sizing:border-box;">
+                            <input type="file" id="audioFileInput" multiple accept=".mp3,.wav,.m4a,.aac,.ogg,.flac"
+                                style="display:none;" onchange="handleAudioFilesSelected(this.files)">
+                            <i class="fa-solid fa-cloud-arrow-up fa-2x text-cyan mb-2"></i>
+                            <h4>Kéo thả file nhạc (.MP3, .WAV, .M4A) vào đây</h4>
+                            <p class="text-muted">Hoặc bấm để chọn file từ máy tính lưu vào <strong
+                                    id="currentUploadTargetCategoryName" class="text-cyan">general</strong></p>
+                        </div>
+                    </div>
+
+                    <!-- Local Track List Table -->
+                    <div class="glass-panel">
+                        <div class="panel-header"
+                            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h4>Danh Sách Bài Hát: <span id="currentCategoryTitle" class="text-accent">Tổng
+                                        Hợp</span> (<span id="currentCategoryTrackCount">0 bài</span>)</h4>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <button type="button" class="btn btn-sm btn-secondary has-tooltip tooltip-top"
+                                    id="btnEditCurrentCategory"
+                                    onclick="openEditCategoryModal(currentSelectedAudioCategory)"
+                                    data-tooltip="Đổi tên thư mục nhạc hiện tại">
+                                    <i class="fa-solid fa-pen"></i> Đổi Tên Thư Mục
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger has-tooltip tooltip-top-left"
+                                    id="btnDeleteCurrentCategory"
+                                    onclick="deleteCategoryPrompt(currentSelectedAudioCategory)"
+                                    data-tooltip="Xóa thư mục này và toàn bộ file bên trong">
+                                    <i class="fa-solid fa-trash-can"></i> Xóa Thư Mục
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table" id="localTracksTable">
+                                <thead>
+                                    <tr>
+                                        <th>Tên Bài Hát</th>
+                                        <th style="width: 100px;">Định Dạng</th>
+                                        <th style="width: 110px;">Dung Lượng</th>
+                                        <th style="width: 150px;">Ngày Thêm</th>
+                                        <th style="width: 260px;" class="text-center">Nghe Thử</th>
+                                        <th style="width: 80px;" class="text-center">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="localTracksBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            Chưa có bài hát nào trong danh mục này. Hãy kéo thả file hoặc dán link tải
+                                            từ YouTube!
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> <!-- /#audioSubViewLibrary -->
+            </section> <!-- /#tab-audio-studio -->
+
+            <!-- TAB: AUTO-PILOT CAMPAIGNS (BẬT TỰ ĐỘNG Ở ĐÂU) -->

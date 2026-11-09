@@ -1,0 +1,347 @@
+    <div id="followerSchedulerModal" class="modal">
+        <div class="modal-content" style="max-width: 580px;">
+            <div class="modal-header">
+                <div style="max-width: 440px;">
+                    <h3 style="display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-clock-rotate-left text-accent"></i> Lịch Quét Follower Định Kỳ
+                    </h3>
+                    <p class="modal-sub"
+                        style="max-width: 400px; font-size: 12px; color: var(--text-muted); line-height: 1.45; margin-top: 3px;">
+                        Cấu hình thời gian tự động quét tăng trưởng và gửi cảnh báo 10K qua Telegram</p>
+                </div>
+                <button type="button" class="close-btn has-tooltip tooltip-left" onclick="closeFollowerSchedulerModal()"
+                    data-tooltip="Đóng cửa sổ"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Trạng thái bật/tắt -->
+                <div
+                    style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 700; color: #fff; font-size: 14px;">Bật Tự Động Quét Follower</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Chạy ngầm theo lịch đã
+                            đặt, không phụ thuộc vào lúc đăng bài</div>
+                    </div>
+                    <label class="tele-toggle-switch has-tooltip tooltip-side-left"
+                        data-tooltip="Bật hoặc tắt quét định kỳ">
+                        <input type="checkbox" id="chkFollowerSchedulerEnable" checked>
+                        <span class="tele-toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Chế độ quét -->
+                <div class="form-group">
+                    <label
+                        style="font-weight: 600; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; display: block;">
+                        <i class="fa-solid fa-calendar-check"></i> Chế độ quét lịch trình:
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <label
+                            style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; cursor: pointer; display: flex; align-items: flex-start; gap: 8px;">
+                            <input type="radio" name="followerScanMode" id="scanModeDaily" value="daily_times" checked
+                                onchange="toggleFollowerScanModeUI()" style="margin-top: 3px;">
+                            <div>
+                                <strong style="font-size: 13px; color: #fff;">Giờ Cố Định Hàng Ngày</strong>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Quét vào các
+                                    khung giờ vàng trong ngày (VD: 08:00, 20:00)</div>
+                            </div>
+                        </label>
+                        <label
+                            style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; cursor: pointer; display: flex; align-items: flex-start; gap: 8px;">
+                            <input type="radio" name="followerScanMode" id="scanModeInterval" value="interval"
+                                onchange="toggleFollowerScanModeUI()" style="margin-top: 3px;">
+                            <div>
+                                <strong style="font-size: 13px; color: #fff;">Chu Kỳ Cách N Tiếng</strong>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Cứ mỗi 6 tiếng
+                                    hoặc 12 tiếng tự động quét lại một lần</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Cấu hình giờ cố định -->
+                <div id="wrapDailyTimes" class="form-group">
+                    <label
+                        style="font-weight: 600; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+                        <i class="fa-regular fa-clock"></i> Các mốc giờ quét trong ngày (phân tách bởi dấu phẩy):
+                    </label>
+                    <input type="text" id="inputFollowerScanTimes" class="input-field" placeholder="08:00, 20:00"
+                        value="08:00, 20:00">
+                    <small class="form-hint"
+                        style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">
+                        Ví dụ: <code>08:00, 14:00, 20:00</code> hoặc chỉ 1 giờ cụ thể như <code>21:00</code> (định dạng
+                        24 giờ).
+                    </small>
+                </div>
+
+                <!-- Cấu hình chu kỳ N tiếng -->
+                <div id="wrapIntervalHours" class="form-group" style="display: none;">
+                    <label
+                        style="font-weight: 600; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+                        <i class="fa-solid fa-hourglass-half"></i> Khoảng cách giữa các lần quét:
+                    </label>
+                    <select id="selectFollowerIntervalHours" class="custom-select" style="width: 100%; height: 42px;">
+                        <option value="2">Mỗi 2 tiếng một lần</option>
+                        <option value="4">Mỗi 4 tiếng một lần</option>
+                        <option value="6" selected>Mỗi 6 tiếng một lần (Khuyên Dùng)</option>
+                        <option value="8">Mỗi 8 tiếng một lần</option>
+                        <option value="12">Mỗi 12 tiếng một lần</option>
+                        <option value="24">Mỗi 24 tiếng (1 ngày 1 lần)</option>
+                    </select>
+                </div>
+
+                <!-- Cấu hình ngưỡng báo cáo Telegram -->
+                <div class="form-group"
+                    style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 14px;">
+                    <label
+                        style="font-weight: 600; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fa-solid fa-sliders text-accent"></i> Ngưỡng Gửi Cảnh Báo Telegram:</span>
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">Đạt mốc sẽ gửi
+                            cảnh báo</span>
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                        <div>
+                            <div style="font-size: 11px; color: #ff4d79; margin-bottom: 3px; font-weight: 600;"><i
+                                    class="fa-brands fa-tiktok"></i> TikTok:</div>
+                            <input type="number" id="schedThresholdTiktok" class="input-field" min="1" step="100"
+                                placeholder="10000" value="10000"
+                                style="height: 36px; font-size: 12px; font-weight: 600;">
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: #f87171; margin-bottom: 3px; font-weight: 600;"><i
+                                    class="fa-brands fa-youtube"></i> YouTube:</div>
+                            <input type="number" id="schedThresholdYoutube" class="input-field" min="1" step="100"
+                                placeholder="1000" value="1000"
+                                style="height: 36px; font-size: 12px; font-weight: 600;">
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: #60a5fa; margin-bottom: 3px; font-weight: 600;"><i
+                                    class="fa-brands fa-facebook"></i> Facebook:</div>
+                            <input type="number" id="schedThresholdFacebook" class="input-field" min="1" step="100"
+                                placeholder="1000" value="1000"
+                                style="height: 36px; font-size: 12px; font-weight: 600;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Banner thông tin bảo vệ -->
+                <div
+                    style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.25); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; line-height: 1.5; color: var(--text-secondary);">
+                    <div
+                        style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-shield-halved"></i> Cơ Chế Vận Hành Thông Minh:
+                    </div>
+                    <ul style="margin: 0; padding-left: 18px;">
+                        <li><strong>Ưu tiên ZeroRAM (Không mở trình duyệt):</strong> Đọc trực tiếp cookie từ ổ đĩa và
+                            gọi API TikTok thần tốc (~0.5s/nick), không tốn RAM và không mở cửa sổ trình duyệt. Chỉ mở
+                            app/trình duyệt làm dự phòng khi cookie hết hạn.</li>
+                        <li><strong>Chống Xung Đột:</strong> Profile nào đang bận upload bài sẽ được tự động
+                            bỏ qua và quét lại sau, tuyệt đối không làm gián đoạn việc đăng video.</li>
+                        <li><strong>Cảnh báo Đạt Chỉ Tiêu:</strong> Khi phát hiện nick/kênh đạt ngưỡng cài đặt (TikTok,
+                            YouTube, Facebook), hệ thống sẽ gửi
+                            tin nhắn Telegram tới tất cả các kênh đang kích hoạt.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn btn-warning" onclick="scanAllProfilesFollowers(this)">
+                    <i class="fa-solid fa-bolt"></i> Quét Thử Ngay
+                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeFollowerSchedulerModal()">Đóng</button>
+                    <button type="button" class="btn btn-primary" onclick="saveFollowerSchedulerSettings(this)">
+                        <i class="fa-solid fa-check"></i> Lưu Cài Đặt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CÀI ĐẶT NGƯỠNG GỬI THÔNG BÁO TĂNG TRƯỞNG -->
+    <div id="thresholdSettingsModal" class="modal">
+        <div class="modal-content" style="max-width: 540px;">
+            <div class="modal-header">
+                <div style="max-width: 440px;">
+                    <h3 style="display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-sliders text-accent"></i> <span>Cài Đặt Ngưỡng Thông Báo Tăng
+                            Trưởng</span>
+                    </h3>
+                    <p class="modal-sub"
+                        style="max-width: 430px; font-size: 12px; color: var(--text-muted); line-height: 1.45; margin-top: 3px;">
+                        Thiết lập chỉ tiêu Follower / Subscriber theo từng nền tảng để gắn huy hiệu Đạt Chỉ Tiêu và tự
+                        động gửi cảnh báo Telegram
+                    </p>
+                </div>
+                <button type="button" class="close-btn has-tooltip tooltip-left" onclick="closeThresholdSettingsModal()"
+                    data-tooltip="Đóng cửa sổ">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- TikTok -->
+                <div
+                    style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px 16px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px; color: #ff0050;"><i class="fa-brands fa-tiktok"></i></span>
+                            <div>
+                                <strong style="color: #fff; font-size: 13.5px;">TikTok Creator Rewards / Beta</strong>
+                                <div style="font-size: 11px; color: var(--text-muted);">Số follower cần đạt để mở kiếm
+                                    tiền Beta</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="modalThTiktok" class="input-field" min="1" step="100"
+                            placeholder="10000" style="font-weight: 700; font-size: 14px;">
+                        <span style="color: var(--text-muted); font-size: 12px; white-space: nowrap;">followers</span>
+                    </div>
+                </div>
+
+                <!-- YouTube -->
+                <div
+                    style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px 16px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px; color: #ff0000;"><i class="fa-brands fa-youtube"></i></span>
+                            <div>
+                                <strong style="color: #fff; font-size: 13.5px;">YouTube Shorts / Partner (YPP)</strong>
+                                <div style="font-size: 11px; color: var(--text-muted);">Số subscriber của kênh để gửi
+                                    thông báo mốc</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="modalThYoutube" class="input-field" min="1" step="100"
+                            placeholder="1000" style="font-weight: 700; font-size: 14px;">
+                        <span style="color: var(--text-muted); font-size: 12px; white-space: nowrap;">subscribers</span>
+                    </div>
+                </div>
+
+                <!-- Facebook -->
+                <div
+                    style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px 16px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px; color: #1877f2;"><i class="fa-brands fa-facebook"></i></span>
+                            <div>
+                                <strong style="color: #fff; font-size: 13.5px;">Facebook Reels / Fanpage
+                                    Monetize</strong>
+                                <div style="font-size: 11px; color: var(--text-muted);">Số người theo dõi Fanpage / Nick
+                                    cá nhân</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="modalThFacebook" class="input-field" min="1" step="100"
+                            placeholder="1000" style="font-weight: 700; font-size: 14px;">
+                        <span style="color: var(--text-muted); font-size: 12px; white-space: nowrap;">followers</span>
+                    </div>
+                </div>
+
+                <!-- Hint -->
+                <div
+                    style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); border-radius: 8px; padding: 10px 14px; font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;">
+                    <i class="fa-solid fa-circle-info text-accent"></i> <strong data-i18n="hint_note_prefix">Lưu
+                        ý:</strong> <span data-i18n="threshold_modal_note">Khi bấm lưu, hệ thống tự động tính lại nhãn
+                        Đạt Chỉ Tiêu cho toàn bộ danh sách profile và gửi thông báo Telegram tức thì khi có kênh/profile
+                        đạt mốc trong các lần quét.</span>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn btn-secondary" onclick="closeThresholdSettingsModal()"
+                    data-i18n="threshold_modal_close">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="saveThresholdFromDedicatedModal(this)"
+                    style="font-weight: 700;">
+                    <i class="fa-solid fa-check"></i> <span data-i18n="threshold_modal_save">Lưu Cài Đặt Ngưỡng</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GÁN / SỬA USERNAME & CHỈ SỐ PROFILE / ACCOUNT METRICS -->
+    <div id="editProfileUsernameModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="display:flex; align-items:center; gap:8px;">
+                        <i id="editProfileModalIcon" class="fa-solid fa-user-pen text-accent"></i> <span id="editProfileModalTitle">Sửa Thông Tin & Chỉ Số Tài Khoản</span>
+                    </h3>
+                    <p class="modal-sub" id="editProfileModalSub">Gán thủ công hoặc đồng bộ thông số cho profile / kênh</p>
+                </div>
+                <button type="button" class="close-btn has-tooltip" onclick="closeEditUsernameModal()"
+                    data-tooltip="Đóng"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+                <input type="hidden" id="editProfileGpmId">
+                <input type="hidden" id="editProfileChannelId">
+                <div class="form-group">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Tên Profile
+                        :</label>
+                    <input type="text" id="editProfileName" class="input-field" disabled
+                        style="background: rgba(255,255,255,0.05); color: var(--text-primary);">
+                </div>
+                <div style="display:grid; grid-template-columns:1fr; gap:10px;">
+                    <!-- Trình duyệt (Preserved in DOM for future development) -->
+                    <div class="form-group" style="display: none;">
+                        <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);"><i
+                                class="fa-solid fa-window-restore"></i> Trình Duyệt:</label>
+                        <select id="editProfileBrowserType" class="input-field" style="height:38px;">
+                            <option value="gpm" selected>GPMLogin</option>
+                            <option value="adspower">AdsPower</option>
+                            <option value="dolphin">Dolphin Anty</option>
+                            <option value="genlogin">GenLogin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);"><i
+                                class="fa-solid fa-share-nodes"></i> Nền Tảng:</label>
+                        <select id="editProfilePlatform" class="input-field" style="height:38px;" onchange="onEditProfilePlatformChange(this.value)">
+                            <option value="tiktok">TikTok</option>
+                            <option value="youtube">YouTube</option>
+                            <option value="facebook">Facebook</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label id="lblEditProfileUsername" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
+                        <i id="editProfileUserIcon" class="fa-brands fa-tiktok"></i> <span id="editProfileUserLabel">Tài Khoản / Username:</span>
+                    </label>
+                    <div style="position: relative;">
+                        <span id="editProfileUserPrefix"
+                            style="position: absolute; left: 12px; top: 10px; color: var(--text-muted); font-weight: 700;">@</span>
+                        <input type="text" id="editProfileUsername" class="input-field" placeholder="username_cua_ban"
+                            style="padding-left: 28px;">
+                    </div>
+                    <small id="editProfileUserHint" class="form-hint"
+                        style="font-size: 11px; color: var(--text-muted); margin-top: 3px; display: block;">
+                        Không cần nhập dấu @. Ví dụ: <code>dat.nguyen261096</code>
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label id="lblEditProfileNickname" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
+                        <i id="editProfileNickIcon" class="fa-solid fa-id-badge"></i> <span id="editProfileNickLabel">Tên Kênh / Hiển Thị:</span>
+                    </label>
+                    <input type="text" id="editProfileNickname" class="input-field"
+                        placeholder="Ví dụ: Hoàng Minh, Iamcooked...">
+                </div>
+                <div class="form-group">
+                    <label id="lblEditProfileFollowers" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
+                        <i id="editProfileFollowersIcon" class="fa-solid fa-users"></i> <span id="editProfileFollowersLabel">Số Follower / Người Đăng Ký:</span>
+                    </label>
+                    <input type="number" id="editProfileFollowers" class="input-field" placeholder="0">
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+                <button type="button" class="btn btn-primary" onclick="saveProfileUsernameFromModal(this)"
+                    style="min-width: 140px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: SYSTEM ACTIVE ISSUES -->

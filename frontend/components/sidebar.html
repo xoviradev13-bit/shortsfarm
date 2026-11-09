@@ -1,0 +1,104 @@
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-icon">
+                <img src="/logo/app-logo.png" alt="ShortsStack" class="brand-logo-img">
+            </div>
+            <div class="brand-text">
+                <div style="display: flex; align-items: center; gap: 7px;">
+                    <h2>SHORTSSTACK</h2>
+                    <span class="app-version-badge" id="sidebarAppVersionBadge">v1.0.1</span>
+                </div>
+                <p>AI Engine & Auto Upload</p>
+            </div>
+            <!-- Toggle anchored on brand bottom divider -->
+            <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" data-tooltip="Thu gọn">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+        </div>
+
+
+        <nav class="nav-menu">
+            <div class="nav-section-title" data-i18n="nav_auto_pipeline_title">QUY TRÌNH TỰ ĐỘNG</div>
+            <a href="#auto-pipeline" class="nav-item active" data-tab="tab-auto-pipeline"
+                data-i18n-tooltip="nav_campaigns" data-tooltip="Chiến Dịch Tự Động">
+                <i class="fa-solid fa-bolt"></i> <span data-i18n="nav_campaigns">Chiến Dịch Tự Động</span>
+            </a>
+            <a href="#video-studio" class="nav-item" data-tab="tab-video-studio" data-i18n-tooltip="nav_studio"
+                data-tooltip="Studio Biên Tập Video">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="nav_studio">Studio Biên Tập
+                    Video</span>
+            </a>
+
+            <div class="nav-section-title" data-i18n="nav_resources_title">TÀI NGUYÊN</div>
+            <a href="#video-manager" class="nav-item" data-tab="tab-video-manager" data-i18n-tooltip="nav_video_manager"
+                data-tooltip="Quản Lý Video">
+                <i class="fa-solid fa-film"></i> <span data-i18n="nav_video_manager">Quản Lý Video</span>
+            </a>
+            <a href="#elevenlabs" class="nav-item" data-tab="tab-elevenlabs" data-i18n-tooltip="nav_elevenlabs"
+                data-tooltip="Phòng Thu ElevenLabs">
+                <i class="fa-solid fa-microphone-lines" style="color: #c084fc;"></i> <span
+                    data-i18n="nav_elevenlabs">Phòng Thu ElevenLabs</span>
+            </a>
+            <a href="#sources" class="nav-item" data-tab="tab-sources" data-i18n-tooltip="nav_sources"
+                data-tooltip="Kênh Nguồn YouTube">
+                <i class="fa-brands fa-youtube" style="color:#ff0000;"></i> <span data-i18n="nav_sources">Kênh Nguồn
+                    YouTube</span>
+            </a>
+            <a href="#audio-studio" class="nav-item" data-tab="tab-audio-studio" data-i18n-tooltip="nav_audio_studio"
+                data-tooltip="Kho Âm Thanh & BGM">
+                <i class="fa-solid fa-music" style="color:#00f2fe;"></i> <span data-i18n="nav_audio_studio">Kho Âm Thanh
+                    & BGM</span>
+            </a>
+            <a href="#gpm-farm" class="nav-item" data-tab="tab-gpm-farm" data-i18n-tooltip="nav_gpm_farm"
+                data-tooltip="Quản Lý Dàn Account">
+                <i class="fa-solid fa-robot" style="color:#10b981;"></i> <span data-i18n="nav_gpm_farm">Quản Lý Dàn
+                    Account</span>
+            </a>
+
+            <div class="nav-section-title" data-i18n="nav_monitor_title">GIÁM SÁT & HỆ THỐNG</div>
+            <a href="#overview" class="nav-item" data-tab="tab-overview" data-i18n-tooltip="nav_overview"
+                data-tooltip="Tổng Quan">
+                <i class="fa-solid fa-chart-pie"></i> <span data-i18n="nav_overview">Tổng Quan</span>
+            </a>
+            <a href="#pipeline-queue" class="nav-item" data-tab="tab-pipeline-queue" data-i18n-tooltip="nav_queue"
+                data-tooltip="Hàng Đợi & Lịch Đăng">
+                <i class="fa-solid fa-list-check"></i> <span data-i18n="nav_queue">Hàng Đợi & Lịch Đăng</span>
+            </a>
+            <a href="#ai-usage" class="nav-item" data-tab="tab-ai-usage" data-i18n-tooltip="nav_ai_usage"
+                data-tooltip="Chi Phí & Quản Lý AI">
+                <i class="fa-solid fa-brain" style="color:#a855f7;"></i> <span data-i18n="nav_ai_usage">Chi Phí & Quản
+                    Lý AI</span>
+            </a>
+            <a href="#logs" class="nav-item" data-tab="tab-logs" data-i18n-tooltip="nav_logs"
+                data-tooltip="Nhật Ký Hệ Thống">
+                <i class="fa-solid fa-terminal"></i> <span data-i18n="nav_logs">Nhật Ký Hệ Thống</span>
+            </a>
+            <a href="#settings" class="nav-item" data-tab="tab-settings" data-i18n-tooltip="nav_settings"
+                data-tooltip="Cài Đặt">
+                <i class="fa-solid fa-gear"></i> <span data-i18n="nav_settings">Cài Đặt</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="gpm-status-card" id="gpmStatusBadge" title="Trạng thái máy trạm & antidetect">
+                <div class="status-indicator ping-pulse" id="sidebarStatusLed"></div>
+                <div class="status-info">
+                    <span class="status-label" id="sidebarHostLabel"
+                        style="display:flex; align-items:center; gap:6px; font-weight:700; color:var(--text-primary); font-size:12px;">
+                        <i class="fa-solid fa-desktop" style="color:var(--accent-cyan); font-size:13px;"></i>
+                        <span id="sidebarComputerName">Local Machine</span>
+                    </span>
+                </div>
+            </div>
+            <!-- License Button moved from Topbar to Sidebar Bottom below Computer Name -->
+            <button class="sidebar-license-btn has-tooltip tooltip-top" id="btnTopbarLicense"
+                onclick="window.LicenseManager.openLicenseModal()"
+                data-tooltip="Xem thông tin bản quyền hoặc kích hoạt License Key">
+                <i class="fa-solid fa-shield-halved" id="topbarLicenseIcon" style="color:var(--text-muted);"></i>
+                <span id="topbarLicenseText" data-i18n="topbar_license">Bản Quyền</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->

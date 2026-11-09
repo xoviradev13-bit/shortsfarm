@@ -1,0 +1,533 @@
+<div class="modal" id="telegramChannelModal">
+    <div class="modal-content glass-panel"
+        style="max-width: 540px; border-radius: var(--radius-lg); overflow: hidden; padding: 0;">
+        <div class="modal-header"
+            style="padding: 16px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; gap: 14px; position: relative;">
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                <div class="stat-icon bg-cyan" id="teleModalIcon"
+                    style="width: 38px; height: 38px; font-size: 17px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="fa-brands fa-telegram"></i>
+                </div>
+                <div style="min-width: 0; flex: 1; overflow: hidden;">
+                    <h3 id="teleModalTitle"
+                        style="margin: 0; font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        Thêm Kênh Telegram Mới</h3>
+                    <p class="panel-sub"
+                        style="margin: 3px 0 0 0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; display: block;"
+                        title="Cấu hình kênh/nhóm nhận cảnh báo 10K (từ lịch quét), cảnh báo sự cố & báo cáo ngày">
+                        Cấu hình kênh/nhóm nhận cảnh báo 10K (từ lịch quét), cảnh báo sự cố & báo cáo ngày</p>
+                </div>
+            </div>
+            <button type="button" class="modal-corner-close has-tooltip tooltip-side-left"
+                onclick="closeTelegramChannelModal()" data-tooltip="Đóng"
+                style="position: absolute; top: 14px; right: 18px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-body" style="padding: 20px 22px;">
+            <input type="hidden" id="teleModalChannelId" value="">
+
+            <div class="form-group mb-3">
+                <label style="font-weight:600; display:block; margin-bottom:6px;"><i
+                        class="fa-solid fa-tag text-cyan"></i> Tên Gợi Nhớ Của Kênh:</label>
+                <input type="text" id="teleModalName" class="input-field"
+                    placeholder="Ví dụ: Kênh Báo MMO Chính, Group Beta Alert, Kênh Riêng..." maxlength="100">
+                <small style="color:var(--text-muted); font-size:11px; margin-top:4px; display:block;">Đặt tên giúp
+                    bạn dễ phân biệt khi quản lý nhiều kênh.</small>
+            </div>
+
+            <div class="form-group mb-3">
+                <label style="font-weight:600; display:block; margin-bottom:6px;"><i
+                        class="fa-solid fa-id-badge text-cyan"></i> Chat ID / Channel ID:</label>
+                <input type="text" id="teleModalChatId" class="input-field"
+                    placeholder="Ví dụ: -1001928374829 hoặc @mychannel hoặc 123456789">
+                <small style="color:var(--text-muted); font-size:11px; margin-top:4px; display:block;">
+                    Với nhóm/kênh ID thường bắt đầu bằng <code style="color:var(--accent-cyan);">-100</code> hoặc
+                    username công khai <code style="color:var(--accent-cyan);">@channel_name</code>.
+                </small>
+            </div>
+
+            <div class="form-group mb-3"
+                style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-weight:600; font-size:13px; color:var(--text-primary);">Trạng thái kích hoạt
+                        kênh
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted);">Bật/Tắt kênh này mà không cần xóa cấu hình
+                    </div>
+                </div>
+                <label class="tele-toggle-switch">
+                    <input type="checkbox" id="teleModalActive" checked>
+                    <span class="tele-toggle-slider"></span>
+                </label>
+            </div>
+
+            <!-- Phân Loại Thông Báo Nhận Tại Nhóm Này -->
+            <div class="form-group mb-3"
+                style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px;">
+                <div
+                    style="font-weight:700; font-size:13px; color:var(--text-primary); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-sliders text-cyan"></i> Loại Thông Báo Nhận Tại Nhóm Này:
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <!-- 1. Cảnh báo 10k follower -->
+                    <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; margin:0;">
+                        <input type="checkbox" id="teleModalNotify10k" checked
+                            style="margin-top:3px; accent-color:#2AABEE; width:16px; height:16px;">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                <span style="font-weight:600; font-size:12.5px; color:var(--text-primary);">🌟 Cảnh
+                                    báo nick đạt ngưỡng Follower / Sub (TikTok, YouTube, Facebook)</span>
+                                <span class="badge"
+                                    style="font-size:10px; padding:1px 6px; background:rgba(42,171,238,0.15); color:#2AABEE; border:1px solid rgba(42,171,238,0.3); border-radius:10px;"><i
+                                        class="fa-regular fa-clock"></i> Gửi từ Lịch Quét Định Kỳ</span>
+                            </div>
+                            <span
+                                style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px; line-height:1.4;">
+                                Hệ thống tự động phát hiện trong <b>Lịch Quét Định Kỳ</b> (hoặc khi bấm quét): Tự
+                                động bắn thông báo khi tài khoản / kênh ở trạng thái 🔔 <i>Đang theo dõi</i> chạm ngưỡng
+                                chỉ tiêu đã cài đặt (TikTok, YouTube, Facebook).
+                            </span>
+                        </div>
+                    </label>
+
+                    <!-- 2. Cảnh báo sự cố + cách khắc phục -->
+                    <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; margin:0;">
+                        <input type="checkbox" id="teleModalNotifyIssues" checked
+                            style="margin-top:3px; accent-color:#f59e0b; width:16px; height:16px;">
+                        <div>
+                            <span
+                                style="font-weight:600; font-size:12.5px; color:var(--text-primary); display:block;">⚠️
+                                Cảnh báo lỗi nghiêm trọng & Cách khắc phục</span>
+                            <span style="font-size:11px; color:var(--text-muted); display:block;">Bắn tin khẩn cấp
+                                khi upload thất bại, proxy die, lỗi GPMLogin kèm các bước xử lý cụ thể</span>
+                        </div>
+                    </label>
+
+                    <!-- 3. Báo cáo hoạt động hàng ngày -->
+                    <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; margin:0;">
+                        <input type="checkbox" id="teleModalNotifyDailyReport" checked
+                            style="margin-top:3px; accent-color:#10b981; width:16px; height:16px;"
+                            onchange="toggleDailyTimeRow(this.checked)">
+                        <div>
+                            <span
+                                style="font-weight:600; font-size:12.5px; color:var(--text-primary); display:block;">📊
+                                Báo cáo tổng kết ngày</span>
+                            <span style="font-size:11px; color:var(--text-muted); display:block;">Báo cáo danh sách
+                                video đã đăng lên nick nào (thành công/thất bại) & thống kê chi phí AI</span>
+                        </div>
+                    </label>
+
+                    <!-- Giờ gửi báo cáo hàng ngày riêng cho kênh này -->
+                    <div id="teleDailyTimeRow"
+                        style="margin-left:26px; padding:8px 12px; background:rgba(0,0,0,0.25); border-radius:8px; border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between;">
+                        <div style="font-size:11.5px; color:var(--text-secondary);">
+                            <i class="fa-regular fa-clock" style="color:#10b981;"></i> Giờ gửi báo cáo mỗi ngày cho
+                            nhóm này:
+                        </div>
+                        <input type="time" id="teleModalReportTime" class="input-field" value="21:00"
+                            style="width:115px; padding:4px 8px; font-size:12.5px; text-align:center;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Help Box -->
+            <div
+                style="background:rgba(42, 171, 238, 0.08); border:1px solid rgba(42, 171, 238, 0.2); border-radius:10px; padding:12px 14px; font-size:11.5px; line-height:1.5; color:var(--text-secondary);">
+                <div
+                    style="font-weight:700; color:#2AABEE; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-lightbulb"></i> Hướng Dẫn Lấy Chat ID Nhanh:
+                </div>
+                <ol style="margin-left:16px; padding:0;">
+                    <li>Mở nhóm hoặc kênh Telegram bạn muốn nhận tin.</li>
+                    <li>Thêm bot của bạn vào (cấp quyền Admin nếu là Channel).</li>
+                    <li>Thêm bot <b>@userinfobot</b> hoặc <b>@raw_data_bot</b> vào nhóm để xem ID, hoặc forward 1
+                        tin từ kênh sang bot đó để lấy Chat ID.</li>
+                </ol>
+            </div>
+        </div>
+        <div class="modal-footer"
+            style="padding: 14px 22px; border-top: 1px solid rgba(255,255,255,0.08); display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeTelegramChannelModal()">Hủy</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btnSaveTelegramChannel"
+                onclick="saveTelegramChannelModal(this)">
+                <i class="fa-solid fa-check"></i> Lưu Kênh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cấu Hình Tự Động Quét & Scheduler Nâng Cao -->
+<div class="modal" id="schedulerSettingsModal">
+    <div class="modal-content glass-panel"
+        style="max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="modal-header"
+            style="flex-shrink: 0; padding: 14px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); position: relative;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="stat-icon bg-cyan"
+                    style="width:36px; height:36px; font-size:16px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div>
+                    <h3 style="margin:0; font-size:16px; font-weight:700;">Cấu Hình Tự Động Quét & Vận Hành Ngầm
+                    </h3>
+                    <p class="panel-sub" style="margin:2px 0 0 0; font-size:12px;">Tùy chỉnh chu kỳ quét RSS YouTube
+                        và các thông số tự động</p>
+                </div>
+            </div>
+            <button type="button" class="modal-corner-close has-tooltip tooltip-side-left"
+                onclick="closeSchedulerSettingsModal()" data-tooltip="Đóng cửa sổ"
+                style="position: absolute; top: 14px; right: 18px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-body" style="padding: 18px 22px; overflow-y: auto; flex: 1; min-height: 0;">
+            <!-- Master RSS Switch (Moved from banner) -->
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,242,254,0.06); padding:12px 16px; border-radius:10px; border:1px solid rgba(0,242,254,0.25); margin-bottom:18px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div
+                        style="width:36px; height:36px; border-radius:8px; background:rgba(0,242,254,0.15); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <i class="fa-solid fa-rss" style="color:var(--accent-cyan); font-size:16px;"></i>
+                    </div>
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:13.5px; font-weight:700; color:var(--text-primary);">Tự Động Quét
+                                RSS YouTube</span>
+                            <span style="font-size:11px; font-weight:700; color:var(--accent-cyan);"
+                                id="bannerRssStatusLabel">Đang BẬT</span>
+                        </div>
+                        <span style="font-size:11.5px; color:var(--text-muted); display:block; margin-top:2px;">Bật
+                            hoặc tắt tự động quét video mới qua RSS XML YouTube</span>
+                    </div>
+                </div>
+                <label class="switch" style="margin:0;" data-tooltip="Bật hoặc Tắt tự động quét kênh YouTube qua RSS">
+                    <input type="checkbox" id="bannerRssToggleSwitch" checked
+                        onchange="togglePipelineRss(this.checked)">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <!-- Scan Interval -->
+            <div class="form-group" style="margin-bottom:0;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="font-weight:600; margin:0;"><i class="fa-solid fa-clock text-cyan"></i> Chu Kỳ
+                        Quét RSS YouTube:</label>
+                    <span id="modalIntervalBadge" class="badge badge-cyan" style="font-size:12px; font-weight:700;">15
+                        phút/lần</span>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+                    <input type="number" id="modalSchedulerInterval" class="input-field" min="1" max="1440" value="15"
+                        oninput="updateModalIntervalBadge(this.value)"
+                        style="width:130px; font-size:16px; font-weight:700; color:var(--accent-cyan); text-align:center;">
+                    <span style="font-size:13px; color:var(--text-muted); font-weight:600;">phút một lần</span>
+                </div>
+
+                <!-- Presets -->
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                    <button type="button" class="btn btn-sm btn-secondary has-tooltip"
+                        onclick="setSchedulerPreset(5, true)" data-tooltip="Đặt chu kỳ quét 5 phút (Rất nhanh)">
+                        <i class="fa-solid fa-bolt"></i> 5 phút
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary has-tooltip"
+                        onclick="setSchedulerPreset(10, true)" data-tooltip="Đặt chu kỳ quét 10 phút">
+                        10 phút
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary has-tooltip" id="preset15ModalBtn"
+                        onclick="setSchedulerPreset(15, true)" data-tooltip="Khuyến nghị mặc định chuẩn">
+                        <i class="fa-solid fa-star"></i> 15 phút (Chuẩn)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary has-tooltip"
+                        onclick="setSchedulerPreset(30, true)" data-tooltip="Đặt chu kỳ quét 30 phút">
+                        30 phút
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary has-tooltip"
+                        onclick="setSchedulerPreset(60, true)" data-tooltip="Đặt chu kỳ quét 60 phút">
+                        60 phút (1 giờ)
+                    </button>
+                </div>
+                <small class="form-hint" style="margin-top:6px; margin-bottom:0;">Hệ thống sẽ chạy ngầm kiểm tra XML
+                    RSS của YouTube
+                    mỗi chu kỳ được chọn. Thay đổi có hiệu lực ngay lập tức.</small>
+            </div>
+
+            <hr class="settings-divider" style="margin: 10px 0 14px 0;">
+
+            <!-- Advanced Options Grid -->
+            <div class="modal-form-grid">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-list-check text-purple"></i> Kiểm Tra Giờ Đăng:</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="number" id="modalUploadInterval" class="input-field" min="10" max="3600" value="60"
+                            style="font-weight:600;">
+                        <span style="font-size:12px; color:var(--text-muted);">giây</span>
+                    </div>
+                    <small class="form-hint">Kiểm tra video tới lịch hẹn đăng (mặc định: 60s).</small>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-cloud-arrow-down text-blue"></i> Giới Hạn Video / Kênh:</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="number" id="modalMaxVideosPerScan" class="input-field" min="1" max="50" value="5"
+                            style="font-weight:600;">
+                        <span style="font-size:12px; color:var(--text-muted);">video/lần</span>
+                    </div>
+                    <small class="form-hint">Tối đa số video tải về mỗi kênh trong 1 chu kỳ.</small>
+                </div>
+
+                <div class="form-group full-width">
+                    <label><i class="fa-solid fa-shield-halved text-gold"></i> Độ Trễ Nghỉ Giữa Các Kênh:</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="number" id="modalChannelDelay" class="input-field" min="0" max="30" value="2"
+                            style="width:130px; font-weight:600;">
+                        <span style="font-size:12px; color:var(--text-muted);">giây (khuyến nghị 2-5s để tránh
+                            YouTube rate-limit)</span>
+                    </div>
+                    <small class="form-hint">Giãn cách thời gian giữa các kênh để bảo vệ IP máy không bị hạn chế kết
+                        nối.</small>
+                </div>
+
+                <div class="form-group full-width">
+                    <label><i class="fa-solid fa-hourglass-half text-green" style="color:#10b981;"></i> Giãn Cách An
+                        Toàn Giữa Các Lần Đăng (Cùng Nick - Toàn Cục):</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="number" id="modalMinAccountCooldown" class="input-field" min="15" max="1440"
+                            value="60" style="width:130px; font-weight:600; color:#10b981;">
+                        <span style="font-size:12px; color:var(--text-muted);">phút (mặc định: 60p, chống TikTok
+                            shadowban/flag spam)</span>
+                    </div>
+                    <small class="form-hint">Khoảng cách tối thiểu giữa 2 lần đăng bài trên cùng 1 tài khoản TikTok.
+                        Nếu chiến dịch không chỉ định riêng, hệ thống sẽ tự động dùng mốc toàn cục này.</small>
+                </div>
+            </div>
+
+            <hr class="settings-divider" style="margin: 14px 0;">
+
+            <!-- Download Filter Settings (Toàn Cục) -->
+            <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-filter" style="color:#f59e0b; font-size:15px;"></i>
+                        <span style="font-weight:700; font-size:13px; color:#fff;">Bộ Lọc Tải Video YouTube</span>
+                    </div>
+                </div>
+                <p class="panel-sub" style="margin:0 0 10px 0; font-size:11.5px;">Lựa chọn loại video (Shorts /
+                    Video Dài) và giới hạn thời lượng tải về tự động cho toàn hệ thống.</p>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <label
+                        style="display:flex; align-items:flex-start; gap:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:9px 12px; border-radius:8px; cursor:pointer; user-select:none;">
+                        <input type="checkbox" id="settingFilterIncludeShorts" checked
+                            onchange="onToggleFormatCheckbox(this,'settingFilterIncludeShorts','settingFilterIncludeLongform','settingMinVideoDuration')"
+                            style="width:16px; height:16px; margin-top:2px; accent-color:#f59e0b; cursor:pointer;">
+                        <div>
+                            <div style="font-size:12px; font-weight:600; color:var(--text-primary);"><i
+                                    class="fa-brands fa-youtube" style="color:#ef4444;"></i> Shorts (≤ 3 phút /
+                                180s)</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:1px;">Xuất 1 clip full,
+                                không cắt PART.</div>
+                        </div>
+                    </label>
+                    <label
+                        style="display:flex; align-items:flex-start; gap:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:9px 12px; border-radius:8px; cursor:pointer; user-select:none;">
+                        <input type="checkbox" id="settingFilterIncludeLongform" checked
+                            onchange="onToggleFormatCheckbox(this,'settingFilterIncludeShorts','settingFilterIncludeLongform','settingMinVideoDuration')"
+                            style="width:16px; height:16px; margin-top:2px; accent-color:#f59e0b; cursor:pointer;">
+                        <div>
+                            <div style="font-size:12px; font-weight:600; color:var(--text-primary);"><i
+                                    class="fa-solid fa-film" style="color:#38bdf8;"></i> Video Dài (> 3 phút)</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:1px;">Cắt Part kèm gắn
+                                nhãn PART X.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="modal-form-grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:11.5px; font-weight:600;"><i class="fa-solid fa-clock-rotate-left"
+                                style="color:#f59e0b;"></i> Min Video Dài (giây):</label>
+                        <input type="number" id="settingMinVideoDuration" class="input-field mt-1" value="0" min="0"
+                            max="14400" placeholder="0" onchange="validateMinDurationInput(this)"
+                            onblur="validateMinDurationInput(this)">
+                        <small class="form-hint" style="font-size:10.5px;">Tối thiểu 180s (3 phút). Shorts luôn tải
+                            nếu bật ở trên.</small>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:11.5px; font-weight:600;"><i class="fa-solid fa-hourglass-end"
+                                style="color:#ef4444;"></i> Max Thời Lượng (giây):</label>
+                        <input type="number" id="settingMaxVideoDuration" class="input-field mt-1" value="3600" min="60"
+                            max="14400" placeholder="3600">
+                        <small class="form-hint" style="font-size:10.5px;">Bỏ qua video dài quá mức này. Mặc định:
+                            3600s (1 giờ).</small>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="settings-divider" style="margin: 14px 0;">
+
+            <!-- Feature Toggles -->
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <label
+                    style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;">
+                    <div>
+                        <div style="font-weight:600; font-size:13px; color:#fff;">Tự Động Tải Video Mới:</div>
+                        <div style="font-size:11px; color:var(--text-muted);">Tự động kéo MP4 chất lượng cao về máy
+                            khi phát hiện video mới qua RSS</div>
+                    </div>
+                    <label class="switch" style="margin-left:14px;">
+                        <input type="checkbox" id="modalAutoDownloadToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </label>
+
+                <label
+                    style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;">
+                    <div>
+                        <div style="font-weight:600; font-size:13px; color:#fff;">Tự Động Render 9:16
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted);">Đưa video vừa tải vào hàng đợi AI
+                            Transformer tự động cắt ghép, biến đổi dọc</div>
+                    </div>
+                    <label class="switch" style="margin-left:14px;">
+                        <input type="checkbox" id="modalAutoRenderToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </label>
+
+                <label
+                    style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;">
+                    <div>
+                        <div style="font-weight:600; font-size:13px; color:#fff;"><i
+                                class="fa-solid fa-folder-tree text-cyan"></i> Lưu Video Theo Thư Mục Riêng Từng
+                            Kênh
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted);">Tự động gom video tải về và video
+                            render vào thư mục con theo tên từng kênh</div>
+                    </div>
+                    <label class="switch" style="margin-left:14px;">
+                        <input type="checkbox" id="modalSaveByChannelFolderToggle">
+                        <span class="slider"></span>
+                    </label>
+                </label>
+
+                <hr class="settings-divider" style="margin: 14px 0;">
+
+                <!-- Auto-Retry & Watchdog Settings -->
+                <label
+                    style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;">
+                    <div>
+                        <div style="font-weight:600; font-size:13px; color:#fff;"><i
+                                class="fa-solid fa-arrows-rotate text-emerald"></i> Tự Động Thử Lại Thông Minh</div>
+                        <div style="font-size:11px; color:var(--text-muted);">Tự động xếp lịch thử lại khi gặp lỗi
+                            tạm thời (mạng, proxy, browser timeout, kết nối GPM). An toàn: không thử lại khi vi
+                            phạm, captcha hoặc văng phiên.</div>
+                    </div>
+                    <label class="switch" style="margin-left:14px;">
+                        <input type="checkbox" id="modalAutoRetryToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </label>
+
+                <div class="modal-form-grid" style="margin-top: 4px;">
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-arrow-rotate-right text-emerald"></i> Số Lần Thử Lại Tối
+                            Đa:</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="number" id="modalMaxRetries" class="input-field" min="1" max="10" value="2"
+                                style="font-weight:600;">
+                            <span style="font-size:12px; color:var(--text-muted);">lần</span>
+                        </div>
+                        <small class="form-hint">Thử lại tối đa số lần này trước khi đánh dấu thất bại hẳn.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-hourglass-half text-cyan"></i> Độ Trễ Giữa Các Lần Thử:</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="number" id="modalRetryDelay" class="input-field" min="1" max="1440" value="15"
+                                style="font-weight:600;">
+                            <span style="font-size:12px; color:var(--text-muted);">phút</span>
+                        </div>
+                        <small class="form-hint">Khoảng thời gian chờ trước lần thử kế tiếp (ví dụ: 15
+                            phút).</small>
+                    </div>
+                </div>
+
+                <label
+                    style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06); cursor:pointer; margin-top: 6px;">
+                    <div>
+                        <div style="font-weight:600; font-size:13px; color:#fff;"><i
+                                class="fa-solid fa-shield-dog text-gold"></i> Watchdog Chống Treo Task</div>
+                        <div style="font-size:11px; color:var(--text-muted);">Tự động giải phóng profile và phục hồi
+                            các task bị dở dang (processing) khi khởi động lại máy hoặc treo quá thời gian cho phép.
+                        </div>
+                    </div>
+                    <label class="switch" style="margin-left:14px;">
+                        <input type="checkbox" id="modalWatchdogToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </label>
+
+                <div class="form-group" style="margin-top: 4px;">
+                    <label><i class="fa-solid fa-stopwatch text-gold"></i> Thời Gian Coi Là Bị Treo:</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="number" id="modalStuckTimeout" class="input-field" min="5" max="180" value="15"
+                            style="width:130px; font-weight:600;">
+                        <span style="font-size:12px; color:var(--text-muted);">phút (mặc định: 15 phút)</span>
+                    </div>
+                    <small class="form-hint">Nếu task ở trạng thái processing quá thời gian này, Watchdog sẽ tự động
+                        can thiệp.</small>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer"
+            style="padding: 12px 22px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(10, 13, 20, 0.5);">
+            <button type="button" class="btn btn-secondary has-tooltip" onclick="closeSchedulerSettingsModal()"
+                data-tooltip="Hủy bỏ thay đổi và đóng">
+                Hủy
+            </button>
+            <button type="button" class="btn btn-primary has-tooltip tooltip-left" id="btnSaveSchedulerModal"
+                onclick="saveSchedulerSettings(this, true)"
+                data-tooltip="Lưu cấu hình và cập nhật chu kỳ quét ngay lập tức">
+                <i class="fa-solid fa-floppy-disk"></i> Lưu & Áp Dụng Ngay
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Upload Video To GPM -->
+<div class="modal" id="uploadModal">
+    <div class="modal-content glass-panel">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-cloud-arrow-up"></i> Đăng Video Lên Tài Khoản</h3>
+            <button type="button" class="close-btn has-tooltip" onclick="closeUploadModal()"
+                data-tooltip="Đóng cửa sổ"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Chọn Profile:</label>
+                <select id="modalProfileSelect" class="input-field"
+                    style="width:100%; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;"></select>
+            </div>
+            <div class="form-group">
+                <label>Đường dẫn video đã render:</label>
+                <input type="text" id="modalVideoPath" class="input-field" readonly>
+            </div>
+            <div class="form-group">
+                <label>Tiêu đề:</label>
+                <input type="text" id="modalVideoTitle" class="input-field">
+            </div>
+            <div class="form-group">
+                <label>Hashtag:</label>
+                <input type="text" id="modalVideoTags" class="input-field" value="#viral #fyp #xuhuong #learnontiktok">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeUploadModal()">Hủy</button>
+            <button class="btn btn-primary" id="btnConfirmUpload" onclick="executeUploadVideo()">
+                <i class="fa-solid fa-paper-plane"></i> Bắt Đầu Đăng Bài
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xem Chi Tiết Kênh (Channel Detail Interface) -->

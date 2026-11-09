@@ -1,0 +1,145 @@
+            <section id="tab-overview" class="tab-pane">
+                <!-- Global SaaS 4-Step Guided Pipeline Banner (North Star UI) -->
+                <div class="pipeline-stepper-banner glass-panel mb-4" id="globalPipelineStepper">
+                    <div class="stepper-track">
+                        <div class="step-item has-tooltip" id="step1Indicator" onclick="switchTab('tab-sources')"
+                            data-tooltip="Bước 1: Quản lý & quét kênh YouTube nguồn">
+                            <div class="step-circle"><i class="fa-brands fa-youtube" style="color:#ff0000;"></i></div>
+                            <div class="step-meta">
+                                <span class="step-badge">BƯỚC 1</span>
+                                <h4>Nguồn YouTube</h4>
+                                <p id="stepperSourceStats">0 kênh đang theo dõi</p>
+                            </div>
+                        </div>
+                        <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
+                        <div class="step-item has-tooltip" id="step2Indicator" onclick="switchTab('tab-video-studio')"
+                            data-tooltip="Bước 2: Cấu hình mẫu edit dọc 9:16, cắt >60s">
+                            <div class="step-circle"><i class="fa-solid fa-wand-magic-sparkles"
+                                    style="color:#00f2fe;"></i></div>
+                            <div class="step-meta">
+                                <span class="step-badge">BƯỚC 2</span>
+                                <h4>Công Thức Edit</h4>
+                                <p id="stepperEditStats">9:16 Beta 65s sẵn sàng</p>
+                            </div>
+                        </div>
+                        <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
+                        <div class="step-item active has-tooltip" id="step3Indicator"
+                            onclick="switchTab('tab-auto-pipeline')"
+                            data-tooltip="Bước 3: Thiết lập chiến dịch gán Kênh -> Edit -> Nick TikTok">
+                            <div class="step-circle"><i class="fa-solid fa-bolt" style="color:#8b5cf6;"></i></div>
+                            <div class="step-meta">
+                                <span class="step-badge">BƯỚC 3</span>
+                                <h4>Chiến Dịch Tự Động</h4>
+                                <p id="stepperCampaignStats">Auto-Pilot: Đang Chạy</p>
+                            </div>
+                        </div>
+                        <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
+                        <div class="step-item has-tooltip" id="step4Indicator" onclick="switchTab('tab-gpm-farm')"
+                            data-tooltip="Bước 4: Theo dõi tài khoản & mốc Follow">
+                            <div class="step-circle"><i class="fa-solid fa-trophy" style="color:#f59e0b;"></i></div>
+                            <div class="step-meta">
+                                <span class="step-badge">BƯỚC 4</span>
+                                <h4>Đăng & Follow</h4>
+                                <p id="stepperGpmStats">0 nick kết nối</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-blue"><i class="fa-brands fa-youtube"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-num" id="statChannels">0</span>
+                            <span class="stat-title">Kênh YouTube Theo Dõi</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-purple"><i class="fa-solid fa-video"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-num" id="statVideos">0</span>
+                            <span class="stat-title">Video Đã Tải / AI Render</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-cyan"><i class="fa-solid fa-users-gear"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-num" id="statProfiles">0</span>
+                            <span class="stat-title">Profiles</span>
+                        </div>
+                    </div>
+                    <div class="stat-card highlight-card">
+                        <div class="stat-icon bg-gold"><i class="fa-solid fa-trophy"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-num" id="stat10k">0</span>
+                            <span class="stat-title">Nick Đạt Chỉ Tiêu</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <!-- Quick Actions Panel -->
+                    <div class="glass-panel col-8" style="display: flex; flex-direction: column;">
+                        <div class="panel-header"
+                            style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3><i class="fa-solid fa-bolt"></i> Thao Tác Nhanh</h3>
+                            <button type="button" class="btn btn-secondary btn-sm has-tooltip tooltip-left"
+                                onclick="openVariantsReportModal()"
+                                data-tooltip="Báo cáo phân tích hiệu suất A/B Testing">
+                                <i class="fa-solid fa-chart-pie" style="color:#c084fc;"></i> Báo Cáo A/B
+                            </button>
+                        </div>
+                        <div class="quick-actions-grid"
+                            style="grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); flex: 1; display: grid; align-content: center; justify-content: center; margin: auto 0; padding: 12px 0;">
+                            <div class="action-box" onclick="switchTab('tab-auto-pipeline')">
+                                <i class="fa-solid fa-bolt" style="color:var(--accent-purple);"></i>
+                                <h4>Chiến Dịch Tự Động</h4>
+                                <p>Quản lý luồng Auto từ Kênh &rarr; Edit &rarr; TikTok</p>
+                            </div>
+                            <div class="action-box" onclick="switchTab('tab-video-studio')">
+                                <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-cyan);"></i>
+                                <h4>Studio & Mẫu Edit</h4>
+                                <p>Mô phỏng 9:16 trên điện thoại & cắt part >60s</p>
+                            </div>
+                            <div class="action-box" onclick="switchTab('tab-sources')">
+                                <i class="fa-brands fa-youtube" style="color:#ff0000;"></i>
+                                <h4>Kênh YouTube Nguồn</h4>
+                                <p>Theo dõi RSS feed và quét tìm kênh mới</p>
+                            </div>
+                            <div class="action-box" onclick="switchTab('tab-gpm-farm')">
+                                <i class="fa-solid fa-robot" style="color:var(--accent-gold);"></i>
+                                <h4>Dàn Account</h4>
+                                <p>Profiles theo dõi mốc 10K</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Status Panel -->
+                    <div class="glass-panel col-4">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-signal"></i> Trạng Thái Hệ Thống</h3>
+                        </div>
+                        <ul class="system-checklist">
+                            <li>
+                                <span class="check-title">FFmpeg Video Engine</span>
+                                <span class="badge badge-success">Sẵn Sàng</span>
+                            </li>
+                            <li>
+                                <span class="check-title">yt-dlp Downloader</span>
+                                <span class="badge badge-success">Sẵn Sàng</span>
+                            </li>
+                            <li>
+                                <span class="check-title">Playwright Browser CDP</span>
+                                <span class="badge badge-success">Sẵn Sàng</span>
+                            </li>
+                            <li>
+                                <span class="check-title">Telegram Bot Alert</span>
+                                <span class="badge badge-info">Đang Giám Sát</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- TAB: VIDEO MANAGER & MULTI-DOWNLOADER & ELEVENLABS -->

@@ -1,0 +1,941 @@
+            <section id="tab-settings" class="tab-pane">
+                <div class="glass-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3><i class="fa-solid fa-key text-accent"></i> Quản Lý API Keys</h3>
+                            <p class="panel-sub">Thêm, chỉnh sửa và xoay vòng API Keys. Hỗ trợ nhiều YouTube API Key để
+                                tránh hết quota.</p>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="loadApiKeySettings()"><i
+                                class="fa-solid fa-rotate"></i> Làm Mới</button>
+                    </div>
+
+                    <!-- Giao Diện & Ngôn Ngữ -->
+                    <div class="settings-section mt-3"
+                        style="background: rgba(2, 132, 199, 0.04); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 12px; padding: 18px 20px;">
+                        <div class="settings-section-header"
+                            style="justify-content: space-between; align-items: center; display: flex; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fa-solid fa-palette" style="color: #0284c7; font-size: 22px;"></i>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 15px; font-weight: 700;"
+                                        data-i18n="settings_appearance_title">Giao Diện & Ngôn Ngữ</h4>
+                                    <p class="panel-sub" style="margin: 2px 0 0 0;" data-i18n="settings_appearance_sub">
+                                        Tùy chỉnh giao diện sáng/tối và lựa chọn ngôn ngữ làm việc theo ý muốn.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px;">
+                            <div>
+                                <label
+                                    style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;"
+                                    data-i18n="settings_theme_label">
+                                    Chế Độ Giao Diện:
+                                </label>
+                                <select id="settingAppTheme" class="custom-select" style="width: 100%; height: 42px;"
+                                    onchange="window.setAppTheme(this.value)">
+                                    <option value="dark" data-i18n="settings_theme_dark">🌙 Giao diện Tối</option>
+                                    <option value="light" data-i18n="settings_theme_light">☀️ Giao diện Sáng</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;"
+                                    data-i18n="settings_lang_label">
+                                    Ngôn Ngữ Hệ Thống:
+                                </label>
+                                <select id="settingAppLanguage" class="custom-select" style="width: 100%; height: 42px;"
+                                    onchange="window.setAppLanguage(this.value)">
+                                    <option value="vi" data-i18n="settings_lang_vi">VI - Tiếng Việt</option>
+                                    <option value="en" data-i18n="settings_lang_en">EN - English</option>
+                                    <option value="zh" data-i18n="settings_lang_zh">ZH - 简体中文</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BẢN QUYỀN PHẦN MỀM & HWID -->
+                    <div class="settings-section mt-3"
+                        style="background: rgba(244, 63, 94, 0.03); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 12px; padding: 18px 20px;">
+                        <div class="settings-section-header"
+                            style="justify-content: space-between; align-items: center; display: flex; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fa-solid fa-shield-halved" style="color: #F43F5E; font-size: 22px;"></i>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 15px; font-weight: 700;">Bản Quyền Phần Mềm & Thiết
+                                        Bị</h4>
+                                    <p class="panel-sub" style="margin: 2px 0 0 0;">Kiểm soát số máy tính sử dụng theo
+                                        từng gói (1 PC / 3 PCs / 5 PCs - Vĩnh Viễn) qua mã phần cứng HWID.</p>
+                                </div>
+                            </div>
+                            <div id="settingLicenseStatusBadge">
+                                <span class="badge badge-secondary"><i class="fa-solid fa-spinner fa-spin"></i> Đang
+                                    tải...</span>
+                            </div>
+                        </div>
+
+                        <!-- Card thông tin phần cứng HWID -->
+                        <div
+                            style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px 16px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <span
+                                    style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">Mã
+                                    Thiết Bị Máy Tính Này (HWID):</span>
+                                <div style="font-family: monospace; font-size: 13.5px; font-weight: 700; color: #38bdf8; margin-top: 3px;"
+                                    id="settingLicenseHwid">Đang quét...</div>
+                            </div>
+                            <button type="button" class="btn btn-xs btn-secondary"
+                                onclick="window.LicenseManager.copyHwid()"
+                                title="Sao chép HWID gửi cho Admin nếu cần hỗ trợ">
+                                <i class="fa-regular fa-copy"></i> Sao Chép HWID
+                            </button>
+                        </div>
+
+                        <!-- Trạng thái 1: Đã kích hoạt -->
+                        <div id="settingLicenseActiveCard" style="display: none; margin-top: 14px;">
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                                <div
+                                    style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block;">Gói bản
+                                        quyền:</span>
+                                    <strong style="color: #34d399; font-size: 13.5px;"
+                                        id="settingLicensePlan">—</strong>
+                                </div>
+                                <div
+                                    style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block;">Thời hạn sử
+                                        dụng:</span>
+                                    <strong style="font-size: 13.5px;" id="settingLicenseExpires">—</strong>
+                                </div>
+                                <div
+                                    style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block;">Giới hạn
+                                        thiết bị:</span>
+                                    <strong style="color: #38bdf8; font-size: 13.5px;"
+                                        id="settingLicenseDevices">—</strong>
+                                </div>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div style="font-size: 12px; color: var(--text-muted);">
+                                    Mã key hiện tại: <code style="padding: 2px 6px; border-radius: 4px;"
+                                        id="settingLicenseCurrentKey">SS-***</code>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="btn btn-xs btn-secondary"
+                                        onclick="window.LicenseManager.syncLicense(this)"
+                                        title="Đồng bộ trạng thái từ máy chủ">
+                                        <i class="fa-solid fa-arrows-rotate"></i> Đồng Bộ Trạng Thái
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-danger"
+                                        onclick="window.LicenseManager.openConfirmDeactivateModal()"
+                                        style="color: #f87171; border: 1px solid rgba(248,113,113,0.3); background: transparent; padding: 4px 10px; border-radius: 6px; cursor: pointer;">
+                                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Đổi Key Khác
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trạng thái 2: Chưa kích hoạt -->
+                        <div id="settingLicenseUnactiveCard" style="margin-top: 14px;">
+                            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px;">
+                                Nhập mã License Key nhận được sau khi thanh toán VietQR trên website (ví dụ: <code
+                                    style="color:#f43f5e;">SS-PRO-XXXX-XXXXXXXX</code>):
+                            </p>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <input type="text" id="settingLicenseKeyInput" class="input-field"
+                                    placeholder="Dán mã bản quyền SS-PRO-XXXX... vào đây"
+                                    style="flex: 1; min-width: 260px; font-family: monospace; font-size: 13.5px; text-transform: uppercase;">
+                                <button type="button" class="btn btn-primary"
+                                    onclick="window.LicenseManager.activate(this, 'settingLicenseKeyInput')">
+                                    <i class="fa-solid fa-key"></i> Kích Hoạt Bản Quyền
+                                </button>
+                            </div>
+                            <small
+                                style="display: block; margin-top: 8px; font-size: 11.5px; color: var(--text-muted);">
+                                💡 Chưa có key? Mua bản quyền tự động kích hoạt trong 3 giây tại cổng thanh toán
+                                website: <a href="https://shortsstack.com" target="_blank"
+                                    style="color:#f43f5e; text-decoration: underline; font-weight: 600;">shortsstack.com</a>
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- KIỂM TRA BẢN CẬP NHẬT PHẦN MỀM -->
+                    <div class="settings-section mt-3"
+                        style="background: rgba(56, 189, 248, 0.03); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; padding: 16px 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <i class="fa-solid fa-cloud-arrow-down" style="color: #38bdf8; font-size: 20px;"></i>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 700;">Cập Nhật Phiên Bản</h4>
+                                    <p class="panel-sub" style="margin: 2px 0 0 0;">Phiên bản hiện tại: <strong
+                                            style="color: #38bdf8;" id="appCurrentVersionText">v1.0.1</strong> — Luôn
+                                        cập nhật để nhận các tính
+                                        năng lách bản quyền & bypass mới nhất.</p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-secondary" id="btnCheckAppUpdate"
+                                onclick="window.LicenseManager.checkForUpdates(true)">
+                                <i class="fa-solid fa-arrows-rotate"></i> Kiểm Tra Bản Cập Nhật
+                            </button>
+                        </div>
+
+                        <!-- Card hiển thị khi có bản mới -->
+                        <div id="appUpdateAvailableCard"
+                            style="display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 14px 16px; margin-top: 14px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div>
+                                    <div style="color: #34d399; font-weight: 700; font-size: 14px;">🎉 Đã có bản cập
+                                        nhật mới!</div>
+                                    <div style="color: #cbd5e1; font-size: 12.5px; margin-top: 2px;"
+                                        id="appUpdateInfoText">Đang tải chi tiết...</div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-success" id="btnDownloadNewRelease">
+                                    <i class="fa-solid fa-download"></i> Tải Bản Cập Nhật (.exe)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider">
+
+                    <!-- YouTube API Keys -->
+                    <div class="settings-section mt-3">
+                        <div class="settings-section-header">
+                            <i class="fa-brands fa-youtube text-danger"></i>
+                            <div>
+                                <h4>YouTube Data API v3 Keys</h4>
+                                <p class="panel-sub">Mỗi key miễn phí 10,000 units/ngày. Thêm nhiều key để tự động xoay
+                                    vòng khi hết quota. Phân cách bằng dấu phẩy hoặc xuống dòng.</p>
+                            </div>
+                        </div>
+                        <div class="form-group mt-2">
+                            <textarea id="settingYoutubeKeys" class="input-field" rows="4"
+                                placeholder="AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX&#10;AIzaSyYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY&#10;AIzaSyZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
+                                style="font-family: monospace; font-size: 13px; resize: vertical;"></textarea>
+                            <small class="form-hint"
+                                style="display: block; margin-top: 6px; margin-bottom: 14px; color: var(--text-muted); font-size: 12px; line-height: 1.5;">Mỗi
+                                key trên 1 dòng hoặc cách nhau bằng dấu phẩy. Hệ thống sẽ tự động xoay sang key tiếp
+                                theo khi key hiện tại hết quota.</small>
+                        </div>
+                        <div
+                            style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; margin-bottom: 12px;">
+                            <button class="btn btn-sm btn-secondary" id="btnTestYtKey" onclick="testYoutubeKey(this)">
+                                <i class="fa-solid fa-flask"></i> Test Key Đầu Tiên
+                            </button>
+                            <span id="testKeyResult" style="font-size:13px;"></span>
+                        </div>
+
+                        <!-- Key Pool Status -->
+                        <div id="keyPoolStatus" class="mt-3" style="display:none;">
+                            <h5 style="font-size:13px; color:var(--text-muted); margin-bottom:8px;"><i
+                                    class="fa-solid fa-table-list"></i> Trạng Thái Key Pool</h5>
+                            <div id="keyPoolTable"></div>
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider">
+
+                    <!-- AI Engine Settings (Cloud API & Local Whisper) -->
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <i class="fa-solid fa-brain" style="color:#a855f7;"></i>
+                            <div>
+                                <h4>AI Video Engine & Cloud API</h4>
+                                <p class="panel-sub">Cấu hình mô hình AI Cloud (DeepSeek/Gemini/OpenAI) và
+                                    Speech-to-Text Local (faster-whisper).</p>
+                            </div>
+                        </div>
+                        <div class="modal-form-grid mt-2">
+                            <div class="form-group">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <label style="font-weight:600; margin:0;"><i class="fa-solid fa-bolt"
+                                            style="color:#0070f3;"></i> DeepSeek API Key (Khuyên dùng - Siêu
+                                        rẻ):</label>
+                                    <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                        onclick="togglePasswordVisibility('settingDeepSeekKey', this, 'Key')">
+                                        <i class="fa-solid fa-eye"></i> Hiện Key
+                                    </span>
+                                </div>
+                                <input type="password" id="settingDeepSeekKey" class="input-field" placeholder="sk-..."
+                                    autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fa-solid fa-microchip"></i> DeepSeek Model:</label>
+                                <select id="settingDeepSeekModel" class="input-field">
+                                    <option value="deepseek-chat">deepseek-chat (V3 - Siêu nhanh, chuyên viết Hook)
+                                    </option>
+                                    <option value="deepseek-reasoner">deepseek-reasoner (R1 - Suy luận sâu, phân tích
+                                        kịch tính)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <label style="font-weight:600; margin:0;"><i class="fa-solid fa-robot"
+                                            style="color:#10b981;"></i> Gemini API Key (Viết kịch bản & Google Imagen 3
+                                        sinh ảnh):</label>
+                                    <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                        onclick="togglePasswordVisibility('settingGeminiKey', this, 'Key')">
+                                        <i class="fa-solid fa-eye"></i> Hiện Key
+                                    </span>
+                                </div>
+                                <input type="password" id="settingGeminiKey" class="input-field" placeholder="AIzaSy..."
+                                    autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fa-solid fa-microchip"></i> Gemini Model:</label>
+                                <select id="settingGeminiModel" class="input-field">
+                                    <option value="gemini-flash-lite-latest">gemini-flash-lite-latest (Siêu nhanh,
+                                        Khuyên dùng & Miễn phí)</option>
+                                    <option value="gemini-flash-latest">gemini-flash-latest (Bản Flash mới nhất)
+                                    </option>
+                                    <option value="gemini-3.8-flash">gemini-3.8-flash (Model thế hệ mới của Google)
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <label style="font-weight:600; margin:0;"><i class="fa-solid fa-brain"
+                                            style="color:#10a37f;"></i> OpenAI API Key (Viết kịch bản & DALL-E 3 sinh
+                                        ảnh):</label>
+                                    <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                        onclick="togglePasswordVisibility('settingOpenAiKey', this, 'Key')">
+                                        <i class="fa-solid fa-eye"></i> Hiện Key
+                                    </span>
+                                </div>
+                                <input type="password" id="settingOpenAiKey" class="input-field" placeholder="sk-..."
+                                    autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fa-solid fa-microchip"></i> OpenAI Model:</label>
+                                <select id="settingOpenAiModel" class="input-field">
+                                    <option value="gpt-4o-mini">gpt-4o-mini (Tiết kiệm, tốc độ cao)</option>
+                                    <option value="gpt-4o">gpt-4o (Đỉnh cao, tốn token hơn)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <label style="font-weight:600; margin:0;"><i class="fa-solid fa-microphone-lines"
+                                            style="color:#c084fc;"></i> ElevenLabs API Key (Lồng tiếng AI &amp; Voice
+                                        Clone):</label>
+                                    <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                        onclick="togglePasswordVisibility('settingElevenLabsKey', this, 'Key')">
+                                        <i class="fa-solid fa-eye"></i> Hiện Key
+                                    </span>
+                                </div>
+                                <input type="password" id="settingElevenLabsKey" class="input-field"
+                                    placeholder="sk_... hoặc xi-api-key từ elevenlabs.io" autocomplete="off">
+                            </div>
+
+                            <div class="form-group">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <label style="font-weight:600; margin:0;"><i class="fa-solid fa-film"
+                                            style="color:#05a081;"></i> Pexels API Key (Kho video/ảnh thật):</label>
+                                    <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                        onclick="togglePasswordVisibility('settingPexelsKey', this, 'Key')">
+                                        <i class="fa-solid fa-eye"></i> Hiện Key
+                                    </span>
+                                </div>
+                                <input type="password" id="settingPexelsKey" class="input-field"
+                                    placeholder="Lấy miễn phí tại pexels.com/api..." autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <label style="font-weight:600; margin:0;"><i class="fa-solid fa-camera"
+                                            style="color:#2ea44f;"></i> Pixabay API Key (Kho tư liệu miễn phí):</label>
+                                    <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                        onclick="togglePasswordVisibility('settingPixabayKey', this, 'Key')">
+                                        <i class="fa-solid fa-eye"></i> Hiện Key
+                                    </span>
+                                </div>
+                                <input type="password" id="settingPixabayKey" class="input-field"
+                                    placeholder="Lấy miễn phí tại pixabay.com/api/docs..." autocomplete="off">
+                            </div>
+
+                            <div class="form-group">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <label style="font-weight:600; margin:0;"><i class="fa-solid fa-wand-magic-sparkles"
+                                            style="color:#a855f7;"></i> Pollinations Token (Dành cho FLUX & Nano
+                                        Banana):</label>
+                                    <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                        onclick="togglePasswordVisibility('settingPollinationsKey', this, 'Key')">
+                                        <i class="fa-solid fa-eye"></i> Hiện Key
+                                    </span>
+                                </div>
+                                <input type="password" id="settingPollinationsKey" class="input-field"
+                                    placeholder="Tùy chọn - Nhập token/key để bỏ giới hạn rate limit 402/503..."
+                                    autocomplete="off">
+                            </div>
+
+                            <div class="form-group">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <label><i class="fa-solid fa-bolt" style="color:#f59e0b;"></i> Fal.ai Key (LTX-Video
+                                        & Wan 2.1):</label>
+                                    <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                        onclick="togglePasswordVisibility('settingFalKey', this, 'Key')">
+                                        <i class="fa-solid fa-eye"></i> Hiện Key
+                                    </span>
+                                </div>
+                                <input type="password" id="settingFalKey" class="input-field"
+                                    placeholder="Nhập FAL_KEY từ fal.ai/dashboard/keys (Dùng cho LTX-Video siêu tốc & Wan 2.1)..."
+                                    autocomplete="off">
+                            </div>
+
+                            <div class="full-width" style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                                <div class="form-group">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <label><i class="fa-solid fa-fire" style="color:#ef4444;"></i> Kling Access
+                                            Key:</label>
+                                        <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                            onclick="togglePasswordVisibility('settingKlingAccessKey', this, 'Key')">
+                                            <i class="fa-solid fa-eye"></i> Hiện
+                                        </span>
+                                    </div>
+                                    <input type="password" id="settingKlingAccessKey" class="input-field"
+                                        placeholder="Kling Access Key (AK)..." autocomplete="off">
+                                </div>
+                                <div class="form-group">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <label><i class="fa-solid fa-key" style="color:#ef4444;"></i> Kling Secret
+                                            Key:</label>
+                                        <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                            onclick="togglePasswordVisibility('settingKlingSecretKey', this, 'Key')">
+                                            <i class="fa-solid fa-eye"></i> Hiện
+                                        </span>
+                                    </div>
+                                    <input type="password" id="settingKlingSecretKey" class="input-field"
+                                        placeholder="Kling Secret Key (SK)..." autocomplete="off">
+                                </div>
+                            </div>
+
+                            <div class="full-width"
+                                style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+                                <div class="form-group">
+                                    <label><i class="fa-solid fa-sliders"></i> Ưu tiên nhà cung cấp AI:</label>
+                                    <select id="settingAiProvider" class="input-field">
+                                        <option value="deepseek">DeepSeek (Cực rẻ & Tối ưu TikTok Reup)</option>
+                                        <option value="gemini">Google Gemini (Tốc độ & Free Tier)</option>
+                                        <option value="openai">OpenAI (Tiêu chuẩn quốc tế)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label><i class="fa-solid fa-wave-square"></i> faster-whisper Model:</label>
+                                    <select id="settingWhisperModel" class="input-field">
+                                        <option value="base">base (~145MB - Nhanh, chuẩn, nhẹ máy)</option>
+                                        <option value="tiny">tiny (~75MB - Siêu nhẹ cho máy yếu)</option>
+                                        <option value="small">small (~460MB - Chuẩn xác cao hơn)</option>
+                                        <option value="medium">medium (~1.5GB - Rất chuẩn, đa ngôn ngữ tốt)</option>
+                                        <option value="large-v3">large-v3 (~3GB - Cao cấp nhất, chính xác tối đa)
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label><i class="fa-solid fa-network-wired" style="color:#0ea5e9;"></i> Gemini Proxy
+                                        Base URL:</label>
+                                    <input type="text" id="settingGeminiBaseUrl" class="input-field"
+                                        placeholder="https://my-gemini-proxy.workers.dev">
+                                    <span
+                                        style="font-size:11px; color:var(--text-muted); display:block; margin-top:3px;">URL
+                                        Cloudflare Worker lách chặn tại VN (tránh VPN).</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            style="display:flex; gap:20px; flex-wrap:wrap; margin-top:12px; padding:10px 14px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px;">
+                                <input type="checkbox" id="settingDynamicSubtitles" checked
+                                    style="accent-color:#0070f3;"
+                                    onchange="document.getElementById('settingSubtitleStyleWrap').style.display = this.checked ? 'grid' : 'none'">
+                                <span><i class="fa-solid fa-closed-captioning" style="color:#eab308;"></i> Bật phụ đề
+                                    động TikTok (.ass)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px;">
+                                <input type="checkbox" id="settingAntiDetect" checked style="accent-color:#0070f3;">
+                                <span><i class="fa-solid fa-shield-halved" style="color:#22c55e;"></i> Bật bộ lọc chống
+                                    quét bản quyền</span>
+                            </label>
+                        </div>
+
+                        <!-- Cấu Hình Phong Cách Phụ Đề (Subtitle Style Settings) -->
+                        <div id="settingSubtitleStyleWrap"
+                            style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:10px; padding:12px; background:rgba(234,179,8,0.04); border-radius:8px; border:1px solid rgba(234,179,8,0.18);">
+                            <div class="form-group" style="margin:0;">
+                                <label
+                                    style="font-size:11.5px; font-weight:600; color:var(--accent-gold); display:block; margin-bottom:4px;">
+                                    <i class="fa-solid fa-palette"></i> Phong cách chữ phụ đề:
+                                </label>
+                                <select id="settingSubtitleStyle" class="input-field"
+                                    style="height:36px; font-size:12px;">
+                                    <option value="karaoke_yellow" selected>Highlight Chữ Vàng Neon (Từng Từ)</option>
+                                    <option value="classic_white">Trắng Viền Đen Bold (Cổ điển)</option>
+                                    <option value="tiktok_gradient">Gradient Cyan & Hồng (TikTok Aesthetic)</option>
+                                    <option value="green_neon">Chữ Xanh Neon (High Energy)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label
+                                    style="font-size:11.5px; font-weight:600; color:var(--accent-gold); display:block; margin-bottom:4px;">
+                                    <i class="fa-solid fa-arrows-up-down"></i> Vị trí hiển thị chữ:
+                                </label>
+                                <select id="settingSubtitlePosition" class="input-field"
+                                    style="height:36px; font-size:12px;">
+                                    <option value="center" selected>Chính Giữa Màn Hình (Focus TikTok)</option>
+                                    <option value="bottom">Gần Đáy Màn Hình (Sát mô tả)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label
+                                    style="font-size:11.5px; font-weight:600; color:var(--accent-gold); display:block; margin-bottom:4px;">
+                                    <i class="fa-solid fa-text-height"></i> Kích thước chữ (Font size):
+                                </label>
+                                <select id="settingSubtitleFontSize" class="input-field"
+                                    style="height:36px; font-size:12px;">
+                                    <option value="44">Nhỏ (44px)</option>
+                                    <option value="54" selected>Chuẩn TikTok Viral (54px)</option>
+                                    <option value="64">Lớn Nổi Bật (64px)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <hr class="settings-divider">
+
+                        <!-- Telegram -->
+                        <div class="settings-section">
+                            <div class="settings-section-header"
+                                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <i class="fa-brands fa-telegram" style="color:#2AABEE; font-size:26px;"></i>
+                                    <div>
+                                        <h4 style="margin:0; font-size:16px;" data-i18n="settings_telegram_title">
+                                            Telegram Bot & Cảnh Báo Tăng Trưởng</h4>
+                                        <p class="panel-sub" style="margin:2px 0 0 0;"
+                                            data-i18n="settings_telegram_sub">Cấu hình Bot, quản lý kênh nhận
+                                            cảnh báo và ngưỡng số lượng người theo dõi/đăng ký để kích hoạt thông báo.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <span class="badge" id="teleActiveBadge"
+                                        style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600;">
+                                        <i class="fa-solid fa-circle"
+                                            style="font-size:7px; vertical-align:middle; margin-right:4px;"></i><span
+                                            id="teleActiveCountText">Đang tải...</span>
+                                    </span>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnTestDailyReport"
+                                        onclick="testDailyReportNow(this)"
+                                        title="Gửi thử Báo cáo hoạt động ngày tới các kênh đã bật nhận báo cáo">
+                                        <i class="fa-solid fa-chart-pie" style="color:#10b981;"></i> <span
+                                            data-i18n="settings_telegram_test_daily">Test Báo Cáo Ngày</span>
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnTestIssueAlert"
+                                        onclick="testIssueAlertNow(this)"
+                                        title="Gửi thử Cảnh báo sự cố kèm giải pháp tới các kênh đã bật nhận cảnh báo lỗi">
+                                        <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> <span
+                                            data-i18n="settings_telegram_test_issue">Test Cảnh Báo Lỗi</span>
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnTestAllTelegram"
+                                        onclick="testTelegramAlert(this)"
+                                        title="Gửi tin nhắn thử nghiệm đạt ngưỡng tới tất cả kênh đang bật nhận cảnh báo">
+                                        <i class="fa-solid fa-bell" style="color:#2AABEE;"></i> <span
+                                            data-i18n="settings_telegram_test_milestone">Test Cảnh Báo Đạt Mốc</span>
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-sm"
+                                        onclick="openAddTelegramChannelModal()">
+                                        <i class="fa-solid fa-plus"></i> <span data-i18n="tele_btn_add_channel">Thêm
+                                            Kênh Mới</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Follower / Subscriber Notification Thresholds Card -->
+                            <div class="mt-3"
+                                style="background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px;">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                                    <div>
+                                        <div
+                                            style="font-weight:700; color:#fff; font-size:13.5px; display:flex; align-items:center; gap:8px;">
+                                            <i class="fa-solid fa-sliders" style="color:#f59e0b;"></i> Ngưỡng Gửi Thông
+                                            Báo Tăng Trưởng (Tùy Chỉnh Theo Nền Tảng)
+                                        </div>
+                                        <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                                            Khi nick TikTok, kênh YouTube hoặc trang Facebook đạt mốc số lượng bên dưới,
+                                            hệ thống sẽ tự động gắn cờ Đạt Chỉ Tiêu và gửi thông báo qua Telegram.
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-xs btn-secondary"
+                                        onclick="saveThresholdSettingsOnly(this)" title="Lưu nhanh cài đặt ngưỡng">
+                                        <i class="fa-solid fa-floppy-disk text-accent"></i> Lưu Ngưỡng
+                                    </button>
+                                </div>
+                                <div
+                                    style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px;">
+                                    <!-- TikTok -->
+                                    <div
+                                        style="background:rgba(255,0,80,0.04); border:1px solid rgba(255,0,80,0.2); border-radius:8px; padding:12px;">
+                                        <div
+                                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                            <label
+                                                style="font-weight:700; font-size:12.5px; color:#fff; margin:0; display:flex; align-items:center; gap:6px;">
+                                                <i class="fa-brands fa-tiktok" style="color:#ff0050;"></i> TikTok
+                                                Follower:
+                                            </label>
+                                            <span class="badge"
+                                                style="background:rgba(255,0,80,0.15); color:#ff4d79; font-size:9.5px;">Beta
+                                                10K</span>
+                                        </div>
+                                        <input type="number" id="settingThresholdTiktok"
+                                            class="input-field font-monospace" min="1" step="100" placeholder="10000"
+                                            value="10000" style="height:38px; font-size:13px; font-weight:700;">
+                                        <small
+                                            style="font-size:11px; color:var(--text-muted); display:block; margin-top:4px; line-height:1.35;">
+                                            Gửi cảnh báo khi nick đạt &ge; <b style="color:#fff;">10,000</b> (Quỹ Sáng
+                                            Tạo Beta).
+                                        </small>
+                                    </div>
+
+                                    <!-- YouTube -->
+                                    <div
+                                        style="background:rgba(239,68,68,0.04); border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:12px;">
+                                        <div
+                                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                            <label
+                                                style="font-weight:700; font-size:12.5px; color:#fff; margin:0; display:flex; align-items:center; gap:6px;">
+                                                <i class="fa-brands fa-youtube" style="color:#ef4444;"></i> YouTube
+                                                Subs:
+                                            </label>
+                                            <span class="badge"
+                                                style="background:rgba(239,68,68,0.15); color:#f87171; font-size:9.5px;">YPP
+                                                1K</span>
+                                        </div>
+                                        <input type="number" id="settingThresholdYoutube"
+                                            class="input-field font-monospace" min="1" step="100" placeholder="1000"
+                                            value="1000" style="height:38px; font-size:13px; font-weight:700;">
+                                        <small
+                                            style="font-size:11px; color:var(--text-muted); display:block; margin-top:4px; line-height:1.35;">
+                                            Gửi cảnh báo khi kênh đạt &ge; <b style="color:#fff;">1,000</b> người đăng
+                                            ký (YPP).
+                                        </small>
+                                    </div>
+
+                                    <!-- Facebook -->
+                                    <div
+                                        style="background:rgba(24,119,242,0.04); border:1px solid rgba(24,119,242,0.2); border-radius:8px; padding:12px;">
+                                        <div
+                                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                            <label
+                                                style="font-weight:700; font-size:12.5px; color:#fff; margin:0; display:flex; align-items:center; gap:6px;">
+                                                <i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Facebook
+                                                Followers:
+                                            </label>
+                                            <span class="badge"
+                                                style="background:rgba(24,119,242,0.15); color:#60a5fa; font-size:9.5px;">Reels
+                                                & Sao</span>
+                                        </div>
+                                        <input type="number" id="settingThresholdFacebook"
+                                            class="input-field font-monospace" min="1" step="100" placeholder="1000"
+                                            value="1000" style="height:38px; font-size:13px; font-weight:700;">
+                                        <small
+                                            style="font-size:11px; color:var(--text-muted); display:block; margin-top:4px; line-height:1.35;">
+                                            Gửi cảnh báo khi trang/nick đạt &ge; <b style="color:#fff;">1,000</b> người
+                                            theo dõi.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bot Token Configuration -->
+                            <div class="mt-3"
+                                style="background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px;">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <div
+                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                        <label style="font-weight:600; margin:0;"><i class="fa-solid fa-robot"
+                                                style="color:#2AABEE;"></i> Telegram Bot Token:</label>
+                                        <span style="font-size:11.5px; color:var(--accent-blue); cursor:pointer;"
+                                            onclick="togglePasswordVisibility('settingTelegramToken', this)">
+                                            <i class="fa-solid fa-eye"></i> Hiện Token
+                                        </span>
+                                    </div>
+                                    <input type="password" id="settingTelegramToken" class="input-field"
+                                        placeholder="Ví dụ: 7123456789:AAFrXxXxXxXxXxXxXxXxXxXxXxXx" autocomplete="off">
+                                    <small
+                                        style="color:var(--text-muted); font-size:11.5px; display:block; margin-top:6px;">
+                                        <i class="fa-solid fa-circle-info" style="color:#38bdf8;"></i> Lấy Bot Token từ
+                                        <b style="color:var(--text-primary);">@BotFather</b> trên Telegram. Bạn chỉ cần
+                                        1
+                                        Bot Token để tự động gửi thông báo tới nhiều kênh/nhóm khác nhau bên dưới.
+                                    </small>
+                                </div>
+                                <!-- Hidden input to preserve backward compatibility for legacy chat_id -->
+                                <input type="hidden" id="settingTelegramChatId" value="">
+                            </div>
+
+                            <!-- Channels List -->
+                            <div class="mt-3">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                    <h5
+                                        style="margin:0; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">
+                                        <i class="fa-solid fa-tower-broadcast" style="color:#2AABEE;"></i> Danh Sách
+                                        Kênh /
+                                        Nhóm Nhận Thông Báo (<span id="teleChannelsTotalCount">0</span>)
+                                    </h5>
+                                    <button type="button" class="btn btn-xs btn-secondary"
+                                        onclick="loadTelegramChannels()" title="Làm mới danh sách kênh">
+                                        <i class="fa-solid fa-rotate"></i> Làm mới
+                                    </button>
+                                </div>
+
+                                <div id="telegramChannelsList">
+                                    <!-- Dynamic Rendered by JavaScript -->
+                                    <div
+                                        style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách kênh Telegram...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="settings-divider">
+
+                        <!-- GPMLogin & GenLogin Local API -->
+                        <div class="settings-section">
+                            <div class="settings-section-header">
+                                <i class="fa-solid fa-network-wired" style="color:#38bdf8;"></i>
+                                <div>
+                                    <h4>Cấu Hình Local API Các Trình Duyệt Antidetect</h4>
+                                    <p class="panel-sub">Cấu hình địa chỉ API cục bộ cho GPMLogin và GenLogin.</p>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mt-1"
+                                style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                                <!-- GPMLogin -->
+                                <div>
+                                    <div class="rounded border"
+                                        style="padding:16px 16px 12px 16px; border-radius:10px; background:rgba(255,255,255,0.02); border-color:var(--border-color);">
+                                        <div class="d-flex align-items-center gap-2"
+                                            style="margin-bottom: 12px; display:flex; gap:8px;">
+                                            <i class="fa-solid fa-cube text-primary"></i>
+                                            <span
+                                                style="font-weight:700; font-size:12px; color:var(--text-primary);">GPMLogin
+                                                Local API:</span>
+                                        </div>
+                                        <input type="text" id="settingGpmUrl" class="input-field font-monospace text-xs"
+                                            placeholder="http://127.0.0.1:19995 hoặc 9495">
+                                        <small class="text-muted d-block mt-1"
+                                            style="font-size: 11px; display:block; margin-top:4px; color:var(--text-muted);">Mặc
+                                            định: Tự
+                                            động dò qua cổng 9495, 19995...</small>
+                                    </div>
+                                </div>
+
+                                <!-- GenLogin -->
+                                <div>
+                                    <div class="rounded border"
+                                        style="padding:16px 16px 12px 16px; border-radius:10px; background:rgba(255,255,255,0.02); border-color:var(--border-color);">
+                                        <div class="d-flex align-items-center gap-2"
+                                            style="margin-bottom: 12px; display:flex; gap:8px;">
+                                            <i class="fa-solid fa-window-maximize text-success"></i>
+                                            <span
+                                                style="font-weight:700; font-size:12px; color:var(--text-primary);">GenLogin
+                                                Local API:</span>
+                                        </div>
+                                        <input type="text" id="settingGenLoginUrl"
+                                            class="input-field font-monospace text-xs"
+                                            placeholder="http://localhost:55550">
+                                        <small class="text-muted d-block mt-1"
+                                            style="font-size: 11px; display:block; margin-top:4px; color:var(--text-muted);">Mặc
+                                            định:
+                                            http://localhost:55550</small>
+                                    </div>
+                                </div>
+
+                                <!-- Hidden inputs for AdsPower & Dolphin (keeps backend settings compatibility) -->
+                                <input type="hidden" id="settingAdsPowerUrl" value="">
+                                <input type="hidden" id="settingDolphinUrl" value="">
+                            </div>
+                        </div>
+
+                        <hr class="settings-divider" style="margin-top: 14px;">
+
+                        <!-- Chính Sách Tự Động Dọn Dẹp File Video -->
+                        <div class="settings-section">
+                            <div class="settings-section-header">
+                                <i class="fa-solid fa-hard-drive text-cyan"></i>
+                                <div>
+                                    <h4>Chính Sách Tự Động Dọn Dẹp File Video</h4>
+                                    <p class="panel-sub">Tự động xóa các file MP4 vật lý sau khi video đã được đăng
+                                        thành
+                                        công lên TikTok để giải phóng ổ cứng. Bản ghi database, lịch sử và chống trùng
+                                        lặp
+                                        được giữ nguyên vĩnh viễn.</p>
+                                </div>
+                            </div>
+
+                            <div
+                                style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px 18px; margin-top:12px;">
+                                <div style="display:flex; flex-direction:column; gap:10px;">
+                                    <label
+                                        style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
+                                        <input type="radio" name="cleanupRetentionMode" value="0"
+                                            style="accent-color:var(--accent-cyan); width:16px; height:16px;">
+                                        <span><strong>Xóa ngay lập tức sau khi đăng xong</strong> <span
+                                                style="color:var(--text-muted); font-size:11.5px;">(Tiết kiệm dung lượng
+                                                tối
+                                                đa)</span></span>
+                                    </label>
+                                    <label
+                                        style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
+                                        <input type="radio" name="cleanupRetentionMode" value="3"
+                                            style="accent-color:var(--accent-cyan); width:16px; height:16px;">
+                                        <span><strong>Giữ lại 3 ngày</strong> <span
+                                                style="color:var(--text-muted); font-size:11.5px;">(Vùng đệm an toàn
+                                                ngắn
+                                                hạn)</span></span>
+                                    </label>
+                                    <label
+                                        style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
+                                        <input type="radio" name="cleanupRetentionMode" value="7" checked
+                                            style="accent-color:var(--accent-cyan); width:16px; height:16px;">
+                                        <span><strong style="color:var(--accent-cyan);">Giữ lại 7 ngày</strong> <span
+                                                class="badge badge-cyan" style="font-size:10px; margin-left:2px;">Khuyến
+                                                Nghị Chuẩn</span> <span
+                                                style="color:var(--text-muted); font-size:11.5px;">(Đủ 1 tuần kiểm tra
+                                                trước
+                                                khi xóa)</span></span>
+                                    </label>
+                                    <label
+                                        style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
+                                        <input type="radio" name="cleanupRetentionMode" value="14"
+                                            style="accent-color:var(--accent-cyan); width:16px; height:16px;">
+                                        <span><strong>Giữ lại 14 ngày</strong> <span
+                                                style="color:var(--text-muted); font-size:11.5px;">(2
+                                                tuần)</span></span>
+                                    </label>
+                                    <label
+                                        style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
+                                        <input type="radio" name="cleanupRetentionMode" value="30"
+                                            style="accent-color:var(--accent-cyan); width:16px; height:16px;">
+                                        <span><strong>Giữ lại 30 ngày</strong> <span
+                                                style="color:var(--text-muted); font-size:11.5px;">(1
+                                                tháng)</span></span>
+                                    </label>
+                                    <label
+                                        style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
+                                        <input type="radio" name="cleanupRetentionMode" value="custom"
+                                            id="radioCleanupCustom"
+                                            style="accent-color:var(--accent-cyan); width:16px; height:16px;">
+                                        <span style="display:inline-flex; align-items:center; gap:8px;">
+                                            <strong>Tùy chỉnh số ngày:</strong>
+                                            <input type="number" id="inputCleanupCustomDays" class="input-field" min="1"
+                                                max="365" value="7"
+                                                style="width:75px; height:28px; padding:2px 8px; font-size:13px;"
+                                                onclick="document.getElementById('radioCleanupCustom').checked = true;">
+                                            <span>ngày</span>
+                                        </span>
+                                    </label>
+                                    <label
+                                        style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
+                                        <input type="radio" name="cleanupRetentionMode" value="never"
+                                            style="accent-color:var(--accent-cyan); width:16px; height:16px;">
+                                        <span><strong>Không bao giờ tự động xóa</strong> <span
+                                                style="color:var(--text-muted); font-size:11.5px;">(Quản lý và dọn dẹp
+                                                thủ
+                                                công)</span></span>
+                                    </label>
+                                </div>
+
+                                <div
+                                    style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                    <button type="button" class="btn btn-sm btn-secondary has-tooltip"
+                                        onclick="triggerManualCleanup(this)"
+                                        data-tooltip="Quét các video đã đăng quá hạn và giải phóng dung lượng ổ đĩa ngay bây giờ">
+                                        <i class="fa-solid fa-broom text-cyan"></i> Dọn Dẹp Ổ Cứng Ngay Bây Giờ
+                                    </button>
+                                    <span id="manualCleanupStatus"
+                                        style="font-size:12px; color:var(--text-muted);"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="settings-divider">
+
+                        <!-- Cấu Hình Khởi Động & Khay Hệ Thống (System Tray & Auto-Start) -->
+                        <div class="settings-section">
+                            <div class="settings-section-header">
+                                <i class="fa-solid fa-desktop" style="color:#38bdf8;"></i>
+                                <div>
+                                    <h4>Khởi Động Cùng Windows & Khay Hệ Thống</h4>
+                                    <p class="panel-sub">Tự động khởi động ngầm khi bật máy tính và thu nhỏ xuống khay
+                                        hệ
+                                        thống.</p>
+                                </div>
+                            </div>
+
+                            <div class="channel-quick-actions-bar mt-3"
+                                style="display:flex; gap:24px; align-items:center; flex-wrap:wrap; padding:16px 20px; background:rgba(255,255,255,0.02); border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+                                <label
+                                    style="display:flex; align-items:center; gap:12px; cursor:pointer; font-size:13.5px; margin:0;">
+                                    <label class="switch">
+                                        <input type="checkbox" id="settingAutostartToggle"
+                                            onchange="toggleAutostartSetting(this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span>
+                                        <strong>Khởi động cùng Windows</strong>
+                                        <span
+                                            style="color:var(--text-muted); font-size:12px; display:block; margin-top:2px;">(Tự
+                                            động mở ứng dụng ngầm khi bật máy tính)</span>
+                                    </span>
+                                </label>
+
+                                <label
+                                    style="display:flex; align-items:center; gap:12px; cursor:pointer; font-size:13.5px; margin:0;">
+                                    <label class="switch">
+                                        <input type="checkbox" id="settingMinimizeToTrayToggle"
+                                            onchange="toggleMinimizeToTraySetting(this.checked)" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span>
+                                        <strong>Thu nhỏ vào Khay Hệ Thống</strong>
+                                        <span
+                                            style="color:var(--text-muted); font-size:12px; display:block; margin-top:2px;">(Khi
+                                            bấm đóng X hoặc thu nhỏ, ứng dụng tiếp tục chạy ngầm trong System
+                                            Tray)</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Save Button -->
+                        <div class="mt-4" style="display:flex; gap:12px; align-items:center;">
+                            <button class="btn btn-primary has-tooltip" id="btnSaveApiKeys"
+                                onclick="saveApiKeySettings(this)"
+                                data-tooltip="Lưu toàn bộ cài đặt API keys và cấu hình hệ thống">
+                                <i class="fa-solid fa-floppy-disk"></i> Lưu Toàn Bộ Cài Đặt
+                            </button>
+                            <span id="saveKeysResult" style="font-size:13px;"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>

@@ -48,37 +48,53 @@ def get_device_name() -> str:
     """Lấy tên hiển thị của máy tính (ví dụ: DESKTOP-314C4N7)"""
     return os.environ.get("COMPUTERNAME") or platform.node() or "Windows-PC"
 
-def _make_http_request(url: str, method: str = "GET", data: Optional[dict] = None, timeout: int = 8) -> Tuple[int, dict]:
-    """Helper gửi HTTP request không phụ thuộc external libraries (dùng urllib chuẩn của Python)"""
+def _make_http_request(url: str, method: str = "GET", data: Optional[dict] = None, timeout: int = 10, max_redirects: int = 3) -> Tuple[int, dict]:
+    """Helper gửi HTTP request có hỗ trợ tự động follow redirect (301, 302, 307, 308) cho cả POST/GET"""
+    from urllib.parse import urljoin
+    curr_url = url
     headers = {
         "User-Agent": f"ShortsStack-Desktop/{APP_VERSION} ({platform.system()}; {get_device_name()})",
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
     encoded_data = json.dumps(data).encode("utf-8") if data is not None else None
-    req = urllib.request.Request(url, data=encoded_data, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as res:
-            res_body = res.read().decode("utf-8")
-            try:
-                parsed = json.loads(res_body)
-            except Exception:
-                parsed = {"raw": res_body}
-            return res.status, parsed
-    except urllib.error.HTTPError as e:
-        err_body = e.read().decode("utf-8")
+
+    for _ in range(max_redirects + 1):
+        req = urllib.request.Request(curr_url, data=encoded_data, headers=headers, method=method)
         try:
-            parsed = json.loads(err_body)
-        except Exception:
-            parsed = {"error": err_body}
-        return e.code, parsed
-    except Exception as e:
-        return 0, {"error": f"Không thể kết nối đến máy chủ xác thực: {str(e)}"}
+            with urllib.request.urlopen(req, timeout=timeout) as res:
+                res_body = res.read().decode("utf-8")
+                try:
+                    parsed = json.loads(res_body)
+                except Exception:
+                    parsed = {"raw": res_body}
+                return res.status, parsed
+        except urllib.error.HTTPError as e:
+            if e.code in (301, 302, 307, 308) and e.headers.get("Location"):
+                new_loc = e.headers.get("Location")
+                if new_loc.startswith("/"):
+                    curr_url = urljoin(curr_url, new_loc)
+                else:
+                    curr_url = new_loc
+                continue
+            err_body = e.read().decode("utf-8")
+            try:
+                parsed = json.loads(err_body)
+            except Exception:
+                parsed = {"error": err_body}
+            return e.code, parsed
+        except Exception as e:
+            return 0, {"error": f"Không thể kết nối đến máy chủ xác thực: {str(e)}"}
+            
+    return 0, {"error": "Quá nhiều redirect (Too many redirects)"}
 
 def _get_portal_urls() -> list:
     urls = []
     if LICENSE_PORTAL_URL:
         urls.append(LICENSE_PORTAL_URL.rstrip("/"))
+    for domain in ["https://www.shortsstack.com", "https://shortsstack.com"]:
+        if domain not in urls:
+            urls.append(domain)
     if FALLBACK_PORTAL_URL and FALLBACK_PORTAL_URL not in urls:
         urls.append(FALLBACK_PORTAL_URL.rstrip("/"))
     return urls

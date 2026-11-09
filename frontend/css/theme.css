@@ -312,13 +312,22 @@ body.light-mode input[type="search"],
 body.light-mode input[type="time"],
 body.light-mode textarea,
 body.light-mode .input-field,
-body.light-mode .custom-input,
+body.light-mode .custom-input {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    color-scheme: light !important;
+}
+
 body.light-mode .custom-select,
 body.light-mode select {
     background-color: #ffffff !important;
     color: #0f172a !important;
     border: 1px solid #cbd5e1 !important;
     color-scheme: light !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 14px 14px !important;
 }
 
 body.light-mode input:focus,
@@ -1681,12 +1690,20 @@ body.light-mode select {
     color: #0f172a !important;
     border-color: #cbd5e1 !important;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 14px 14px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
 }
 
 body.light-mode .custom-select option,
 body.light-mode select.input-field option,
-body.light-mode select option {
+body.light-mode select option,
+body.light-mode select optgroup {
     background-color: #ffffff !important;
+    background-image: none !important;
     color: #0f172a !important;
 }
 
@@ -2183,16 +2200,32 @@ body.light-mode small {
     color: #64748b !important;
 }
 
+body.light-mode input.input-field,
+body.light-mode textarea.input-field {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
 body.light-mode .custom-select,
 body.light-mode select.input-field,
-body.light-mode input.input-field {
-    background: #ffffff !important;
+body.light-mode select {
+    background-color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 14px 14px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
     border: 1px solid #cbd5e1 !important;
     color: #0f172a !important;
 }
 
 body.light-mode select option {
-    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
     color: #0f172a !important;
 }
 
@@ -2261,16 +2294,86 @@ body.light-mode.sidebar-collapsed .nav-item::after {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
 }
 
-body.light-mode .has-tooltip::before {
+/* Arrow for bottom-positioned tooltips (pointing UP to element) */
+body.light-mode .has-tooltip::before,
+body.light-mode .has-tooltip.tooltip-left::before {
     border-color: transparent transparent #0f172a transparent !important;
 }
 
-body.light-mode .has-tooltip.tooltip-left::before {
+/* Arrow for top-positioned tooltips (pointing DOWN to element) */
+body.light-mode .has-tooltip.tooltip-top::before {
+    border-color: #0f172a transparent transparent transparent !important;
+}
+
+/* Arrow for left-positioned tooltips (pointing RIGHT towards button) */
+body.light-mode .close-btn.has-tooltip::before,
+body.light-mode .modal-corner-close.has-tooltip::before,
+body.light-mode .has-tooltip.tooltip-side-left::before,
+body.light-mode .data-table td:last-child .has-tooltip:not(.tooltip-top):not(.tooltip-bottom):not(.tooltip-top-left)::before {
     border-color: transparent transparent transparent #0f172a !important;
 }
 
-body.light-mode .has-tooltip.tooltip-top::before {
-    border-color: #0f172a transparent transparent transparent !important;
+/* ── 9.1 Light Mode Selects, BGM & Audio Dropdowns (Pure Consistent Light Theme) ── */
+body.light-mode #studioBgmFolder,
+body.light-mode #downloadAudioTargetCategorySelect,
+body.light-mode #settingBgmFolder,
+body.light-mode #campaignBgmFolder,
+body.light-mode #editCampaignBgmFolder,
+body.light-mode #modalDownloadAudioCategory select.custom-select,
+body.light-mode #modalAudioSettings select.custom-select,
+body.light-mode #modalAudioSettings select.input-field,
+body.light-mode select.input-field,
+body.light-mode select.custom-select,
+body.light-mode .custom-select,
+body.light-mode select {
+    background-color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 14px 14px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    color-scheme: light !important;
+}
+
+body.light-mode #studioBgmFolder option,
+body.light-mode #downloadAudioTargetCategorySelect option,
+body.light-mode #settingBgmFolder option,
+body.light-mode #campaignBgmFolder option,
+body.light-mode #editCampaignBgmFolder option,
+body.light-mode #modalDownloadAudioCategory select option,
+body.light-mode #modalAudioSettings select option,
+body.light-mode select option,
+body.light-mode select optgroup {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+}
+
+body.light-mode #studioBgmFolder:hover,
+body.light-mode #downloadAudioTargetCategorySelect:hover,
+body.light-mode #settingBgmFolder:hover,
+body.light-mode #campaignBgmFolder:hover,
+body.light-mode #editCampaignBgmFolder:hover,
+body.light-mode #modalDownloadAudioCategory select.custom-select:hover,
+body.light-mode #modalAudioSettings select.custom-select:hover,
+body.light-mode select.custom-select:hover {
+    border-color: #0284c7 !important;
+}
+
+body.light-mode #studioBgmFolder:focus,
+body.light-mode #downloadAudioTargetCategorySelect:focus,
+body.light-mode #settingBgmFolder:focus,
+body.light-mode #campaignBgmFolder:focus,
+body.light-mode #editCampaignBgmFolder:focus,
+body.light-mode #modalDownloadAudioCategory select.custom-select:focus,
+body.light-mode #modalAudioSettings select.custom-select:focus,
+body.light-mode select.custom-select:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
 }
 
 /* ==========================================================================

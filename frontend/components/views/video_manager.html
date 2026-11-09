@@ -1,0 +1,131 @@
+            <section id="tab-video-manager" class="tab-pane">
+                <!-- Header Summary -->
+                <div class="panel-header" style="margin-bottom: 24px;">
+                    <div>
+                        <h2
+                            style="font-size: 20px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 10px; color: var(--text-primary);">
+                            <i class="fa-solid fa-film" style="color: var(--accent-pink);"></i> Quản Lý Video & Tải Đa
+                            Nền Tảng
+                        </h2>
+                        <p class="panel-sub"
+                            style="color: var(--text-muted); font-size: 12.5px; margin-top: 6px; margin-bottom: 0;">
+                            Tải video sạch không watermark từ 7 nền tảng, nạp kho video cục bộ từ máy tính, cấu hình
+                            giọng đọc ElevenLabs AI và quản lý thư viện video sẵn sàng đăng.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Top Grid: 2 Glass Cards (Local Ingestion & Multi-Platform Downloader) -->
+                <!-- Card: Tải Video 7 Nền Tảng Sạch (No Watermark) -->
+                <div class="glass-panel" style="padding: 22px; margin-bottom: 24px;">
+                    <div class="panel-header" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div
+                                style="width: 38px; height: 38px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-cloud-arrow-down" style="color: #f59e0b; font-size: 16px;"></i>
+                            </div>
+                            <div>
+                                <h4 style="margin: 0; font-size: 15px; font-weight: 700;">Tải Video 7 Nền
+                                    Tảng Sạch</h4>
+                                <span style="font-size: 11.5px; color: var(--text-muted);">Bóc tách CDN không dính logo
+                                    watermark</span>
+                            </div>
+                        </div>
+                        <span class="badge"
+                            style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 10.5px; padding: 3px 8px; border-radius: 6px; font-weight: 600;">
+                            Auto No-Logo
+                        </span>
+                    </div>
+
+                    <!-- Platform Badges -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+                        <span
+                            style="font-size: 10.5px; padding: 3px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); color: var(--text-primary);">Douyin
+                            (TikTok TQ)</span>
+                        <span
+                            style="font-size: 10.5px; padding: 3px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); color: var(--text-primary);">Xiaohongshu
+                            (RED)</span>
+                        <span
+                            style="font-size: 10.5px; padding: 3px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); color: var(--text-primary);">YouTube</span>
+                        <span
+                            style="font-size: 10.5px; padding: 3px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); color: var(--text-primary);">Facebook</span>
+                        <span
+                            style="font-size: 10.5px; padding: 3px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); color: var(--text-primary);">Instagram</span>
+                        <span
+                            style="font-size: 10.5px; padding: 3px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); color: var(--text-primary);">Bilibili</span>
+                        <span
+                            style="font-size: 10.5px; padding: 3px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); color: var(--text-primary);">Weibo</span>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label
+                            style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block;">
+                            Dán đường dẫn video (URL):
+                        </label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="inputMultiDownloadUrl" class="input-field"
+                                style="flex: 1; height: 38px; padding: 0 12px; font-size: 12.5px; border-radius: 8px;"
+                                placeholder="https://v.douyin.com/... hoặc https://xhslink.com/...">
+                            <button class="btn btn-secondary btn-sm" type="button" id="btnTriggerMultiDownload"
+                                onclick="triggerMultiDownload()"
+                                style="height: 38px; padding: 0 16px; font-size: 12px; font-weight: 700; color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); white-space: nowrap;">
+                                <i class="fa-solid fa-download"></i> Tải Ngay
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="multiDownloadStatusAlert"
+                        style="display: none; padding: 10px 14px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
+                    </div>
+
+                </div>
+
+                <!-- Bottom Panel: Video Library Table -->
+                <div class="glass-panel" style="padding: 24px;">
+                    <div class="panel-header" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div
+                                style="width: 36px; height: 36px; border-radius: 8px; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-list-check" style="color: #22c55e; font-size: 16px;"></i>
+                            </div>
+                            <div>
+                                <h4 style="margin: 0; font-size: 15px; font-weight: 700;">Thư Viện Video
+                                    (Kho Video Đã Tải & Sẵn Sàng Xử Lý)</h4>
+                                <span style="font-size: 11px; color: var(--text-muted);">Quản lý trạng thái xử lý AI và
+                                    lịch đăng</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="loadVideoLibraryTable()"
+                            style="height: 32px; font-size: 12px; padding: 0 12px;">
+                            <i class="fa-solid fa-rotate"></i> Làm Mới Danh Sách
+                        </button>
+                    </div>
+
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table class="data-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">ID</th>
+                                    <th>Tên Video / Tiêu Đề</th>
+                                    <th style="width: 140px;">Kênh / Nguồn</th>
+                                    <th style="width: 100px;">Dung Lượng</th>
+                                    <th style="width: 130px;">Trạng Thái</th>
+                                    <th style="width: 100px;">File Gốc</th>
+                                    <th style="width: 90px; text-align: right;">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="videoLibraryTableBody">
+                                <tr>
+                                    <td colspan="7"
+                                        style="text-align: center; padding: 30px; color: var(--text-muted);">
+                                        <i class="fa-solid fa-spinner fa-spin" style="margin-right: 6px;"></i> Đang tải
+                                        danh sách video...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: ELEVENLABS AI VOICE STUDIO -->

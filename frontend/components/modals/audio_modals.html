@@ -1,0 +1,240 @@
+    <div class="modal" id="modalCreateAudioCategory">
+        <div class="modal-content glass-panel" style="max-width: 480px;">
+            <div class="modal-header" style="position:relative;">
+                <div>
+                    <h3><i class="fa-solid fa-folder-plus text-cyan"></i> Tạo Thư Mục Nhạc Chủ Đề</h3>
+                    <p class="modal-sub">Phân loại nhạc theo phong cách (Chuyện ma, Lo-fi, Phonk, v.v.)</p>
+                </div>
+                <button type="button" class="close-btn" onclick="closeCreateAudioCategoryModal()" title="Đóng"
+                    style="position:absolute; top:14px; right:18px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Tên Thư Mục (Viết liền hoặc gạch dưới):</label>
+                    <input type="text" id="newCategoryFolderInput" class="input-field"
+                        placeholder="Ví dụ: dark_ambient, remix_tiktok...">
+                </div>
+                <div class="form-group mt-3">
+                    <label>Tên Hiển Thị (Gợi nhớ):</label>
+                    <input type="text" id="newCategoryDisplayInput" class="input-field"
+                        placeholder="Ví dụ: 🌙 Dark Ambient / Thư Giãn...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateAudioCategoryModal()">Hủy</button>
+                <button class="btn btn-primary" onclick="submitCreateAudioCategory()">
+                    <i class="fa-solid fa-check"></i> Tạo Thư Mục
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CHỌN PLAYLIST ĐỂ TẢI BÀI HÁT TỪ YOUTUBE -->
+    <div class="modal" id="modalDownloadAudioCategory">
+        <div class="modal-content glass-panel" style="max-width: 480px;">
+            <div class="modal-header" style="position:relative; padding:16px 22px 14px 22px;">
+                <div style="max-width:calc(100% - 46px); min-width:0;">
+                    <h3 style="margin:0 0 4px 0; font-size:16px; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-cloud-arrow-down text-accent"></i> Tải Bài Hát Vào Playlist
+                    </h3>
+                    <p class="modal-sub" id="downloadAudioTrackTitleSub"
+                        style="margin:0; font-size:12px; color:var(--text-muted); max-width:100%; white-space:normal; line-height:1.4; display:block;"
+                        title="Đang chọn bài hát...">Đang chọn bài hát...</p>
+                </div>
+                <button type="button" class="close-btn" onclick="closeDownloadAudioCategoryModal()" title="Đóng"
+                    style="position:absolute; top:12px; right:16px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding:18px 22px;">
+                <input type="hidden" id="downloadAudioTrackUrl">
+                <input type="hidden" id="downloadAudioTrackId">
+
+                <div class="form-group mb-3" id="downloadAudioUrlInputGroup" style="display:none;">
+                    <label
+                        style="font-size:12.5px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-brands fa-youtube text-danger"></i> Link YouTube Cần Tải:
+                    </label>
+                    <input type="text" id="downloadAudioTrackCustomUrl" class="input-field"
+                        placeholder="Dán link YouTube (VD: https://www.youtube.com/watch?v=... hoặc https://youtu.be/...)"
+                        style="width:100%; height:40px; font-size:13px; box-sizing:border-box;">
+                </div>
+
+                <div class="form-group mb-2">
+                    <label
+                        style="font-size:12.5px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-folder-tree text-cyan"></i> Chọn Thư Mục Lưu Nhạc:
+                    </label>
+                    <select id="downloadAudioTargetCategorySelect" class="custom-select mt-1"
+                        style="width:100%; height:44px;">
+                        <!-- Categories dynamically loaded -->
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding:14px 22px; display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" class="btn btn-secondary" onclick="closeDownloadAudioCategoryModal()">Hủy</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmDownloadAudio"
+                    onclick="confirmDownloadAudioTrack(this)" style="display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> Bắt Đầu Tải MP3
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Tạo Chiến Dịch Tự Động Hóa -->
+
+
+    <div class="modal" id="modalEditAudioCategory">
+        <div class="modal-content glass-panel" style="max-width: 480px;">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-folder-pen text-accent" style="font-size:20px;"></i>
+                    <h3 style="margin:0;">Đổi Tên Thư Mục Nhạc</h3>
+                </div>
+                <button type="button" class="modal-corner-close" onclick="closeEditCategoryModal()" title="Đóng">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 20px 24px;">
+                <input type="hidden" id="editCategoryOldId">
+                <div class="form-group mb-3">
+                    <label class="form-label" style="font-weight:600;"><i class="fa-solid fa-tag"></i> Tên Hiển Thị
+                        (Tiếng Việt / Display Name):</label>
+                    <input type="text" id="editCategoryDisplayName" class="input-field"
+                        placeholder="Ví dụ: Nhạc Trend TikTok 2026, Phonk Bay Lắc...">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label" style="font-weight:600;"><i class="fa-solid fa-folder"></i> Tên Folder
+                        Trên Ổ Đĩa (Không dấu, gạch dưới):</label>
+                    <input type="text" id="editCategoryFolderName" class="input-field"
+                        placeholder="Ví dụ: tiktok_trend_2026">
+                    <small class="text-muted" style="font-size:11.5px; margin-top:4px; display:block;">Hệ thống sẽ tự
+                        động đổi tên thư mục thực tế trong <code>data/music/</code>.</small>
+                </div>
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn btn-secondary" onclick="closeEditCategoryModal()">Hủy</button>
+                <button type="button" class="btn btn-primary" id="btnSaveCategoryRename" onclick="saveCategoryRename()">
+                    <i class="fa-solid fa-check"></i> Lưu Thay Đổi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: AUDIO STUDIO SETTINGS -->
+    <div class="modal" id="modalAudioSettings">
+        <div class="modal-content glass-panel" style="max-width: 580px;">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-sliders text-cyan" style="font-size:20px;"></i>
+                    <div>
+                        <h3 style="margin:0;">Cài Đặt Thư Viện Âm Thanh & BGM</h3>
+                        <p class="modal-sub" style="margin:2px 0 0 0;">Cấu hình thư mục lưu nhạc và
+                            tùy chọn nâng cao.</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-corner-close" onclick="closeAudioSettingsModal()" title="Đóng">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 20px 24px;">
+                <div class="form-group mb-3">
+                    <label class="form-label" style="font-weight:600;"><i class="fa-solid fa-folder-open text-cyan"></i>
+                        Thư Mục Lưu Trữ Nhạc Nền:</label>
+                    <input type="text" id="settingAudioMusicDir" class="input-field" placeholder="data/music">
+                    <small class="text-muted" style="font-size:11.5px; margin-top:3px; display:block;">Đường dẫn thư mục
+                        chứa toàn bộ playlist và bài hát nền trên máy tính.</small>
+                </div>
+                <div class="row mb-3" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:600;"><i class="fa-solid fa-weight-hanging"></i>
+                            Dung Lượng Tối Đa (MB):</label>
+                        <input type="number" id="settingAudioMaxSize" class="input-field" value="50" min="5" max="500"
+                            style="height:44px;">
+                        <small class="text-muted" style="font-size:11px; margin-top:4px; display:block;">Giới hạn dung
+                            lượng mỗi bài tải về.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:600;"><i class="fa-solid fa-music"></i> Chất Lượng
+                            Bitrate MP3:</label>
+                        <select id="settingAudioBitrate" class="input-field custom-select"
+                            style="width:100%; height:44px; font-size:13.5px;">
+                            <option value="128k">128 kbps (Nhẹ, tối ưu)</option>
+                            <option value="192k" selected>192 kbps (Khuyến nghị chuẩn)</option>
+                            <option value="256k">256 kbps (Chất lượng cao)</option>
+                            <option value="320k">320 kbps (Studio Master)</option>
+                        </select>
+                        <small class="text-muted" style="font-size:11px; margin-top:4px; display:block;">Chuẩn nén âm
+                            thanh khi xuất file.</small>
+                    </div>
+                </div>
+                <div class="row mb-3 mt-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:600;"><i class="fa-solid fa-list-ol"></i> Giới Hạn
+                            Tìm Kiếm Mặc Định:</label>
+                        <select id="settingAudioMaxResults" class="input-field custom-select"
+                            style="width:100%; height:44px; font-size:13.5px;">
+                            <option value="20">20 Bài</option>
+                            <option value="50" selected>50 Bài</option>
+                            <option value="100">100 Bài</option>
+                            <option value="200">200 Bài</option>
+                        </select>
+                        <small class="text-muted" style="font-size:11px; margin-top:4px; display:block;">Số lượng bài
+                            hát quét từ YouTube.</small>
+                    </div>
+                    <div class="form-group" style="display:flex; flex-direction:column; justify-content:flex-start;">
+                        <label class="form-label" style="font-weight:600; margin-bottom:8px;"><i
+                                class="fa-solid fa-volume-high"></i> Tự Động Chuẩn Hóa Âm Lượng:</label>
+                        <div style="height:44px; display:flex; align-items:center;">
+                            <label class="switch has-tooltip tooltip-top"
+                                data-tooltip="Tự động cân bằng volume nhạc nền với giọng đọc video">
+                                <input type="checkbox" id="settingAudioNormalize" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span style="font-size:12px; color:var(--text-muted); margin-left:12px;">ReplayGain
+                                &minus;14 LUFS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn btn-secondary" onclick="closeAudioSettingsModal()">Hủy</button>
+                <button type="button" class="btn btn-primary" id="btnSaveAudioSettings" onclick="saveAudioSettings()">
+                    <i class="fa-solid fa-check"></i> Lưu Cài Đặt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GLOBAL CUSTOM CONFIRMATION MODAL (Replaces browser confirm to avoid 127.0.0.1 header) -->
+
+
+    <div class="modal" id="modalVariantsReport" style="display:none;">
+        <div class="modal-content glass-panel"
+            style="max-width:980px; width:92vw; max-height:88vh; display:flex; flex-direction:column; overflow:hidden;">
+            <div class="modal-header" style="position:relative; flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-chart-pie" style="color:#c084fc; font-size:22px;"></i>
+                    <div>
+                        <h3 style="margin:0;">Báo Cáo Hiệu Quả Biến Thể A/B Testing</h3>
+                        <p class="modal-sub" style="margin:2px 0 0 0;">So sánh tỷ lệ giữ chân 3s (Retention 3s) và lượt
+                            xem trung bình giữa VarA, VarB, VarC</p>
+                    </div>
+                </div>
+                <button type="button" class="close-btn" onclick="closeVariantsReportModal()" title="Đóng"
+                    style="position:absolute; top:14px; right:18px;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding:18px 22px; overflow-y:auto; flex:1;" id="variantsReportModalBody">
+                <div class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu
+                    A/B Testing...</div>
+            </div>
+            <div class="modal-footer"
+                style="padding:12px 20px; border-top:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:11.5px; color:var(--text-muted);"><i
+                        class="fa-solid fa-circle-info text-cyan"></i> Dữ liệu tự động cập nhật từ các bài đăng trên
+                    ShortsStack</span>
+                <button type="button" class="btn btn-secondary btn-sm"
+                    onclick="closeVariantsReportModal()">Đóng</button>
+            </div>
+        </div>
+    </div>

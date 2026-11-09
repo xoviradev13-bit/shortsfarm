@@ -1,0 +1,633 @@
+            <section id="tab-sources" class="tab-pane">
+                <div class="sources-subnav-tabs mb-4">
+                    <button type="button" class="subnav-tab-btn active" id="btnSubnavSearch"
+                        onclick="switchSourceSubTab('search')">
+                        <i class="fa-solid fa-magnifying-glass" style="color:var(--accent-cyan);"></i> Quét & Tìm Kênh
+                        Mới
+                    </button>
+                    <button type="button" class="subnav-tab-btn" id="btnSubnavSaved"
+                        onclick="switchSourceSubTab('saved')">
+                        <i class="fa-solid fa-bookmark" style="color:var(--accent-blue);"></i> Kênh Đang Giám Sát (<span
+                            id="sourceSavedCountBadge">0</span>)
+                    </button>
+                </div>
+
+                <!-- Subview: Search Channels (Active by default) -->
+                <div id="sourceSubViewSearch" style="display:block;">
+                    <div id="tab-youtube">
+                        <div class="glass-panel">
+                            <div class="panel-header">
+                                <div>
+                                    <h3><i class="fa-brands fa-youtube"></i> Quét Kênh Theo Từ Khóa Ngách</h3>
+                                    <p class="panel-sub">Lọc ra 50 - 100 kênh đang hoạt động mạnh, hiển thị số video,
+                                        view, sub
+                                        và chu kỳ đăng</p>
+                                </div>
+                            </div>
+
+                            <!-- Search Box -->
+                            <div class="search-bar-container">
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                    <input type="text" id="ytSearchKeyword"
+                                        placeholder="Nhập từ khóa chủ đề (ví dụ: podcast shorts, finance us, daily facts, scary stories)..."
+                                        value="podcast clips viral">
+                                </div>
+                                <select id="ytMaxResults" class="custom-select">
+                                    <option value="20">20 Kênh</option>
+                                    <option value="50" selected>50 Kênh</option>
+                                    <option value="100">100 Kênh</option>
+                                    <option value="200">200 Kênh</option>
+                                </select>
+                                <button class="btn btn-primary" id="btnSearchYt" onclick="searchYouTubeChannels()">
+                                    <i class="fa-solid fa-bolt"></i> Bắt Đầu Quét
+                                </button>
+                            </div>
+
+                            <!-- Table Controls Toolbar (Sort, Filter, Search) -->
+                            <div class="table-toolbar mt-3" id="ytTableToolbar">
+                                <div class="toolbar-multi">
+                                    <!-- Row 1: Sort + Main Metrics (Views & Subs & Country) -->
+                                    <div class="toolbar-row">
+                                        <div class="toolbar-group">
+                                            <div class="sort-control">
+                                                <label for="ytSortSelect"><i
+                                                        class="fa-solid fa-arrow-down-short-wide"></i> Sắp
+                                                    xếp:</label>
+                                                <select id="ytSortSelect" class="custom-select sort-select"
+                                                    onchange="handleSortSelectChange(this.value)">
+                                                    <option value="default">Mặc định (Độ liên quan)</option>
+                                                    <option value="subscriber_count">Subscribers</option>
+                                                    <option value="video_count">Tổng Số Video</option>
+                                                    <option value="avg_views">Lượt Xem TB</option>
+                                                    <option value="total_view_count">Tổng Lượt Xem Kênh</option>
+                                                    <option value="views_per_sub_ratio">Tỷ Lệ View/Sub (Viral Ratio 🔥)
+                                                    </option>
+                                                    <option value="days_since_last_upload">Video Mới Nhất</option>
+                                                    <option value="upload_cadence_days">Tần Suất Ra Video</option>
+                                                    <option value="country">Quốc Gia</option>
+                                                    <option value="title">Tên Kênh</option>
+                                                    <option value="is_active">Trạng Thái Hoạt Động</option>
+                                                    <option value="is_saved">Đã Lưu / Chưa Lưu</option>
+                                                </select>
+                                                <button type="button"
+                                                    class="btn btn-sm btn-secondary sort-dir-btn has-tooltip"
+                                                    id="btnSortDirection" onclick="toggleSortDirection()"
+                                                    data-tooltip="Chuyển đổi Tăng dần / Giảm dần">
+                                                    <i class="fa-solid fa-arrow-down-wide-short" id="sortDirIcon"></i>
+                                                    <span id="sortDirText">Giảm dần</span>
+                                                </button>
+                                            </div>
+
+                                            <!-- Filter Country -->
+                                            <div class="sort-control">
+                                                <label for="ytFilterCountrySelect"><i
+                                                        class="fa-solid fa-earth-americas"></i>
+                                                    Quốc gia:</label>
+                                                <select id="ytFilterCountrySelect" class="custom-select sort-select"
+                                                    onchange="handleFilterCountryChange(this.value)">
+                                                    <option value="all">Tất cả quốc gia</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Filter Min Views -->
+                                            <div class="sort-control">
+                                                <label for="ytFilterViewsSelect"><i class="fa-solid fa-eye"></i> View
+                                                    >:</label>
+                                                <select id="ytFilterViewsSelect" class="custom-select sort-select"
+                                                    onchange="handleFilterViewsChange(this.value)">
+                                                    <option value="0">Tất cả</option>
+                                                    <option value="5000">> 5,000 views</option>
+                                                    <option value="10000">> 10,000 views</option>
+                                                    <option value="50000">> 50,000 views</option>
+                                                    <option value="100000">> 100,000 views</option>
+                                                    <option value="500000">> 500,000 views</option>
+                                                    <option value="1000000">> 1,000,000 views</option>
+                                                    <option value="custom">Tùy chỉnh...</option>
+                                                </select>
+                                                <input type="number" id="ytCustomViewsInput" class="custom-num-input"
+                                                    style="display: none;" placeholder="Ví dụ: 25000" min="0"
+                                                    step="1000" oninput="handleCustomViewsInput(this.value)">
+                                            </div>
+
+                                            <!-- Filter Min Subs -->
+                                            <div class="sort-control">
+                                                <label for="ytFilterSubsSelect"><i class="fa-solid fa-users"></i> Sub
+                                                    >:</label>
+                                                <select id="ytFilterSubsSelect" class="custom-select sort-select"
+                                                    onchange="handleFilterSubsChange(this.value)">
+                                                    <option value="0">Tất cả</option>
+                                                    <option value="1000">> 1,000 subs</option>
+                                                    <option value="10000">> 10,000 subs</option>
+                                                    <option value="50000">> 50,000 subs</option>
+                                                    <option value="100000">> 100,000 subs</option>
+                                                    <option value="500000">> 500,000 subs</option>
+                                                    <option value="custom">Tùy chỉnh...</option>
+                                                </select>
+                                                <input type="number" id="ytCustomSubsInput" class="custom-num-input"
+                                                    style="display: none;" placeholder="Ví dụ: 15000" min="0" step="500"
+                                                    oninput="handleCustomSubsInput(this.value)">
+                                            </div>
+
+                                            <!-- Filter Cadence -->
+                                            <div class="sort-control">
+                                                <label for="ytFilterCadenceSelect"><i
+                                                        class="fa-solid fa-calendar-days"></i> Tần
+                                                    suất:</label>
+                                                <select id="ytFilterCadenceSelect" class="custom-select sort-select"
+                                                    onchange="handleFilterCadenceChange(this.value)">
+                                                    <option value="all">Tất cả tần suất</option>
+                                                    <option value="daily">Hàng ngày (&le; 1 ngày/vid)</option>
+                                                    <option value="frequent">Đều đặn (&le; 3 ngày/vid)</option>
+                                                    <option value="weekly">Hàng tuần (&le; 7 ngày/vid)</option>
+                                                    <option value="custom">Tùy chỉnh...</option>
+                                                </select>
+                                                <input type="number" id="ytCustomCadenceInput" class="custom-num-input"
+                                                    style="display: none;" placeholder="&le; số ngày/vid" min="0.1"
+                                                    step="0.5" oninput="handleCustomCadenceInput(this.value)">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 2: Status, Search, Column Picker, Reset -->
+                                    <div class="toolbar-row">
+                                        <div class="toolbar-group">
+                                            <!-- Filter Saved -->
+                                            <div class="sort-control">
+                                                <label for="ytFilterSavedSelect"><i class="fa-solid fa-bookmark"></i>
+                                                    Lưu:</label>
+                                                <select id="ytFilterSavedSelect" class="custom-select sort-select"
+                                                    onchange="handleFilterSavedChange(this.value)">
+                                                    <option value="all">Tất cả</option>
+                                                    <option value="saved">Đã Lưu</option>
+                                                    <option value="unsaved">Chưa Lưu</option>
+                                                </select>
+                                            </div>
+
+                                            <label class="filter-checkbox-label">
+                                                <input type="checkbox" id="ytFilterActiveOnly"
+                                                    onchange="handleFilterActiveChange(this.checked)">
+                                                <span>Chỉ kênh Đang hoạt động</span>
+                                            </label>
+
+                                            <!-- Column Picker Dropdown -->
+                                            <div class="col-picker-container">
+                                                <button type="button" class="btn-col-toggle" id="btnToggleColDropdown"
+                                                    onclick="toggleColumnDropdown(event)">
+                                                    <i class="fa-solid fa-table-columns"></i> Cột hiển thị <i
+                                                        class="fa-solid fa-chevron-down"
+                                                        style="font-size: 10px; margin-left: 8px;"></i>
+                                                </button>
+                                                <div class="col-picker-dropdown" id="colPickerDropdown"
+                                                    style="display: none;">
+                                                    <div class="col-picker-header">
+                                                        <span><i class="fa-solid fa-sliders"></i> Cột Hiển Thị</span>
+                                                        <button type="button" class="btn-close-picker"
+                                                            onclick="closeColumnDropdown()">&times;</button>
+                                                    </div>
+                                                    <div class="col-picker-body">
+                                                        <label class="col-picker-item disabled"
+                                                            title="Tên kênh luôn hiển thị">
+                                                            <input type="checkbox" checked disabled
+                                                                data-col-target="col-title">
+                                                            <span>Tên Kênh (Cố định)</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked data-col-target="col-id"
+                                                                onchange="toggleColVisibility('col-id', this.checked)">
+                                                            <span>Mã Channel ID</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked data-col-target="col-country"
+                                                                onchange="toggleColVisibility('col-country', this.checked)">
+                                                            <span>Quốc Gia</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked data-col-target="col-subs"
+                                                                onchange="toggleColVisibility('col-subs', this.checked)">
+                                                            <span>Subscribers</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked data-col-target="col-videos"
+                                                                onchange="toggleColVisibility('col-videos', this.checked)">
+                                                            <span>Tổng Video</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked
+                                                                data-col-target="col-avg-views"
+                                                                onchange="toggleColVisibility('col-avg-views', this.checked)">
+                                                            <span>Lượt Xem TB</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked
+                                                                data-col-target="col-total-views"
+                                                                onchange="toggleColVisibility('col-total-views', this.checked)">
+                                                            <span>Tổng Views Kênh</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked data-col-target="col-ratio"
+                                                                onchange="toggleColVisibility('col-ratio', this.checked)">
+                                                            <span>Tỷ Lệ View/Sub</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked
+                                                                data-col-target="col-last-upload"
+                                                                onchange="toggleColVisibility('col-last-upload', this.checked)">
+                                                            <span>Video Mới Nhất</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked data-col-target="col-cadence"
+                                                                onchange="toggleColVisibility('col-cadence', this.checked)">
+                                                            <span>Tần Suất Đăng</span>
+                                                        </label>
+                                                        <label class="col-picker-item">
+                                                            <input type="checkbox" checked data-col-target="col-active"
+                                                                onchange="toggleColVisibility('col-active', this.checked)">
+                                                            <span>Trạng Thái</span>
+                                                        </label>
+                                                        <label class="col-picker-item disabled"
+                                                            title="Thao tác luôn hiển thị">
+                                                            <input type="checkbox" checked disabled
+                                                                data-col-target="col-actions">
+                                                            <span>Thao Tác (Cố định)</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button type="button" class="btn-reset-filter has-tooltip tooltip-top"
+                                                onclick="resetYtFilters()"
+                                                data-tooltip="Khôi phục toàn bộ bộ lọc về mặc định">
+                                                <i class="fa-solid fa-rotate-left"></i> Đặt lại bộ lọc
+                                            </button>
+                                            <button type="button" class="btn-export-csv has-tooltip tooltip-top"
+                                                id="btnExportYtSearchCsv" onclick="exportYtSearchCsv()"
+                                                data-tooltip="Xuất danh sách kênh quét được ra file CSV (Excel UTF-8)">
+                                                <i class="fa-solid fa-file-csv"></i> Xuất CSV
+                                            </button>
+                                        </div>
+
+                                        <div class="toolbar-group">
+                                            <div class="table-search-box">
+                                                <i class="fa-solid fa-filter"></i>
+                                                <input type="text" id="ytFilterKeyword"
+                                                    placeholder="Lọc nhanh tên kênh, ID, handle..."
+                                                    oninput="handleFilterKeywordChange(this.value)">
+                                            </div>
+                                            <span class="badge badge-info" id="ytResultCountBadge">0 Kênh</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Search Results Table -->
+                            <div class="table-responsive mt-3">
+                                <table class="data-table" id="ytChannelsTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable" id="th-title" data-col="col-title"
+                                                onclick="handleHeaderSort('title')" title="Bấm để sắp xếp theo Tên Kênh"
+                                                style="min-width: 250px;">
+                                                Kênh YouTube <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th data-col="col-id" style="min-width: 140px;">
+                                                Mã Channel ID
+                                            </th>
+                                            <th class="sortable" id="th-country" data-col="col-country"
+                                                onclick="handleHeaderSort('country')"
+                                                title="Bấm để sắp xếp theo Quốc Gia">
+                                                Quốc Gia <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-subs" data-col="col-subs"
+                                                onclick="handleHeaderSort('subscriber_count')"
+                                                title="Bấm để sắp xếp theo Subscribers">
+                                                Subscribers <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-videos" data-col="col-videos"
+                                                onclick="handleHeaderSort('video_count')"
+                                                title="Bấm để sắp xếp theo Tổng Video">
+                                                Tổng Video <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-avg-views" data-col="col-avg-views"
+                                                onclick="handleHeaderSort('avg_views')"
+                                                title="Bấm để sắp xếp theo Lượt Xem TB">
+                                                Lượt Xem TB <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-total-views" data-col="col-total-views"
+                                                onclick="handleHeaderSort('total_view_count')"
+                                                title="Bấm để sắp xếp theo Tổng Lượt Xem">
+                                                Tổng Views <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-ratio" data-col="col-ratio"
+                                                onclick="handleHeaderSort('views_per_sub_ratio')"
+                                                title="Bấm để sắp xếp theo Tỷ Lệ View/Sub">
+                                                Tỷ Lệ View/Sub <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-last_upload" data-col="col-last-upload"
+                                                onclick="handleHeaderSort('days_since_last_upload')"
+                                                title="Bấm để sắp xếp theo Ngày Đăng Gần Nhất">
+                                                Video Mới Nhất <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-cadence" data-col="col-cadence"
+                                                onclick="handleHeaderSort('upload_cadence_days')"
+                                                title="Bấm để sắp xếp theo Tần Suất Đăng">
+                                                Tần Suất Đăng <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-active" data-col="col-active"
+                                                onclick="handleHeaderSort('is_active')"
+                                                title="Bấm để sắp xếp theo Trạng Thái">
+                                                Trạng Thái <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th data-col="col-actions" style="min-width: 110px; text-align: center;">
+                                                Thao Tác
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ytChannelsBody">
+                                        <tr>
+                                            <td colspan="12" class="text-center py-4 text-muted">
+                                                Nhập từ khóa phía trên và bấm <strong>"Bắt Đầu Quét"</strong> để tìm
+                                                kênh.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> <!-- /#tab-youtube -->
+                </div> <!-- /#sourceSubViewSearch -->
+
+                <!-- Subview: Saved Channels -->
+                <div id="sourceSubViewSaved" style="display:none;">
+                    <div id="tab-saved-channels">
+                        <!-- Saved Channels Stats Bar -->
+                        <div class="stats-grid mb-4">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-blue"><i class="fa-solid fa-bookmark"></i></div>
+                                <div class="stat-details">
+                                    <span class="stat-num" id="savedCountTotal">0</span>
+                                    <span class="stat-title">Kênh Đang Giám Sát</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-green"><i class="fa-solid fa-circle-play"></i></div>
+                                <div class="stat-details">
+                                    <span class="stat-num" id="savedCountActive">0</span>
+                                    <span class="stat-title">Đang Bật Auto-Lấy Video</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-purple"><i class="fa-solid fa-cloud-arrow-down"></i></div>
+                                <div class="stat-details">
+                                    <span class="stat-num" id="savedCountDownloaded">0</span>
+                                    <span class="stat-title">Video Đã Tải Về</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-gold"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                <div class="stat-details">
+                                    <span class="stat-num" id="savedCountRendered">0</span>
+                                    <span class="stat-title">Video Đã Render AI</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel">
+                            <div class="panel-header">
+                                <div>
+                                    <h3><i class="fa-solid fa-bookmark text-primary"></i> Danh Sách Kênh YouTube Đang
+                                        Giám Sát
+                                    </h3>
+                                    <p class="panel-sub">Tự động quét RSS định kỳ mỗi 15 phút, tải video mới nhất và đưa
+                                        vào pipeline Render AI</p>
+                                </div>
+                                <div class="panel-actions-inline">
+                                    <button class="btn btn-secondary has-tooltip" id="btnRefreshSavedChannels"
+                                        onclick="loadSavedChannels(this)"
+                                        data-tooltip="Tải lại danh sách kênh & số liệu mới nhất">
+                                        <i class="fa-solid fa-rotate"></i> Làm Mới
+                                    </button>
+                                    <button class="btn btn-secondary has-tooltip" id="btnExportSavedChannelsHeader"
+                                        onclick="exportSavedChannelsCsv()"
+                                        data-tooltip="Xuất toàn bộ danh sách kênh đang theo dõi ra file CSV (Excel UTF-8)">
+                                        <i class="fa-solid fa-file-csv" style="color:var(--accent-cyan);"></i> Xuất CSV
+                                    </button>
+                                    <button class="btn btn-primary has-tooltip tooltip-left"
+                                        id="btnScanAllSavedChannels" onclick="scanAllSavedChannels(this)"
+                                        data-tooltip="Quét tìm video mới ngay lập tức cho tất cả kênh đang bật Auto">
+                                        <i class="fa-solid fa-bolt"></i> Quét Toàn Bộ Ngay
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Toolbar Filter & Search (Matching YouTube Scanner) -->
+                            <div class="table-toolbar mt-3" id="savedTableToolbar">
+                                <div class="toolbar-multi">
+                                    <!-- Row 1: Sort + Main Metrics (Views & Subs & Country) -->
+                                    <div class="toolbar-row">
+                                        <div class="toolbar-group">
+                                            <div class="sort-control">
+                                                <label for="savedSortSelect"><i
+                                                        class="fa-solid fa-arrow-down-short-wide"></i> Sắp xếp:</label>
+                                                <select id="savedSortSelect" class="custom-select sort-select"
+                                                    onchange="handleSavedSortSelectChange(this.value)">
+                                                    <option value="default">Mặc định</option>
+                                                    <option value="subscriber_count">Subscribers</option>
+                                                    <option value="video_count">Tổng Số Video</option>
+                                                    <option value="avg_views">Lượt Xem TB</option>
+                                                    <option value="total_view_count">Tổng Lượt Xem</option>
+                                                    <option value="views_per_sub_ratio">Tỷ Lệ View/Sub (Viral Ratio 🔥)
+                                                    </option>
+                                                    <option value="days_since_last_upload">Video Mới Nhất</option>
+                                                    <option value="upload_cadence_days">Tần Suất Ra Video</option>
+                                                    <option value="country">Quốc Gia</option>
+                                                    <option value="title">Tên Kênh</option>
+                                                    <option value="is_active">Trạng Thái Hoạt Động</option>
+                                                </select>
+                                                <button type="button"
+                                                    class="btn btn-sm btn-secondary sort-dir-btn has-tooltip"
+                                                    id="btnSavedSortDirection" onclick="toggleSavedSortDirection()"
+                                                    data-tooltip="Chuyển đổi Tăng dần / Giảm dần">
+                                                    <i class="fa-solid fa-arrow-down-wide-short"
+                                                        id="savedSortDirIcon"></i>
+                                                    <span id="savedSortDirText">Giảm dần</span>
+                                                </button>
+                                            </div>
+
+                                            <!-- Filter Country -->
+                                            <div class="sort-control">
+                                                <label for="savedFilterCountrySelect"><i
+                                                        class="fa-solid fa-earth-americas"></i> Quốc gia:</label>
+                                                <select id="savedFilterCountrySelect" class="custom-select sort-select"
+                                                    onchange="handleSavedFilterCountryChange(this.value)">
+                                                    <option value="all">Tất cả quốc gia</option>
+                                                    <option value="US">🇺🇸 Hoa Kỳ (US)</option>
+                                                    <option value="GB">🇬🇧 Vương Quốc Anh (GB)</option>
+                                                    <option value="CA">🇨🇦 Canada (CA)</option>
+                                                    <option value="AU">🇦🇺 Úc (AU)</option>
+                                                    <option value="VN">🇻🇳 Việt Nam (VN)</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Filter Min Views -->
+                                            <div class="sort-control">
+                                                <label for="savedFilterViewsSelect"><i class="fa-solid fa-eye"></i> View
+                                                    >:</label>
+                                                <select id="savedFilterViewsSelect" class="custom-select sort-select"
+                                                    onchange="handleSavedFilterViewsChange(this.value)">
+                                                    <option value="0">Tất cả</option>
+                                                    <option value="5000">> 5,000 views</option>
+                                                    <option value="10000">> 10,000 views</option>
+                                                    <option value="50000">> 50,000 views</option>
+                                                    <option value="100000">> 100,000 views</option>
+                                                    <option value="500000">> 500,000 views</option>
+                                                    <option value="1000000">> 1,000,000 views</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Filter Min Subs -->
+                                            <div class="sort-control">
+                                                <label for="savedFilterSubsSelect"><i class="fa-solid fa-users"></i> Sub
+                                                    >:</label>
+                                                <select id="savedFilterSubsSelect" class="custom-select sort-select"
+                                                    onchange="handleSavedFilterSubsChange(this.value)">
+                                                    <option value="0">Tất cả</option>
+                                                    <option value="1000">> 1,000 subs</option>
+                                                    <option value="10000">> 10,000 subs</option>
+                                                    <option value="50000">> 50,000 subs</option>
+                                                    <option value="100000">> 100,000 subs</option>
+                                                    <option value="500000">> 500,000 subs</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Filter Cadence -->
+                                            <div class="sort-control">
+                                                <label for="savedFilterCadenceSelect"><i
+                                                        class="fa-solid fa-calendar-days"></i> Tần suất:</label>
+                                                <select id="savedFilterCadenceSelect" class="custom-select sort-select"
+                                                    onchange="handleSavedFilterCadenceChange(this.value)">
+                                                    <option value="all">Tất cả tần suất</option>
+                                                    <option value="daily">Hàng ngày (&le; 1 ngày/vid)</option>
+                                                    <option value="frequent">Đều đặn (&le; 3 ngày/vid)</option>
+                                                    <option value="weekly">Hàng tuần (&le; 7 ngày/vid)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 2: Status, Search, Reset -->
+                                    <div class="toolbar-row">
+                                        <div class="toolbar-group">
+                                            <!-- Filter Status (Fixed clean icons, no broken encoding) -->
+                                            <div class="sort-control">
+                                                <label for="filterSavedStatus"><i class="fa-solid fa-power-off"></i>
+                                                    Trạng thái:</label>
+                                                <select id="filterSavedStatus" class="custom-select sort-select"
+                                                    onchange="renderSavedChannelsTable()">
+                                                    <option value="all">Tất cả kênh</option>
+                                                    <option value="active">✅ Đang hoạt động (Lấy video)</option>
+                                                    <option value="inactive">⏸️ Tạm ngưng (Không lấy)</option>
+                                                </select>
+                                            </div>
+
+                                            <button type="button" class="btn-reset-filter has-tooltip tooltip-top"
+                                                onclick="resetSavedFilters()"
+                                                data-tooltip="Khôi phục toàn bộ bộ lọc về mặc định">
+                                                <i class="fa-solid fa-rotate-left"></i> Đặt lại bộ lọc
+                                            </button>
+                                            <button type="button" class="btn-export-csv has-tooltip tooltip-top"
+                                                id="btnExportSavedChannelsCsv" onclick="exportSavedChannelsCsv()"
+                                                data-tooltip="Xuất danh sách kênh đang theo dõi ra file CSV (Excel UTF-8)">
+                                                <i class="fa-solid fa-file-csv"></i> Xuất CSV
+                                            </button>
+                                        </div>
+
+                                        <div class="toolbar-group">
+                                            <div class="table-search-box">
+                                                <i class="fa-solid fa-filter"></i>
+                                                <input type="text" id="searchSavedKeyword"
+                                                    placeholder="Lọc nhanh tên kênh, ID, handle..."
+                                                    oninput="renderSavedChannelsTable()">
+                                            </div>
+                                            <span class="badge badge-info" id="badgeSavedCount">0 Kênh</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Saved Channels Table (Matching Columns with Search Channels Tab) -->
+                            <div class="table-responsive mt-3">
+                                <table class="data-table" id="savedChannelsTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable" id="th-saved-title"
+                                                onclick="handleSavedHeaderSort('title')"
+                                                title="Bấm để sắp xếp theo Tên Kênh" style="min-width: 250px;">
+                                                Kênh YouTube <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th id="th-saved-id" style="min-width: 140px;">
+                                                Mã Channel ID
+                                            </th>
+                                            <th class="sortable" id="th-saved-country"
+                                                onclick="handleSavedHeaderSort('country')"
+                                                title="Bấm để sắp xếp theo Quốc Gia">
+                                                Quốc Gia <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-saved-subs"
+                                                onclick="handleSavedHeaderSort('subscriber_count')"
+                                                title="Bấm để sắp xếp theo Subscribers">
+                                                Subscribers <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-saved-videos"
+                                                onclick="handleSavedHeaderSort('video_count')"
+                                                title="Bấm để sắp xếp theo Tổng Video">
+                                                Tổng Video <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-saved-avg-views"
+                                                onclick="handleSavedHeaderSort('avg_views')"
+                                                title="Bấm để sắp xếp theo Lượt Xem TB">
+                                                Lượt Xem TB <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-saved-ratio"
+                                                onclick="handleSavedHeaderSort('views_per_sub_ratio')"
+                                                title="Bấm để sắp xếp theo Tỷ Lệ View/Sub">
+                                                Tỷ Lệ View/Sub <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-saved-last-upload"
+                                                onclick="handleSavedHeaderSort('days_since_last_upload')"
+                                                title="Bấm để sắp xếp theo Ngày Đăng Gần Nhất">
+                                                Video Mới Nhất <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" id="th-saved-cadence"
+                                                onclick="handleSavedHeaderSort('upload_cadence_days')"
+                                                title="Bấm để sắp xếp theo Tần Suất Đăng">
+                                                Tần Suất Đăng <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th style="min-width: 110px;">
+                                                Video (Tải / Render)
+                                            </th>
+                                            <th class="sortable" id="th-saved-active"
+                                                onclick="handleSavedHeaderSort('is_active')"
+                                                title="Bấm để sắp xếp theo Trạng Thái">
+                                                Trạng Thái <i class="fa-solid fa-sort sort-icon"></i>
+                                            </th>
+                                            <th style="min-width: 90px; text-align: center;">
+                                                Thao Tác
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="savedChannelsBody">
+                                        <tr>
+                                            <td colspan="12" class="text-center py-4 text-muted">
+                                                Đang nạp danh sách kênh đã lưu...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> <!-- /#tab-saved-channels -->
+                </div> <!-- /#sourceSubViewSaved -->
+            </section> <!-- /#tab-sources -->
+
+            <!-- TAB: AUDIO STUDIO (KHO ÂM THANH & BGM) -->

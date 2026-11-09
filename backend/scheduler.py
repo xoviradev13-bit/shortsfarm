@@ -629,11 +629,18 @@ class BackgroundScheduler:
             if is_profile_busy(gpm_id):
                 conn.close()
                 return
-            # Tự động khởi chạy GPMLogin nếu ứng dụng đang tắt
-            from backend.modules.gpm_client import gpm_client
-            if not gpm_client.check_health().get("running"):
-                log_event("INFO", f"[UPLOAD WORKER] Phát hiện GPMLogin chưa mở trước khi upload Task #{task_id}. Đang tự động bật GPMLogin...")
-                gpm_client.ensure_gpm_running()
+            # Lấy thông tin platform và browser_type của profile
+            cursor.execute("SELECT platform, browser_type FROM gpm_profiles WHERE gpm_id = ? LIMIT 1", (gpm_id,))
+            p_row = cursor.fetchone()
+            p_platform = (p_row["platform"] if p_row and p_row["platform"] else "tiktok").lower()
+            p_browser = (p_row["browser_type"] if p_row and p_row["browser_type"] else "auto").lower()
+
+            # Tự động đảm bảo trình duyệt sẵn sàng
+            from backend.modules.browser_adapters import browser_manager
+            adapter = browser_manager.get_adapter(p_browser if p_browser != "auto" else "gpm")
+            if adapter and hasattr(adapter, "ensure_running"):
+                adapter.ensure_running()
+
             cursor.execute("""
                 UPDATE upload_tasks 
                 SET status = 'processing', processing_started_at = ? 
@@ -641,13 +648,17 @@ class BackgroundScheduler:
             """, (now_str, task_id))
             conn.commit()
             conn.close()
-            # Thực thi upload
+
+            # Thực thi upload qua MultiPlatformUploader (hỗ trợ TikTok, YouTube, Facebook x GPM, GenLogin)
             try:
-                res = tiktok_uploader.upload_via_gpm(
-                    gpm_profile_id=gpm_id,
+                from backend.modules.multi_uploader import multi_uploader
+                res = multi_uploader.upload(
+                    platform=p_platform,
+                    profile_id=gpm_id,
                     video_path=video_path,
                     title=title,
                     tags=tags,
+                    browser_type=p_browser,
                     auto_post=True
                 )
             except Exception as ex:

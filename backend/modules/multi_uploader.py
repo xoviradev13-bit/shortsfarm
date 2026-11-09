@@ -8,6 +8,18 @@ from backend.logger import get_logger
 
 logger = get_logger("multi_uploader")
 
+def connect_cdp_with_retry(p, cdp_target: str, max_retries: int = 5):
+    last_err: Optional[Exception] = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            return p.chromium.connect_over_cdp(cdp_target)
+        except Exception as e:
+            last_err = e
+            time.sleep(1.5)
+    if last_err is not None:
+        raise last_err
+    raise RuntimeError(f"Không thể kết nối CDP tới {cdp_target}")
+
 class MultiPlatformUploader:
     """
     Trình tự động đăng video đa nền tảng (TikTok, YouTube Shorts, Facebook Reels)
@@ -41,6 +53,9 @@ class MultiPlatformUploader:
                 tags=tags,
                 auto_post=auto_post,
                 close_browser_on_finish=close_browser_on_finish,
+                browser_type=browser_type,
+                enable_warmup=kwargs.get("enable_warmup", True),
+                warmup_minutes=kwargs.get("warmup_minutes", None)
             )
         elif p in ["youtube", "yt", "shorts"]:
             return self.upload_to_youtube(
@@ -83,6 +98,34 @@ class MultiPlatformUploader:
         if not os.path.exists(video_path):
             return {"success": False, "message": f"Không tìm thấy video: {video_path}"}
 
+        # Tự động nhận diện browser_type từ gpm_profiles nếu là auto
+        if browser_type in ("auto", "", None):
+            try:
+                from backend.database import get_connection
+                conn_b = get_connection()
+                cur_b = conn_b.cursor()
+                cur_b.execute("SELECT browser_type FROM gpm_profiles WHERE gpm_id = ? LIMIT 1", (profile_id,))
+                row_b = cur_b.fetchone()
+                if row_b and row_b["browser_type"]:
+                    browser_type = row_b["browser_type"].lower()
+                conn_b.close()
+            except Exception:
+                pass
+
+        # Tự động nhận diện browser_type từ gpm_profiles nếu là auto
+        if browser_type in ("auto", "", None):
+            try:
+                from backend.database import get_connection
+                conn_b = get_connection()
+                cur_b = conn_b.cursor()
+                cur_b.execute("SELECT browser_type FROM gpm_profiles WHERE gpm_id = ? LIMIT 1", (profile_id,))
+                row_b = cur_b.fetchone()
+                if row_b and row_b["browser_type"]:
+                    browser_type = row_b["browser_type"].lower()
+                conn_b.close()
+            except Exception:
+                pass
+
         if not channel_id:
             try:
                 from backend.database import get_connection
@@ -113,7 +156,7 @@ class MultiPlatformUploader:
         try:
             with sync_playwright() as p:
                 cdp_target = remote_address if remote_address.startswith("ws://") or remote_address.startswith("http://") else f"http://{remote_address}"
-                browser = p.chromium.connect_over_cdp(cdp_target)
+                browser = connect_cdp_with_retry(p, cdp_target)
                 context = browser.contexts[0] if browser.contexts else browser.new_context()
                 page = context.new_page()
 
@@ -148,8 +191,8 @@ class MultiPlatformUploader:
                         upload_option.click()
 
                 # Upload file
-                file_input = page.locator('input[type="file"]')
-                file_input.wait_for(timeout=15000)
+                file_input = page.locator('input[type="file"]').first
+                file_input.wait_for(state="attached", timeout=15000)
                 file_input.set_input_files(video_path)
                 log_event("INFO", f"Đã đẩy file video vào YouTube: {os.path.basename(video_path)}")
 
@@ -213,6 +256,20 @@ class MultiPlatformUploader:
         if not os.path.exists(video_path):
             return {"success": False, "message": f"Không tìm thấy video: {video_path}"}
 
+        # Tự động nhận diện browser_type từ gpm_profiles nếu là auto
+        if browser_type in ("auto", "", None):
+            try:
+                from backend.database import get_connection
+                conn_b = get_connection()
+                cur_b = conn_b.cursor()
+                cur_b.execute("SELECT browser_type FROM gpm_profiles WHERE gpm_id = ? LIMIT 1", (profile_id,))
+                row_b = cur_b.fetchone()
+                if row_b and row_b["browser_type"]:
+                    browser_type = row_b["browser_type"].lower()
+                conn_b.close()
+            except Exception:
+                pass
+
         if not page_id:
             try:
                 from backend.database import get_connection
@@ -243,7 +300,7 @@ class MultiPlatformUploader:
         try:
             with sync_playwright() as p:
                 cdp_target = remote_address if remote_address.startswith("ws://") or remote_address.startswith("http://") else f"http://{remote_address}"
-                browser = p.chromium.connect_over_cdp(cdp_target)
+                browser = connect_cdp_with_retry(p, cdp_target)
                 context = browser.contexts[0] if browser.contexts else browser.new_context()
                 page = context.new_page()
 
@@ -254,39 +311,37 @@ class MultiPlatformUploader:
                 if "login" in page.url.lower():
                     return {"success": False, "message": "Profile chưa đăng nhập Facebook!"}
 
-                # Chuyển sang Facebook Page nếu page_id được chỉ định
-                if page_id:
-                    try:
-                        page.goto(f"https://www.facebook.com/{page_id}/reels/create", timeout=30000, wait_until="domcontentloaded")
-                        time.sleep(3)
-                        log_event("INFO", f"Đã chuyển sang trang Facebook: {page_id}")
-                    except Exception as switch_err:
-                        log_event("WARNING", f"Không thể chuyển trang Facebook {page_id}: {switch_err}")
-
                 # Upload file
                 file_input = page.locator('input[type="file"]').first
-                file_input.wait_for(timeout=15000)
+                file_input.wait_for(state="attached", timeout=15000)
                 file_input.set_input_files(video_path)
                 log_event("INFO", "Đã đưa file video vào Facebook Reels composer...")
-                time.sleep(5)
+                time.sleep(4)
 
                 # Nhập mô tả
                 desc_input = page.locator('div[role="textbox"][contenteditable="true"]').first
-                if desc_input.is_visible(timeout=8000):
+                if desc_input.is_visible(timeout=5000):
                     desc_input.click()
                     desc_input.fill(f"{title} {tags}")
 
-                # Bấm nút Tiếp (Next)
-                next_btn = page.locator('div[aria-label="Tiếp"], div[aria-label="Next"]').first
-                if next_btn.is_visible(timeout=5000):
-                    next_btn.click()
-                    time.sleep(2)
+                # Bấm nút Tiếp (Next) qua các bước biên tập
+                for _ in range(2):
+                    next_btn = page.locator('div[aria-label="Tiếp"], div[aria-label="Next"], div[role="button"]:has-text("Tiếp"), div[role="button"]:has-text("Next")').first
+                    if next_btn.is_visible(timeout=5000):
+                        try:
+                            next_btn.click(timeout=3000)
+                        except Exception:
+                            next_btn.click(force=True)
+                        time.sleep(2)
 
                 # Bấm nút Đăng (Publish)
                 if auto_post:
-                    publish_btn = page.locator('div[aria-label="Đăng"], div[aria-label="Publish"]').first
-                    if publish_btn.is_visible(timeout=5000):
-                        publish_btn.click()
+                    publish_btn = page.locator('div[aria-label="Đăng"], div[aria-label="Publish"], div[role="button"]:has-text("Đăng"), div[role="button"]:has-text("Publish")').first
+                    if publish_btn.is_visible(timeout=8000):
+                        try:
+                            publish_btn.click(timeout=4000)
+                        except Exception:
+                            publish_btn.click(force=True)
                         log_event("SUCCESS", "Đã bấm ĐĂNG trên Facebook Reels!")
                         time.sleep(5)
 

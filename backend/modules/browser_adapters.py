@@ -15,6 +15,7 @@ def get_browser_setting_url(key: str, default: str) -> str:
     return os.environ.get(key, default).strip().rstrip("/")
 
 import os
+import time
 import socket
 import requests
 import threading
@@ -258,8 +259,9 @@ class DolphinAntyAdapter(BaseBrowserAdapter):
 
 
 class GenLoginAdapter(BaseBrowserAdapter):
-    """Adapter cho GenLogin (Local API Port 55550)"""
+    """Adapter cho GenLogin (Local API Port 55550 & Direct Titan Browser Engine)"""
     _launch_lock = threading.Lock()  # Class-level lock ngăn chặn launch đồng thời
+    _active_processes: Dict[str, Any] = {}
 
     def __init__(self, base_url: Optional[str] = None):
         self._custom_base = base_url
@@ -285,22 +287,48 @@ class GenLoginAdapter(BaseBrowserAdapter):
                 continue
         return False
 
+    def _find_profile_storage(self, profile_id: str) -> Optional[str]:
+        """Tìm đường dẫn thư mục lưu trữ profile trong ~/.genlogin/profiles"""
+        base_dir = os.path.expanduser(r"~/.genlogin/profiles")
+        if not os.path.isdir(base_dir):
+            return None
+        target_id = str(profile_id)
+        for root, dirs, _ in os.walk(base_dir):
+            for d in dirs:
+                if d == target_id or d.endswith(f"_{target_id}"):
+                    return os.path.join(root, d)
+        return None
+
+    def _find_titan_browser(self) -> Optional[str]:
+        """Tìm đường dẫn thực thi của Titan Browser (Chromium core của GenLogin)"""
+        base_dir = os.path.expanduser(r"~/.genlogin/browsers/titan")
+        if not os.path.isdir(base_dir):
+            return None
+        for root, _, files in os.walk(base_dir):
+            if "chrome.exe" in files:
+                return os.path.join(root, "chrome.exe")
+        return None
+
+    def _get_free_port(self) -> int:
+        """Lấy một cổng TCP tự do trên localhost"""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('127.0.0.1', 0))
+            return s.getsockname()[1]
+
     def ensure_running(self) -> bool:
         """Kiểm tra nếu GenLogin đang tắt thì tự động bật lên (thread-safe, chống launch trùng)"""
         import os, time, subprocess
 
         # Kiểm tra nhanh trước khi lấy lock
-        if self._ping():
+        if self._ping() or self._find_titan_browser():
             return True
 
         # Lock ngăn chặn nhiều thread cùng launch GenLogin
         if not self._launch_lock.acquire(blocking=False):
-            # Thread khác đang launch rồi → chờ kết quả
             with self._launch_lock:
-                return self._ping()
+                return self._ping() or bool(self._find_titan_browser())
 
         try:
-            # Re-check sau khi lấy lock (thread khác có thể đã launch xong)
             if self._ping():
                 return True
 
@@ -316,7 +344,6 @@ class GenLoginAdapter(BaseBrowserAdapter):
                     exe_path = p
                     break
 
-            # Fallback quét shortcut Start Menu nếu GenLogin cài đặt ở ổ đĩa tùy biến (D:, E:...)
             if not exe_path:
                 import glob
                 for d in [
@@ -336,116 +363,229 @@ class GenLoginAdapter(BaseBrowserAdapter):
                         os.startfile(exe_path)
                     else:
                         subprocess.Popen([exe_path], shell=False)
-                    for attempt in range(1, 31):
+                    for attempt in range(1, 10):
                         time.sleep(1)
                         if self._ping():
                             log_event("INFO", f"GenLogin đã khởi động thành công và API sẵn sàng sau {attempt}s!")
                             return True
-                    log_event("WARNING", "Đã khởi chạy GenLogin nhưng API cổng 55550 chưa sẵn sàng sau 30s. Vui lòng kiểm tra cửa sổ GenLogin.")
                 except Exception as e:
                     log_event("ERROR", f"Không thể tự động bật GenLogin: {e}")
 
-            return False
+            return bool(self._find_titan_browser())
         finally:
             self._launch_lock.release()
 
     def check_health(self) -> Dict[str, Any]:
-        """Kiểm tra sức khỏe GenLogin - KHÔNG tự động khởi chạy app"""
+        """Kiểm tra sức khỏe GenLogin"""
         running = self._ping()
-        count = 0
-        if running:
-            try:
-                r = requests.get(f"{self.base_url}/backend/profiles", timeout=3)
-                if r.status_code == 200:
-                    count = len(r.json().get("data", {}).get("items", []))
-            except Exception:
-                pass
+        titan_avail = bool(self._find_titan_browser())
+        is_ready = running or titan_avail
+        count = len(self.list_profiles())
+        msg = "GenLogin đang online (Cổng 55550)" if running else ("Titan Browser Engine sẵn sàng" if titan_avail else "GenLogin chưa bật")
         return {
             "browser": "genlogin",
             "name": "GenLogin",
-            "running": running,
+            "running": is_ready,
             "profile_count": count,
-            "message": "GenLogin đang online (Cổng 55550)" if running else "GenLogin chưa bật (Cổng 55550)"
+            "message": msg
         }
 
     def list_profiles(self) -> List[Dict[str, Any]]:
-        """Lấy danh sách profile từ GenLogin Local API.
-        Endpoint đúng: GET /backend/profiles
-        Response: {"success": true, "data": {"items": [...], "pagination": {...}}}
-        Mỗi item: {"id": 26883945, "profile_data": {"name": "...", ...}}
-        """
-        if not self._ping():
-            self.ensure_running()
+        """Lấy danh sách profile từ GenLogin Local API hoặc quét từ lưu trữ nội bộ."""
+        if self._ping():
+            for base in [self.base_url, "http://127.0.0.1:55550", "http://localhost:55550"]:
+                try:
+                    offset = 0
+                    limit = 50
+                    all_profiles = []
+                    while True:
+                        url = f"{base}/backend/profiles?offset={offset}&limit={limit}"
+                        r = requests.get(url, timeout=5)
+                        if r.status_code != 200:
+                            break
+                        res_json = r.json()
+                        if not res_json.get("success"):
+                            break
+                        items = res_json.get("data", {}).get("items", [])
+                        if not items:
+                            break
+                        for p in items:
+                            if p.get("id") is not None:
+                                profile_data = p.get("profile_data", {})
+                                all_profiles.append({
+                                    "id": str(p["id"]),
+                                    "name": profile_data.get("name") or str(p["id"]),
+                                    "raw_name": profile_data.get("name"),
+                                    "group_name": "GenLogin",
+                                    "raw_proxy": "",
+                                    "browser_type": "genlogin",
+                                })
+                        pagination = res_json.get("data", {}).get("pagination", {})
+                        total = pagination.get("total_items", 0)
+                        if offset + limit >= total:
+                            break
+                        offset += limit
 
-        all_profiles = []
-        for base in [self.base_url, "http://127.0.0.1:55550", "http://localhost:55550"]:
-            try:
-                # Phân trang: lấy tất cả profile
-                offset = 0
-                limit = 50
-                while True:
-                    url = f"{base}/backend/profiles?offset={offset}&limit={limit}"
-                    r = requests.get(url, timeout=5)
-                    if r.status_code != 200:
-                        break
-                    res_json = r.json()
-                    if not res_json.get("success"):
-                        break
-                    items = res_json.get("data", {}).get("items", [])
-                    if not items:
-                        break
-                    for p in items:
-                        if p.get("id") is not None:
-                            profile_data = p.get("profile_data", {})
-                            all_profiles.append({
-                                "id": str(p["id"]),
-                                "name": profile_data.get("name") or str(p["id"]),
-                                "raw_name": profile_data.get("name"),
-                                "group_name": "GenLogin",
-                                "raw_proxy": "",
-                                "browser_type": "genlogin",
-                            })
-                    # Kiểm tra pagination
-                    pagination = res_json.get("data", {}).get("pagination", {})
-                    total = pagination.get("total_items", 0)
-                    if offset + limit >= total:
-                        break
-                    offset += limit
+                    if all_profiles:
+                        return all_profiles
+                except Exception:
+                    continue
 
-                if all_profiles:
-                    return all_profiles
-            except Exception:
-                continue
+        # Quét dự phòng từ cơ sở dữ liệu nội bộ
+        try:
+            from backend.database import get_connection
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT gpm_id, name FROM gpm_profiles WHERE browser_type = 'genlogin'")
+            db_rows = cur.fetchall()
+            conn.close()
+            if db_rows:
+                return [
+                    {
+                        "id": str(r["gpm_id"]),
+                        "name": r["name"] or str(r["gpm_id"]),
+                        "raw_name": r["name"],
+                        "group_name": "GenLogin",
+                        "raw_proxy": "",
+                        "browser_type": "genlogin",
+                    }
+                    for r in db_rows
+                ]
+        except Exception:
+            pass
+
         return []
 
     def start_profile(self, profile_id: str) -> Optional[str]:
-        for base in [self.base_url, "http://127.0.0.1:55550", "http://localhost:55550"]:
-            for pattern in [f"{base}/backend/profiles/{profile_id}/start", f"{base}/profiles/{profile_id}/start"]:
+        """
+        Khởi động profile GenLogin:
+        1. Thử qua Local API cổng 55550 nếu đang mở.
+        2. Nếu API không phản hồi hoặc lỗi, tự động khởi chạy trực tiếp Titan Browser Core
+           với profile storage tương ứng, hỗ trợ CDP chuẩn 100%.
+        """
+        profile_id_str = str(profile_id)
+
+        # 1. Thử qua Local API
+        if self._ping():
+            from backend.modules.genlogin_cdp_reader import get_genlogin_auth_token
+            token = get_genlogin_auth_token()
+            headers = {"Authorization": f"Bearer {token}"} if token else {}
+
+            for base in [self.base_url, "http://127.0.0.1:55550", "http://localhost:55550"]:
                 try:
-                    r = requests.get(pattern, timeout=20)
+                    url = f"{base}/backend/profiles/{profile_id_str}/start"
+                    r = requests.put(url, headers=headers, json={}, timeout=20)
                     if r.status_code == 200:
                         data = r.json()
                         ws_endpoint = data.get("wsEndpoint") or data.get("data", {}).get("wsEndpoint")
                         if ws_endpoint:
-                            log_event("INFO", f"GenLogin profile {profile_id} mở thành công: {ws_endpoint}")
+                            log_event("INFO", f"GenLogin profile {profile_id_str} mở thành công qua API: {ws_endpoint}")
                             return ws_endpoint
-                        port = data.get("remote_debugging_port") or data.get("port") or data.get("data", {}).get("port")
+                        port = data.get("port") or data.get("remote_debugging_port") or data.get("data", {}).get("port")
                         if port:
                             return f"127.0.0.1:{port}"
+                except Exception as api_err:
+                    logger.warning(f"Lỗi gọi start qua GenLogin API: {api_err}")
+
+        # 2. Khởi chạy trực tiếp Titan Browser Core
+        storage_path = self._find_profile_storage(profile_id_str)
+        titan_exe = self._find_titan_browser()
+
+        if not storage_path or not titan_exe:
+            log_event("ERROR", f"Không tìm thấy thư mục lưu trữ profile GenLogin ({storage_path}) hoặc Titan Browser ({titan_exe})")
+            return None
+
+        # Đảm bảo tắt phiên cũ trước khi mở
+        self.stop_profile(profile_id_str)
+        time.sleep(1)
+
+        import subprocess
+        port = self._get_free_port()
+        cmd = [
+            titan_exe,
+            f"--remote-debugging-port={port}",
+            f"--user-data-dir={storage_path}",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "about:blank"
+        ]
+
+        try:
+            log_event("INFO", f"Khởi chạy trực tiếp Titan Browser cho profile GenLogin {profile_id_str} tại cổng {port}...")
+            proc = subprocess.Popen(cmd)
+            self._active_processes[profile_id_str] = proc
+
+            for attempt in range(1, 15):
+                time.sleep(0.8)
+                try:
+                    r_v = requests.get(f"http://127.0.0.1:{port}/json/version", timeout=1.5)
+                    if r_v.status_code == 200:
+                        v_data = r_v.json()
+                        ws_url = v_data.get("webSocketDebuggerUrl")
+                        if ws_url:
+                            log_event("INFO", f"Titan Browser profile {profile_id_str} sẵn sàng: {ws_url}")
+                            return ws_url
+                        return f"127.0.0.1:{port}"
                 except Exception:
                     continue
-        log_event("ERROR", f"Không thể khởi động profile GenLogin {profile_id}")
-        return None
+
+            log_event("WARNING", f"Titan Browser khởi động cổng {port} nhưng chưa phản hồi sau 12s")
+            return f"127.0.0.1:{port}"
+        except Exception as e:
+            log_event("ERROR", f"Lỗi khởi chạy Titan Browser cho GenLogin {profile_id_str}: {e}")
+            return None
 
     def stop_profile(self, profile_id: str) -> bool:
-        try:
-            for pattern in [f"{self.base_url}/backend/profiles/{profile_id}/stop", f"{self.base_url}/profiles/{profile_id}/stop"]:
-                r = requests.get(pattern, timeout=10)
+        """Đóng profile GenLogin"""
+        profile_id_str = str(profile_id)
+        stopped = False
+
+        # 1. Đóng tiến trình Titan trực tiếp nếu được quản lý
+        proc = self._active_processes.pop(profile_id_str, None)
+        if proc:
+            try:
+                proc.terminate()
+                proc.wait(timeout=2)
+                stopped = True
+            except Exception:
+                try:
+                    proc.kill()
+                    stopped = True
+                except Exception:
+                    pass
+
+        # 2. Thử đóng qua GenLogin API nếu đang chạy
+        if self._ping():
+            try:
+                from backend.modules.genlogin_cdp_reader import get_genlogin_auth_token
+                token = get_genlogin_auth_token()
+                headers = {"Authorization": f"Bearer {token}"} if token else {}
+                url = f"{self.base_url}/backend/profiles/{profile_id_str}/stop"
+                r = requests.put(url, headers=headers, json={}, timeout=5)
                 if r.status_code == 200:
-                    return True
-            return False
+                    stopped = True
+            except Exception:
+                pass
+
+        # 3. Dọn dẹp triệt để bất kỳ tiến trình Titan nào đang nắm giữ user-data-dir của profile
+        try:
+            storage_path = self._find_profile_storage(profile_id_str)
+            if storage_path:
+                norm_target = os.path.normpath(storage_path).lower()
+                import subprocess, json
+                cmd = 'Get-CimInstance Win32_Process -Filter "Name = \'chrome.exe\'" | Select-Object ProcessId, CommandLine | ConvertTo-Json'
+                out = subprocess.check_output(['powershell', '-Command', cmd], timeout=5).decode('utf-8', errors='ignore')
+                procs = json.loads(out)
+                if isinstance(procs, dict): procs = [procs]
+                for p in procs:
+                    cmdline = (p.get('CommandLine') or '').lower()
+                    if norm_target in cmdline or profile_id_str in cmdline:
+                        subprocess.run(['taskkill', '/F', '/PID', str(p['ProcessId'])], capture_output=True)
+                        stopped = True
         except Exception:
-            return False
+            pass
+
+        return stopped
 
 
 class UnifiedBrowserManager:

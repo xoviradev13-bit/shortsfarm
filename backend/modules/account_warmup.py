@@ -229,20 +229,35 @@ class AccountWarmupManager:
                 except Exception:
                     pass
 
+            # Kiểm tra và đóng popup nếu xuất hiện giữa chừng
+            self._dismiss_initial_overlays(page)
+
             # 5. Chuyển sang video tiếp theo:
             # Nhấn phím Mũi tên Xuống (ArrowDown) hoặc PageDown giống hệt người dùng xem TikTok trên máy tính
+            scrolled = False
             try:
                 page.keyboard.press("ArrowDown")
                 time.sleep(random.uniform(0.5, 1.2))
+                scrolled = True
             except Exception:
-                try:
-                    page.mouse.wheel(0, random.randint(400, 650))
-                except Exception:
-                    pass
+                pass
 
-            # Định kỳ đóng các popup xuất hiện giữa chừng
-            if videos_watched % 5 == 0:
-                self._dismiss_initial_overlays(page)
+            if not scrolled or random.random() < 0.2:
+                try:
+                    # Fallback: Click nút chuyển video tiếp theo (mũi tên xuống trên web) hoặc cuộn chuột
+                    next_btn = page.locator('[data-e2e="arrow-right"], button[aria-label*="Next"], button[aria-label*="tiếp"]').first
+                    if next_btn.is_visible(timeout=500):
+                        next_btn.click()
+                    else:
+                        page.mouse.wheel(0, random.randint(450, 750))
+                except Exception:
+                    try:
+                        page.keyboard.press("PageDown")
+                    except Exception:
+                        pass
+
+            # Đóng các popup có thể kích hoạt sau khi chuyển video
+            self._dismiss_initial_overlays(page)
 
         total_elapsed_minutes = (time.time() - start_time) / 60.0
         log_event(
@@ -261,25 +276,57 @@ class AccountWarmupManager:
         }
 
     def _dismiss_initial_overlays(self, page):
-        """Đóng các thông báo pop-up của TikTok (Đăng nhập, Thông báo, Cookies)"""
+        """Đóng các thông báo pop-up của TikTok (Passkey, Đăng nhập, Thông báo, Cookies)"""
+        # 1. Popup "Tạo passkey để đăng nhập dễ dàng hơn" / "Create a passkey"
         try:
-            # Modal "Đăng nhập vào TikTok"
-            close_login = page.locator('#login-modal-title + div, [data-e2e="modal-close-inner-button"], button[aria-label="Close"]').first
-            if close_login.is_visible(timeout=600):
-                close_login.click()
+            passkey_btn = page.locator(
+                'button:has-text("Để sau"), '
+                'button:has-text("Maybe later"), '
+                'button:has-text("Later"), '
+                'button:has-text("Not now"), '
+                'button:has-text("Không phải bây giờ")'
+            ).first
+            if passkey_btn.is_visible(timeout=500):
+                log_event("INFO", "Phát hiện modal 'Tạo passkey' hoặc gợi ý trên TikTok -> Đang bấm 'Để sau'")
+                passkey_btn.click(force=True)
                 time.sleep(0.5)
         except Exception:
             pass
 
+        # 1b. Tìm trong dialog/modal bất kỳ có passkey
         try:
-            # Nút "Không phải bây giờ" / "Not now"
-            not_now = page.locator('button:has-text("Không phải bây giờ"), button:has-text("Not now")').first
-            if not_now.is_visible(timeout=600):
-                not_now.click()
+            modal = page.locator('div[role="dialog"]:has-text("passkey"), div[role="dialog"]:has-text("Passkey"), div:has-text("Tạo passkey")').first
+            if modal.is_visible(timeout=500):
+                btn = modal.locator('button:has-text("Để sau"), button:has-text("Maybe later"), button:has-text("Later"), button:has-text("Not now")').first
+                if btn.is_visible(timeout=500):
+                    btn.click(force=True)
+                    time.sleep(0.5)
+        except Exception:
+            pass
+
+        # 2. Modal "Đăng nhập vào TikTok"
+        try:
+            close_login = page.locator('#login-modal-title + div, [data-e2e="modal-close-inner-button"], button[aria-label="Close"], button[aria-label="Đóng"]').first
+            if close_login.is_visible(timeout=500):
+                close_login.click(force=True)
                 time.sleep(0.5)
         except Exception:
             pass
 
+        # 3. Gỡ bỏ overlay tour guide / joyride
+        try:
+            page.evaluate("""
+                () => {
+                    const joyride = document.querySelector('#react-joyride-portal');
+                    if (joyride) joyride.remove();
+                    const overlays = document.querySelectorAll('.react-joyride__overlay');
+                    overlays.forEach(el => el.remove());
+                }
+            """)
+        except Exception:
+            pass
+
+        # 4. Phím Escape
         try:
             page.keyboard.press("Escape")
         except Exception:

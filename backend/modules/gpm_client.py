@@ -1,3 +1,4 @@
+import time
 import requests
 from typing import List, Dict, Optional, Any
 from backend.config import GPM_API_BASE_URL
@@ -204,6 +205,22 @@ class GPMClient:
             if resp.status_code == 200:
                 json_data = resp.json()
                 if json_data.get("success") is False:
+                    msg = str(json_data.get("message", ""))
+                    if "inuse" in msg.lower():
+                        log_event("INFO", f"Profile {profile_id} đang mở (ProfileInUse). Đang tự động đóng và khởi động lại...")
+                        self.stop_profile(profile_id)
+                        time.sleep(3)
+                        resp2 = requests.get(url, timeout=30)
+                        if resp2.status_code == 200:
+                            json_data2 = resp2.json()
+                            if json_data2.get("success"):
+                                data2 = json_data2.get("data", {})
+                                if not isinstance(data2, dict):
+                                    data2 = json_data2
+                                remote_addr2 = self._extract_debug_address(data2)
+                                if remote_addr2:
+                                    log_event("INFO", f"Khởi động lại thành công GPM profile {profile_id} tại {remote_addr2}")
+                                    return remote_addr2
                     log_event("ERROR", f"GPM trả về lỗi khi mở profile {profile_id}: {json_data.get('message')}")
                     return None
 
@@ -236,20 +253,22 @@ class GPMClient:
             return None
 
     def stop_profile(self, profile_id: str) -> bool:
-        """Đóng profile trên GPMLogin (hỗ trợ cả /stop và /close)"""
+        """Đóng profile trên GPMLogin (hỗ trợ cả /close và /stop)"""
         base = self.discover_api_base()
         if not base:
             return False
 
         endpoints = [
-            f"{base}/profiles/stop/{profile_id}",
-            f"{base}/profiles/close/{profile_id}"
+            f"{base}/profiles/close/{profile_id}",
+            f"{base}/profiles/stop/{profile_id}"
         ]
         for url in endpoints:
             try:
                 resp = requests.get(url, timeout=8)
                 if resp.status_code == 200:
-                    return True
+                    json_data = resp.json()
+                    if json_data.get("success") is True:
+                        return True
             except Exception:
                 continue
         return False
@@ -257,11 +276,11 @@ class GPMClient:
     def _extract_debug_address(self, data: Dict[str, Any]) -> Optional[str]:
         """Trích xuất địa chỉ remote debug port (chuẩn trích từ agent.js:extractDebugPortFromProfile)"""
         candidates = [
+            data.get("websocket_debugging_url"),
             data.get("remote_debugging_address"),
             data.get("debugger_address"),
             data.get("remote_debugging_port"),
-            data.get("debug_port"),
-            data.get("websocket_debugging_url")
+            data.get("debug_port")
         ]
         for raw in candidates:
             if not raw:

@@ -59,12 +59,53 @@ def dismiss_tiktok_modals(page) -> None:
         pass
 
     try:
+        # 3a. Banner bản nháp cũ chưa lưu -> bấm Hủy bỏ
+        btn_draft_discard = page.locator('div:has-text("chưa được lưu") button:has-text("Hủy bỏ"), div:has-text("unsaved") button:has-text("Discard")').first
+        if btn_draft_discard.is_visible(timeout=800):
+            btn_draft_discard.click()
+            time.sleep(1)
+    except Exception:
+        pass
+
+    try:
+        # 3b. Modal xác nhận hủy bài đăng cũ / bản nháp cũ -> bấm Hủy bỏ để xóa
+        modal_discard = page.locator('div[role="dialog"]:has-text("Hủy bỏ bài đăng"), div[role="dialog"]:has-text("Discard this post")')
+        if modal_discard.is_visible(timeout=800):
+            btn_confirm_discard = modal_discard.locator('button:has-text("Hủy bỏ"), button:has-text("Discard")').first
+            if btn_confirm_discard.is_visible(timeout=500):
+                btn_confirm_discard.click()
+                time.sleep(1)
+    except Exception:
+        pass
+
+    try:
         # 3b. Hộp thoại xác nhận "Tiếp tục đăng?" (khi TikTok đang kiểm tra bản quyền/nội dung chưa xong)
         btn_post_now = page.locator('button:has-text("Đăng ngay"), button:has-text("Post now"), button:has-text("Post anyway")').first
         if btn_post_now.is_visible(timeout=1000):
             log_event("INFO", "Phát hiện modal 'Tiếp tục đăng?' -> Đang bấm 'Đăng ngay' (Post anyway)")
             btn_post_now.click()
             time.sleep(1.5)
+    except Exception:
+        pass
+
+    try:
+        # 3c. Modal "Tạo passkey để đăng nhập dễ dàng hơn" / "Create a passkey" -> Bấm 'Để sau' (Maybe later / Later / Not now)
+        passkey_modal = page.locator('div[role="dialog"]:has-text("passkey"), div[role="dialog"]:has-text("Passkey"), div:has-text("Tạo passkey")').first
+        if passkey_modal.is_visible(timeout=500):
+            btn_later = passkey_modal.locator('button:has-text("Để sau"), button:has-text("Maybe later"), button:has-text("Later"), button:has-text("Not now"), button:has-text("Không phải bây giờ")').first
+            if btn_later.is_visible(timeout=500):
+                log_event("INFO", "Phát hiện modal 'Tạo passkey' trên TikTok -> Đang bấm 'Để sau'")
+                btn_later.click(force=True)
+                time.sleep(0.5)
+    except Exception:
+        pass
+
+    try:
+        # 3d. Bất kỳ nút "Để sau" / "Maybe later" / "Không phải bây giờ" nào đang chắn màn hình
+        btn_de_sau = page.locator('button:has-text("Để sau"), button:has-text("Maybe later"), button:has-text("Not now"), button:has-text("Không phải bây giờ")').first
+        if btn_de_sau.is_visible(timeout=500):
+            btn_de_sau.click(force=True)
+            time.sleep(0.5)
     except Exception:
         pass
 
@@ -98,10 +139,11 @@ class TikTokUploader:
         auto_post: bool = True,
         close_browser_on_finish: bool = False,
         enable_warmup: bool = True,
-        warmup_minutes: Optional[float] = None
+        warmup_minutes: Optional[float] = None,
+        browser_type: str = "auto"
     ) -> Dict[str, Any]:
         """
-        Tự động hóa đăng video lên TikTok bằng GPMLogin qua Playwright CDP.
+        Tự động hóa đăng video lên TikTok bằng GPMLogin / GenLogin qua Playwright CDP.
         Hỗ trợ:
         - Dù trình duyệt profile ĐANG MỞ SẴN hay CHƯA MỞ đều hoạt động trơn tru.
         - Tự động đóng modal 'Bật kiểm tra nội dung tự động' và các popup của TikTok Studio.
@@ -116,28 +158,46 @@ class TikTokUploader:
         except Exception:
             pass
 
-        log_event("INFO", f"Bắt đầu upload lên GPM profile {gpm_profile_id}: {os.path.basename(video_path)}")
+        log_event("INFO", f"Bắt đầu upload lên profile {gpm_profile_id}: {os.path.basename(video_path)}")
 
-        # 1. Tự động kiểm tra và bật GPMLogin nếu ứng dụng đang tắt
-        if not gpm_client.check_health().get("running"):
-            log_event("INFO", f"GPMLogin đang tắt. Đang tự động khởi chạy GPMLogin trước khi upload profile {gpm_profile_id}...")
-            gpm_client.ensure_gpm_running()
+        # 1. Xác định adapter tương ứng (GPM, GenLogin, ...)
+        from backend.modules.browser_adapters import browser_manager
+        b_type = (browser_type or "auto").lower()
+        if b_type == "auto":
+            try:
+                conn_b = get_connection()
+                cur_b = conn_b.cursor()
+                cur_b.execute("SELECT browser_type FROM gpm_profiles WHERE gpm_id = ? LIMIT 1", (gpm_profile_id,))
+                row_b = cur_b.fetchone()
+                if row_b and row_b["browser_type"]:
+                    b_type = row_b["browser_type"].lower()
+                conn_b.close()
+            except Exception:
+                pass
 
-        # 2. Mở hoặc kết nối profile GPMLogin (nếu profile đã mở sẵn, GPM trả về port hiện tại)
-        remote_address = gpm_client.start_profile(gpm_profile_id)
+        adapter = browser_manager.get_adapter(b_type) or browser_manager.get_adapter("gpm")
+
+        # Tự động kiểm tra và bật trình duyệt nếu ứng dụng đang tắt
+        if hasattr(adapter, "ensure_running"):
+            adapter.ensure_running()
+        elif hasattr(adapter, "client") and hasattr(adapter.client, "ensure_gpm_running"):
+            adapter.client.ensure_gpm_running()
+
+        # 2. Mở hoặc kết nối profile
+        remote_address = adapter.start_profile(gpm_profile_id)
         if not remote_address:
             try:
                 from backend.modules.tiktok_tracker import set_profile_busy
                 set_profile_busy(gpm_profile_id, False)
             except Exception:
                 pass
-            return {"success": False, "message": f"Không thể lấy cổng debug GPM cho profile {gpm_profile_id}"}
+            return {"success": False, "message": f"Không thể lấy cổng debug ({b_type.upper()}) cho profile {gpm_profile_id}"}
 
         try:
             from playwright.sync_api import sync_playwright
         except ImportError:
-            if close_browser_on_finish:
-                gpm_client.stop_profile(gpm_profile_id)
+            if close_browser_on_finish and adapter:
+                adapter.stop_profile(gpm_profile_id)
             try:
                 from backend.modules.tiktok_tracker import set_profile_busy
                 set_profile_busy(gpm_profile_id, False)
@@ -149,8 +209,17 @@ class TikTokUploader:
 
         try:
             with sync_playwright() as p:
-                log_event("INFO", f"Kết nối Playwright CDP tới http://{remote_address}")
-                browser = p.chromium.connect_over_cdp(f"http://{remote_address}")
+                cdp_target = remote_address if remote_address.startswith("ws://") or remote_address.startswith("http://") else f"http://{remote_address}"
+                log_event("INFO", f"Kết nối Playwright CDP tới {cdp_target}")
+                browser = None
+                for attempt in range(1, 6):
+                    try:
+                        browser = p.chromium.connect_over_cdp(cdp_target)
+                        break
+                    except Exception as cdp_err:
+                        if attempt == 5:
+                            raise cdp_err
+                        time.sleep(1.5)
                 context = browser.contexts[0] if browser.contexts else browser.new_context()
 
                 # Tự động tìm tab đã mở sẵn TikTok Studio nếu profile đã mở sẵn từ trước
@@ -263,9 +332,11 @@ class TikTokUploader:
                 if not has_uploaded_video:
                     file_input_set = False
 
+                    dismiss_tiktok_modals(page)
+
                     # Chờ React mount input[type="file"]
                     try:
-                        page.wait_for_selector('input[type="file"]', timeout=15000)
+                        page.wait_for_selector('input[type="file"]', state="attached", timeout=15000)
                     except Exception:
                         pass
 
@@ -453,8 +524,8 @@ class TikTokUploader:
             except Exception:
                 pass
             # Chỉ tắt browser nếu caller yêu cầu đóng (mặc định giữ lại để không ngắt phiên làm việc của user)
-            if close_browser_on_finish:
-                gpm_client.stop_profile(gpm_profile_id)
+            if close_browser_on_finish and 'adapter' in locals() and adapter:
+                adapter.stop_profile(gpm_profile_id)
 
         return result
 

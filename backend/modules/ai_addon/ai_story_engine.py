@@ -916,6 +916,9 @@ CRITICAL INSTRUCTIONS:
         stock_provider: str = "all",
         voice_gender: str = "male",
         voice_id: Optional[str] = None,
+        tts_engine: str = "edge-tts",
+        elevenlabs_voice_id: Optional[str] = None,
+        elevenlabs_model: Optional[str] = "eleven_multilingual_v2",
         subtitle_style: str = "karaoke_yellow",
         subtitle_position: str = "center",
         bgm_folder: Optional[str] = None,
@@ -997,6 +1000,12 @@ CRITICAL INSTRUCTIONS:
         all_transcript_segments: List[Dict[str, Any]] = []
         current_time_offset = 0.0
 
+        # Phân giải ưu tiên giọng đọc ElevenLabs vs Edge-TTS
+        effective_voice_id = voice_id or kwargs.get("elevenlabs_voice_id") or elevenlabs_voice_id
+        if (tts_engine == "elevenlabs" or kwargs.get("tts_engine") == "elevenlabs") and (elevenlabs_voice_id or kwargs.get("elevenlabs_voice_id")):
+            effective_voice_id = elevenlabs_voice_id or kwargs.get("elevenlabs_voice_id")
+        effective_el_model = elevenlabs_model or kwargs.get("elevenlabs_model") or "eleven_multilingual_v2"
+
         for idx, scene in enumerate(scenes):
             narr_text = scene.get("narration", "").strip()
             if not narr_text:
@@ -1013,7 +1022,8 @@ CRITICAL INSTRUCTIONS:
                         output_path=scene_audio_path,
                         language=effective_lang,
                         gender=voice_gender,
-                        voice=voice_id
+                        voice=effective_voice_id,
+                        elevenlabs_model=effective_el_model
                     )
                     if out_p and os.path.exists(scene_audio_path) and os.path.getsize(scene_audio_path) > 1024:
                         break
@@ -1370,7 +1380,8 @@ CRITICAL INSTRUCTIONS:
         force_regenerate_script: bool = False,
         target_part: Optional[int] = None,
         num_parts: Optional[int] = None,
-        target_duration: float = 65.0
+        target_duration: float = 65.0,
+        **kwargs
     ) -> Dict[str, Any]:
         """
         Quy trình sản xuất trọn bộ Series TikTok nhiều tập (Episodic Bible Arc):
@@ -1426,7 +1437,8 @@ CRITICAL INSTRUCTIONS:
                 custom_title=p_title,
                 custom_hook=p_hook,
                 custom_description=p_summary,
-                part_number=p_num
+                part_number=p_num,
+                **kwargs
             )
 
             if p_res.get("status") == "success" and p_res.get("rendered_file"):

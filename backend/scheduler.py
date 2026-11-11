@@ -528,6 +528,15 @@ class BackgroundScheduler:
         
         from backend.modules.tiktok_tracker import is_profile_busy
         from backend.database import get_linked_profile_ids
+        from backend.modules.license_manager import get_license_tier_limits
+
+        tier_limits = get_license_tier_limits()
+        max_allowed_profiles = tier_limits.get("max_profiles", 999999)
+        allowed_profile_db_ids = None
+
+        if max_allowed_profiles < 999999:
+            cursor.execute("SELECT id FROM gpm_profiles ORDER BY followers_count DESC, id DESC LIMIT ?", (max_allowed_profiles,))
+            allowed_profile_db_ids = set(r["id"] for r in cursor.fetchall())
 
         tasks_to_dispatch = []
         dispatched_profiles = set()
@@ -538,6 +547,10 @@ class BackgroundScheduler:
             cand_profile_id = cand["gpm_profile_id"]
             cand_video_id = cand["video_id"]
             cand_part_num = cand["part_number"] or 1
+
+            # Giới hạn tối đa 5 profiles upload cho Gói Cá Nhân Pro
+            if allowed_profile_db_ids is not None and cand_profile_id not in allowed_profile_db_ids:
+                continue
 
             # Bỏ qua nếu profile này đang được worker khác upload hoặc đang bận
             with self._active_upload_lock:

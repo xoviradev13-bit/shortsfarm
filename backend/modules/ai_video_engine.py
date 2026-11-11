@@ -30,7 +30,9 @@ from backend.modules.ai_addon.ai_story_engine import ai_story_engine
 from backend.modules.audio_manager import audio_manager
 
 # Concurrency Limiter: Ngăn chặn quá tải CPU/RAM khi xử lý hàng ngàn video đồng thời
-RENDER_SEMAPHORE = threading.BoundedSemaphore(value=2)
+RENDER_SEMAPHORE = threading.BoundedSemaphore(value=4)
+# Khóa xử lý tuần tự đơn luồng bắt buộc cho Gói Cá Nhân Pro (Single-thread sequential processing)
+_PERSONAL_TIER_RENDER_LOCK = threading.Lock()
 
 def sanitize_filename(text: Optional[str], max_length: int = 30) -> str:
     """Loại bỏ emoji, ký tự cấm của Windows và ký tự gây lỗi FFmpeg/URL, giữ ký tự an toàn và rút gọn độ dài"""
@@ -648,48 +650,60 @@ class AIVideoEngine:
             gc.collect()
             logger.debug(f"Thực thi lệnh FFmpeg render: {' '.join(cmd[:12])}...")
             cflags = 0x08000000 if sys.platform == "win32" else 0  # CREATE_NO_WINDOW
-            with RENDER_SEMAPHORE:
-                process = subprocess.run(cmd, capture_output=True, timeout=900, creationflags=cflags)
-                stderr_text = process.stderr.decode("utf-8", errors="replace") if process.stderr else ""
-                stdout_text = process.stdout.decode("utf-8", errors="replace") if process.stdout else ""
+            from backend.modules.license_manager import get_license_tier_limits
+            tier_limits = get_license_tier_limits()
+            is_single_thread = not tier_limits.get("allow_multi_thread", False)
 
-                # Nếu chạy bằng NVENC mà bị crash/lỗi encoder -> Fallback tự động sang CPU libx264
-                if process.returncode != 0 and "nvenc" in " ".join(encoder_flags).lower():
-                    logger.warning("NVENC GPU Render thất bại. Đang tự động chuyển sang CPU libx264 fallback...")
-                    cpu_flags = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p"]
-                    if has_bgm:
-                        fallback_cmd = [
-                            self.ffmpeg_bin, "-y",
-                            "-ss", str(start_time),
-                            "-t", str(duration),
-                            "-i", input_file,
-                            "-ss", str(bgm_start_offset),
-                            "-stream_loop", "-1",
-                            "-i", selected_bgm,
-                            "-filter_complex", full_filter_complex,
-                            "-map", f"[{out_map}]",
-                            "-map", "[a_out]"
-                        ]
-                    else:
-                        fallback_cmd = [
-                            self.ffmpeg_bin, "-y",
-                            "-ss", str(start_time),
-                            "-t", str(duration),
-                            "-i", input_file,
-                            "-filter_complex", filter_complex,
-                            "-map", f"[{out_map}]",
-                            "-map", "0:a",
-                            "-af", audio_filter
-                        ]
-                    fallback_cmd.extend(cpu_flags)
-                    fallback_cmd.extend([
-                        "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+            if is_single_thread:
+                # Gói Cá Nhân Pro: Bắt buộc tuần tự đơn luồng (Single-thread sequential)
+                logger.info(f"[{tier_limits.get('tier_display', 'Gói Cá Nhân')}] Đang xử lý tuần tự đơn luồng (Single-thread sequential render)...")
+                with _PERSONAL_TIER_RENDER_LOCK:
+                    with RENDER_SEMAPHORE:
+                        process = subprocess.run(cmd, capture_output=True, timeout=900, creationflags=cflags)
+            else:
+                # Gói Studio Team: Mở khóa xử lý đa luồng song song (Multi-threaded)
+                with RENDER_SEMAPHORE:
+                    process = subprocess.run(cmd, capture_output=True, timeout=900, creationflags=cflags)
+            stderr_text = process.stderr.decode("utf-8", errors="replace") if process.stderr else ""
+            stdout_text = process.stdout.decode("utf-8", errors="replace") if process.stdout else ""
+
+            # Nếu chạy bằng NVENC mà bị crash/lỗi encoder -> Fallback tự động sang CPU libx264
+            if process.returncode != 0 and "nvenc" in " ".join(encoder_flags).lower():
+                logger.warning("NVENC GPU Render thất bại. Đang tự động chuyển sang CPU libx264 fallback...")
+                cpu_flags = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p"]
+                if has_bgm:
+                    fallback_cmd = [
+                        self.ffmpeg_bin, "-y",
+                        "-ss", str(start_time),
                         "-t", str(duration),
-                        "-map_metadata", "-1", "-movflags", "+faststart",
-                        output_file
-                    ])
-                    process = subprocess.run(fallback_cmd, capture_output=True, timeout=900, creationflags=cflags)
-                    stderr_text = process.stderr.decode("utf-8", errors="replace") if process.stderr else ""
+                        "-i", input_file,
+                        "-ss", str(bgm_start_offset),
+                        "-stream_loop", "-1",
+                        "-i", selected_bgm,
+                        "-filter_complex", full_filter_complex,
+                        "-map", f"[{out_map}]",
+                        "-map", "[a_out]"
+                    ]
+                else:
+                    fallback_cmd = [
+                        self.ffmpeg_bin, "-y",
+                        "-ss", str(start_time),
+                        "-t", str(duration),
+                        "-i", input_file,
+                        "-filter_complex", filter_complex,
+                        "-map", f"[{out_map}]",
+                        "-map", "0:a",
+                        "-af", audio_filter
+                    ]
+                fallback_cmd.extend(cpu_flags)
+                fallback_cmd.extend([
+                    "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+                    "-t", str(duration),
+                    "-map_metadata", "-1", "-movflags", "+faststart",
+                    output_file
+                ])
+                process = subprocess.run(fallback_cmd, capture_output=True, timeout=900, creationflags=cflags)
+                stderr_text = process.stderr.decode("utf-8", errors="replace") if process.stderr else ""
 
             if process.returncode == 0 and os.path.exists(output_file):
                 # Kiểm tra chất lượng (Quality Check)
@@ -1150,7 +1164,12 @@ class AIVideoEngine:
         split_source_type: str = "local",
         split_folder: str = "data/gameplay",
         split_keywords: str = "minecraft parkour, satisfying asmr, subway surfers",
-        split_provider: str = "all"
+        split_provider: str = "all",
+        tts_engine: str = "edge-tts",
+        elevenlabs_voice_id: Optional[str] = None,
+        elevenlabs_model: Optional[str] = "eleven_multilingual_v2",
+        voice_id: Optional[str] = None,
+        **kwargs
     ) -> Dict[str, Any]:
         """
         Quy trình xử lý AI trọn gói (End-to-End Enterprise SaaS Workflow):
@@ -1189,7 +1208,11 @@ class AIVideoEngine:
                     subtitle_style=subtitle_style or "karaoke_yellow",
                     bgm_folder=bgm_folder or "cinematic",
                     num_parts=clips_count,
-                    target_duration=float(target_duration or 65.0)
+                    target_duration=float(target_duration or 65.0),
+                    tts_engine=tts_engine,
+                    elevenlabs_voice_id=elevenlabs_voice_id,
+                    elevenlabs_model=elevenlabs_model,
+                    voice_id=voice_id or elevenlabs_voice_id
                 )
             else:
                 log_event("INFO", f"🎬 [AI STORY MODE BẬT] Video {video_id}: Đang tạo video hoàn toàn mới 100% bằng Ảnh AI ({image_style}) và Lồng tiếng AI...")
@@ -1208,6 +1231,10 @@ class AIVideoEngine:
                     ai_video_model=ai_video_model or "fal_ltx",
                     stock_provider=stock_provider or "all",
                     voice_gender=voice_gender,
+                    voice_id=voice_id or elevenlabs_voice_id,
+                    tts_engine=tts_engine,
+                    elevenlabs_voice_id=elevenlabs_voice_id,
+                    elevenlabs_model=elevenlabs_model,
                     enable_subtitles=bool(enable_subtitles if enable_subtitles is not None else True),
                     subtitle_style=subtitle_style or "karaoke_yellow",
                     subtitle_position=subtitle_position or "center",

@@ -434,10 +434,12 @@ CRITICAL INSTRUCTIONS:
         language: str = "en",
         gender: str = "male",
         voice: Optional[str] = None,
-        rate: str = "+0%"
+        rate: str = "+0%",
+        elevenlabs_model: Optional[str] = "eleven_multilingual_v2",
+        **kwargs
     ) -> Tuple[Optional[str], List[Dict[str, Any]], str]:
         """
-        Sinh file am thanh tu van ban su dung Microsoft Edge-TTS dam bao dong nhat 100% giong doc (Voice Consistency):
+        Sinh file am thanh tu van ban su dung Microsoft Edge-TTS hoac ElevenLabs dam bao dong nhat 100% giong doc (Voice Consistency):
         - Giu nguyen 100% duy nhat mot giong doc (selected_voice) trong toan bo video, KHONG DOI GIOI TINH hoac giong khac.
         - Tu dong retry thong minh voi backoff (1.5s, 2.5s, 3.5s) va chuan hoa toc do rate='+0%' de giu ket noi on dinh.
         Tra ve tuple (output_path, transcript_segments, srt_content).
@@ -452,10 +454,11 @@ CRITICAL INSTRUCTIONS:
         if voice and len(voice) >= 18 and "Neural" not in voice:
             try:
                 from backend.modules.elevenlabs_client import elevenlabs_client
-                res = elevenlabs_client.synthesize(clean_text, voice_id=voice, output_path=output_path)
+                model = elevenlabs_model or kwargs.get("elevenlabs_model") or "eleven_multilingual_v2"
+                res = elevenlabs_client.synthesize(clean_text, voice_id=voice, model_id=model, output_path=output_path)
                 if res.get("success"):
                     dur = self._get_audio_file_duration(output_path)
-                    seg = self._generate_fallback_word_timestamps(clean_text, dur)
+                    seg = self._build_synthetic_segments(clean_text, dur)
                     return output_path, seg, ""
                 else:
                     logger.warning(f"ElevenLabs thất bại ({res.get('message')}). Tự động fallback sang Edge-TTS.")
@@ -463,7 +466,7 @@ CRITICAL INSTRUCTIONS:
                 logger.warning(f"Lỗi gọi ElevenLabs: {e}. Fallback sang Edge-TTS.")
 
         # 1. Xac dinh chinh xac duy nhat 1 giong doc (Voice Consistency)
-        selected_voice = voice
+        selected_voice = voice if (voice and "Neural" in voice) else None
         if not selected_voice:
             if gender and ("Neural" in gender or "-" in gender):
                 selected_voice = gender

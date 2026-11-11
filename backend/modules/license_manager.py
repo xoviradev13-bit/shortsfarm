@@ -34,6 +34,62 @@ def verify_signature_authenticity(license_key: str, hwid: str, signature: str, p
     expected = compute_license_signature(license_key, hwid, plan, expires_at)
     return hmac.compare_digest(signature.strip().lower(), expected.lower())
 
+def get_license_tier_limits(plan_override: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Trả về các giới hạn kỹ thuật và đặc quyền theo gói bản quyền phần mềm:
+    - Gói Cá Nhân Pro (pro_1pc / monthly / trial / unlicensed):
+        * max_profiles: 5 (Tối đa 5 Profiles Antidetect GPMLogin / GenLogin)
+        * allow_multi_thread: False (Xử lý tuần tự đơn luồng - Sequential single-thread)
+        * max_render_concurrency: 1
+        * allow_nvenc: False (Chỉ dùng CPU libx264 đơn luồng; GPU NVENC là đặc quyền Studio)
+        * max_devices: 1
+        * max_hwid_resets_per_month: 2 (Đổi máy tối đa 2 lần / tháng)
+    - Gói Studio Team (studio_3pc / yearly / agency_5pc / lifetime):
+        * max_profiles: 999999 (Không giới hạn Profile / Kênh)
+        * allow_multi_thread: True (Mở khóa render đa luồng song song)
+        * max_render_concurrency: 4
+        * allow_nvenc: True (Mở khóa tăng tốc phần cứng GPU NVENC siêu tốc)
+        * max_devices: 3 (hoặc 5 nếu agency)
+        * max_hwid_resets_per_month: 999999 (Reset HWID linh hoạt không giới hạn)
+    """
+    if plan_override:
+        plan = plan_override.lower()
+        is_active = True
+    else:
+        info = get_license_info()
+        plan = (info.get("plan") or "unlicensed").lower()
+        is_active = info.get("is_active", False)
+
+    if is_active and plan in ("studio_3pc", "yearly", "agency_5pc", "lifetime"):
+        return {
+            "tier": "studio",
+            "tier_display": "Gói Studio Team",
+            "max_profiles": 999999,
+            "is_unlimited_profiles": True,
+            "allow_multi_thread": True,
+            "max_render_concurrency": 4,
+            "allow_nvenc": True,
+            "encoder_mode": "GPU_NVENC_ACCELERATED",
+            "max_devices": 3 if plan in ("studio_3pc", "yearly") else 5,
+            "max_hwid_resets_per_month": 999999,
+            "description": "Không giới hạn Profile/Kênh • Render đa luồng GPU NVENC • Reset HWID linh hoạt",
+        }
+    else:
+        # pro_1pc, monthly, trial, unlicensed
+        return {
+            "tier": "personal",
+            "tier_display": "Gói Cá Nhân Pro" if (is_active and plan in ("pro_1pc", "monthly")) else ("Dùng Thử Nghiệm" if is_active else "Chưa Kích Hoạt"),
+            "max_profiles": 5,
+            "is_unlimited_profiles": False,
+            "allow_multi_thread": False,
+            "max_render_concurrency": 1,
+            "allow_nvenc": False,
+            "encoder_mode": "CPU_SEQUENTIAL_SINGLE_THREAD",
+            "max_devices": 1,
+            "max_hwid_resets_per_month": 2,
+            "description": "Tối đa 5 Profiles Antidetect • Xử lý tuần tự đơn luồng • Đổi máy tối đa 2 lần/tháng",
+        }
+
 PLAN_NAMES: Dict[str, str] = {
     "pro_1pc": "Gói Cá Nhân (1 PC - Vĩnh Viễn)",
     "studio_3pc": "Gói Studio (3 PCs - Vĩnh Viễn)",
@@ -197,6 +253,7 @@ def get_license_info() -> Dict[str, Any]:
         "last_verified": last_verified,
         "signature": signature,
         "is_tampered": is_tampered,
+        "tier_limits": get_license_tier_limits(plan_override=plan if is_active else "unlicensed"),
     }
 
 def activate_license(license_key: str) -> Dict[str, Any]:

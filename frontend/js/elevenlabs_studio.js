@@ -108,11 +108,19 @@ async function loadElevenLabsVoicesGallery(filterType = 'all') {
         const data = await res.json();
         studioElevenVoices = data.voices || [];
 
-        // Đồng bộ vào select box của Studio
+        // Đồng bộ vào select box của Studio Lab
         const selVoice = document.getElementById('elStudioVoiceSelect');
         if (selVoice && studioElevenVoices.length > 0) {
             selVoice.innerHTML = studioElevenVoices.map(v => 
                 `<option value="${v.voice_id}">${v.name} (${v.labels?.gender === 'female' ? 'Nữ' : 'Nam'} - ${v.description || v.category})</option>`
+            ).join('');
+        }
+
+        // Đồng bộ vào select box Gán Kênh
+        const selBind = document.getElementById('elBindVoiceSelect');
+        if (selBind && studioElevenVoices.length > 0) {
+            selBind.innerHTML = studioElevenVoices.map(v => 
+                `<option value="${v.voice_id}">${v.name} (${v.labels?.gender === 'female' ? 'Nữ' : 'Nam'})</option>`
             ).join('');
         }
 
@@ -147,7 +155,7 @@ function renderVoiceGalleryCards(filter = 'all') {
         const genderText = isFemale ? 'Nữ' : 'Nam';
 
         return `
-            <div class="glass-panel" style="padding: 16px; border-radius: 10px; transition: transform 0.2s, border-color 0.2s; position: relative;" onmouseover="this.style.borderColor='rgba(192, 132, 252, 0.6)'" onmouseout="this.style.borderColor='var(--border-color)'">
+            <div id="elVoiceCard_${v.voice_id}" class="glass-panel el-voice-card" style="padding: 16px; border-radius: 10px; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; position: relative;" onmouseover="this.style.borderColor='rgba(192, 132, 252, 0.6)'" onmouseout="if(!this.classList.contains('active-voice')) this.style.borderColor='var(--border-color)'">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="width: 32px; height: 32px; border-radius: 50%; background: ${genderColor}20; display: flex; align-items: center; justify-content: center; font-weight: 700; color: ${genderColor}; font-size: 13px;">
@@ -167,14 +175,10 @@ function renderVoiceGalleryCards(filter = 'all') {
                     ${v.description || 'Giọng đọc siêu thực chuẩn Studio của ElevenLabs'}
                 </p>
 
-                <div style="display: flex; gap: 8px;">
+                <div>
                     <button class="btn btn-secondary btn-sm" type="button" onclick="playVoiceDemoSample('${v.voice_id}', '${v.preview_url || ''}')"
-                            style="flex: 1; height: 30px; font-size: 11.5px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                            style="width: 100%; height: 32px; font-size: 12px; font-weight: 600; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 6px; border-color: rgba(192, 132, 252, 0.35);">
                         <i class="fa-solid fa-play" id="iconPlayDemo_${v.voice_id}" style="color: #c084fc;"></i> Nghe Thử
-                    </button>
-                    <button class="btn btn-secondary btn-sm" type="button" onclick="selectVoiceForStudio('${v.voice_id}')"
-                            style="flex: 1; height: 30px; font-size: 11.5px; padding: 0 8px; font-weight: 600; color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">
-                        <i class="fa-solid fa-check"></i> Chọn Giọng
                     </button>
                 </div>
             </div>
@@ -272,18 +276,69 @@ function playVoiceDemoSample(voiceId, previewUrl) {
 }
 
 function selectVoiceForStudio(voiceId) {
+    // 1. Đồng bộ vào select box của Studio Lab
     const selVoice = document.getElementById('elStudioVoiceSelect');
     if (selVoice) selVoice.value = voiceId;
 
+    // 2. Đồng bộ vào select box Gán Kênh
     const selBindVoice = document.getElementById('elBindVoiceSelect');
     if (selBindVoice) selBindVoice.value = voiceId;
 
-    // Scroll nhẹ lên khu vực studio
+    // 3. Đồng bộ vào Studio Biên Tập Video
+    const studioVoiceSelect = document.getElementById('studioElevenLabsVoiceId');
+    if (studioVoiceSelect) studioVoiceSelect.value = voiceId;
+
+    // 4. Đồng bộ vào Cấu Hình Chiến Dịch
+    const campVoiceSelect = document.getElementById('campaignElevenLabsVoiceId');
+    if (campVoiceSelect) campVoiceSelect.value = voiceId;
+
+    // 5. Lưu giọng đã chọn vào localStorage để duy trì
+    localStorage.setItem('selectedElevenLabsVoiceId', voiceId);
+
+    // 6. Cập nhật giao diện các thẻ card (Highlight card đang chọn)
+    document.querySelectorAll('.el-voice-card').forEach(card => {
+        card.classList.remove('active-voice');
+        card.style.borderColor = 'var(--border-color)';
+        card.style.boxShadow = 'none';
+        const btn = card.querySelector('.btn-select-voice');
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Chọn Giọng';
+            btn.style.color = '#38bdf8';
+            btn.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+        }
+    });
+
+    const activeCard = document.getElementById('elVoiceCard_' + voiceId);
+    if (activeCard) {
+        activeCard.classList.add('active-voice');
+        activeCard.style.borderColor = '#c084fc';
+        activeCard.style.boxShadow = '0 0 16px rgba(192, 132, 252, 0.4)';
+        const btn = activeCard.querySelector('.btn-select-voice');
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Đang Chọn';
+            btn.style.color = '#22c55e';
+            btn.style.borderColor = 'rgba(34, 197, 94, 0.6)';
+        }
+    }
+
+    const matchedVoice = studioElevenVoices.find(v => v.voice_id === voiceId);
+    const voiceName = matchedVoice ? matchedVoice.name : voiceId;
+
+    // 7. Hiển thị thông báo Toast xác nhận
+    if (typeof showToast === 'function') {
+        showToast(`✅ Đã chọn giọng: "${voiceName}"! Giọng đã nạp vào Phòng Thu & Studio Biên Tập.`, 'success');
+    }
+
+    // 8. Cuộn mượt lên khu vực Phòng Thu Lab
     const studioBox = document.getElementById('elStudioLabBox');
     if (studioBox) {
         studioBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
         studioBox.style.borderColor = '#c084fc';
-        setTimeout(() => studioBox.style.borderColor = 'var(--border-color)', 1500);
+        studioBox.style.boxShadow = '0 0 20px rgba(192, 132, 252, 0.35)';
+        setTimeout(() => {
+            studioBox.style.borderColor = 'var(--border-color)';
+            studioBox.style.boxShadow = 'none';
+        }, 1500);
     }
 }
 

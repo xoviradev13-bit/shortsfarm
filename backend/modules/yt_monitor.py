@@ -291,7 +291,10 @@ class YouTubeRSSMonitor:
                         split_provider=render_settings.get("split_provider", "all"),
                         ai_image_model=narr_settings.get("ai_image_model", "flux"),
                         ai_video_model=narr_settings.get("ai_video_model", "fal_ltx"),
-                        stock_provider=narr_settings.get("stock_provider", "all")
+                        stock_provider=narr_settings.get("stock_provider", "all"),
+                        tts_engine=narr_settings.get("tts_engine", "edge-tts"),
+                        elevenlabs_voice_id=narr_settings.get("elevenlabs_voice_id"),
+                        elevenlabs_model=narr_settings.get("elevenlabs_model", "eleven_multilingual_v2")
                     )
                     if res.get("status") == "success" and video_db_id:
                         raw_rendered_files = res.get("rendered_files") or ([res.get("rendered_file")] if res.get("rendered_file") else [])
@@ -475,6 +478,19 @@ class YouTubeRSSMonitor:
         camp_stock_p = camp.get("stock_provider") if camp else None
         eff_stock_p = (ch_stock_p if ch_stock_p and ch_stock_p not in ("inherit", "") else (camp_stock_p if camp_stock_p and camp_stock_p not in ("inherit", "") else None)) or "all"
 
+        # I. TTS Engine, ElevenLabs Voice ID & Model (Channel > Campaign > Mặc định):
+        ch_tts_engine = channel_obj.get("tts_engine") if channel_obj else None
+        camp_tts_engine = camp.get("tts_engine") if camp else None
+        eff_tts_engine = (ch_tts_engine if ch_tts_engine and ch_tts_engine not in ("inherit", "") else (camp_tts_engine if camp_tts_engine and camp_tts_engine not in ("inherit", "") else None)) or "edge-tts"
+
+        ch_el_voice = channel_obj.get("elevenlabs_voice_id") if channel_obj else None
+        camp_el_voice = camp.get("elevenlabs_voice_id") if camp else None
+        eff_el_voice = ch_el_voice if ch_el_voice and ch_el_voice not in ("inherit", "") else (camp_el_voice if camp_el_voice and camp_el_voice not in ("inherit", "") else None)
+
+        ch_el_model = channel_obj.get("elevenlabs_model") if channel_obj else None
+        camp_el_model = camp.get("elevenlabs_model") if camp else None
+        eff_el_model = (ch_el_model if ch_el_model and ch_el_model not in ("inherit", "") else (camp_el_model if camp_el_model and camp_el_model not in ("inherit", "") else None)) or "eleven_multilingual_v2"
+
         return {
             "narration_enabled": eff_enabled,
             "narration_language": eff_lang,
@@ -487,7 +503,10 @@ class YouTubeRSSMonitor:
             "visual_source": eff_v_source,
             "ai_image_model": eff_ai_model,
             "ai_video_model": eff_v_model,
-            "stock_provider": eff_stock_p
+            "stock_provider": eff_stock_p,
+            "tts_engine": eff_tts_engine,
+            "elevenlabs_voice_id": eff_el_voice,
+            "elevenlabs_model": eff_el_model
         }
 
     def get_effective_hook_settings(self, channel_obj: Optional[dict], camp: Optional[dict] = None) -> dict:

@@ -73,15 +73,33 @@ def is_nvenc_available() -> bool:
     return probe_hardware_encoder() == "h264_nvenc"
 
 
-def get_optimal_video_encoder_flags() -> List[str]:
+def get_optimal_video_encoder_flags(allow_nvenc: Optional[bool] = None) -> List[str]:
     """
-    Trả về cờ mã hóa tối ưu theo chuẩn Plan v3.0:
-    - h264_nvenc: -preset p4 -rc vbr -cq 19 -b:v 0 -spatial-aq 1 -temporal-aq 1 -rc-lookahead 20
-    - h264_qsv: -global_quality 19 -look_ahead 1
-    - h264_vaapi: -qp 19
-    - libx264: -preset faster -crf 19 -threads 0
-    All encoders include -pix_fmt yuv420p -movflags +faststart
+    Trả về cờ mã hóa tối ưu theo chuẩn Plan v3.0 và chính sách License Tier:
+    - Nếu allow_nvenc == False (Gói Cá Nhân Pro):
+        * Bắt buộc dùng CPU libx264 đơn luồng (-threads 1) để đảm bảo tính tuần tự.
+    - Nếu allow_nvenc == True (Gói Studio Team):
+        * h264_nvenc: -preset p4 -rc vbr -cq 19 -b:v 0 -spatial-aq 1 -temporal-aq 1 -rc-lookahead 20
+        * Fallback: QSV / VAAPI / libx264 đa luồng (-threads 0).
     """
+    if allow_nvenc is None:
+        try:
+            from backend.modules.license_manager import get_license_tier_limits
+            allow_nvenc = get_license_tier_limits().get("allow_nvenc", False)
+        except Exception:
+            allow_nvenc = True
+
+    # Gói Cá Nhân: Bắt buộc CPU đơn luồng
+    if not allow_nvenc:
+        return [
+            "-c:v", "libx264",
+            "-preset", "faster",
+            "-crf", "19",
+            "-threads", "1",
+            "-pix_fmt", "yuv420p",
+            "-movflags", "+faststart"
+        ]
+
     global _ENCODER_FLAGS_CACHE
     if _ENCODER_FLAGS_CACHE is not None:
         return _ENCODER_FLAGS_CACHE

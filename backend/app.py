@@ -712,6 +712,46 @@ def sync_gpm_profiles():
             conn.close()
             return {"status": "warning", "message": f"Không tìm thấy profile nào từ trình duyệt {active_browser.upper()} (hoặc ứng dụng chưa bật)", "synced": 0}
 
+    from backend.modules.license_manager import get_license_tier_limits
+    tier_limits = get_license_tier_limits()
+    max_allowed_profiles = tier_limits.get("max_profiles", 999999)
+    profile_limit_hit = False
+
+    if len(profiles) > max_allowed_profiles:
+        profile_limit_hit = True
+        total_found = len(profiles)
+
+        # Cơ chế Pinned Active Profiles (Khóa 5 Profile cố định - Chống nhảy thứ tự khi Sync lại):
+        # 1. Đọc danh sách các profile ĐÃ CÓ trong DB trước đó theo thứ tự tạo
+        cursor.execute("SELECT gpm_id FROM gpm_profiles ORDER BY id ASC")
+        existing_db_ids = [r["gpm_id"] for r in cursor.fetchall()]
+
+        # 2. Ưu tiên giữ lại các profile đã được liên kết trước đó
+        selected_profiles = []
+        unselected_candidates = []
+
+        # Tạo map id -> profile từ danh sách GPM app
+        gpm_map = {str(p["id"]): p for p in profiles}
+
+        for pid in existing_db_ids:
+            if str(pid) in gpm_map and len(selected_profiles) < max_allowed_profiles:
+                selected_profiles.append(gpm_map[str(pid)])
+
+        # 3. Nếu chưa đủ 5 profiles (lần đầu sync hoặc user vừa xóa bớt profile cũ):
+        # Sắp xếp các profile còn lại theo id/tên cố định (Deterministic Order) để đảm bảo không phụ thuộc thứ tự API
+        selected_ids_set = set(str(p["id"]) for p in selected_profiles)
+        remaining = [p for p in profiles if str(p["id"]) not in selected_ids_set]
+        remaining_sorted = sorted(remaining, key=lambda x: (str(x.get("name", "")).lower(), str(x.get("id", ""))))
+
+        for p in remaining_sorted:
+            if len(selected_profiles) < max_allowed_profiles:
+                selected_profiles.append(p)
+            else:
+                break
+
+        profiles = selected_profiles
+        log_event("WARNING", f"[{tier_limits.get('tier_display')}] Giới hạn tối đa {max_allowed_profiles} Profiles Antidetect. Đã cố định {len(profiles)}/{total_found} profiles (Pinned Active Profiles). Nâng cấp Gói Studio Team để sử dụng không giới hạn!")
+
     active_gpm_ids = set()
     synced = 0
     for p in profiles:
@@ -827,20 +867,38 @@ def sync_gpm_profiles():
         msg += f" (đã cập nhật thông tin TikTok của {tt_synced} profile)"
     if removed_count > 0:
         msg += f" (đã gỡ bỏ {removed_count} profile không còn tồn tại)"
+    if profile_limit_hit:
+        msg += f" (⚠️ Gói Cá Nhân Pro giới hạn tối đa {max_allowed_profiles} profiles. Nâng cấp Gói Studio Team để sử dụng không giới hạn)."
     log_event("INFO", msg)
     try:
         from backend.modules.gpm_profile_reader import propagate_linked_profile_channels
         propagate_linked_profile_channels()
     except Exception:
         pass
-    return {"status": "success", "synced": synced, "tiktok_synced": tt_synced, "removed": removed_count, "message": msg}
+    return {
+        "status": "success",
+        "synced": synced,
+        "tiktok_synced": tt_synced,
+        "removed": removed_count,
+        "limit_reached": profile_limit_hit,
+        "max_allowed_profiles": max_allowed_profiles,
+        "message": msg
+    }
 
 @app.get("/api/gpm/profiles")
 def list_gpm_profiles():
+    from backend.modules.license_manager import get_license_tier_limits
+    tier_limits = get_license_tier_limits()
+    max_allowed = tier_limits.get("max_profiles", 999999)
+
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM gpm_profiles ORDER BY followers_count DESC, id DESC")
     rows = [dict(r) for r in cursor.fetchall()]
+    
+    # Bắt buộc giới hạn hiển thị tối đa 5 profiles cho Gói Cá Nhân Pro
+    if len(rows) > max_allowed:
+        rows = rows[:max_allowed]
     
     try:
         cursor.execute("SELECT * FROM profile_channels ORDER BY is_default DESC, id ASC")
@@ -1970,6 +2028,14 @@ def create_campaign(req: CreateCampaignRequest):
     elif source_mode == "hybrid" and not ch_ids and not local_folder:
         raise HTTPException(status_code=400, detail="Vui lòng chọn kênh YouTube nguồn hoặc nhập đường dẫn thư mục video!")
     gpm_ids = req.gpm_profile_ids if req.gpm_profile_ids else ([req.gpm_profile_id] if req.gpm_profile_id else [])
+
+    from backend.modules.license_manager import get_license_tier_limits
+    tier_limits = get_license_tier_limits()
+    max_allowed = tier_limits.get("max_profiles", 999999)
+    if len(gpm_ids) > max_allowed:
+        gpm_ids = gpm_ids[:max_allowed]
+        log_event("WARNING", f"[{tier_limits.get('tier_display')}] Chiến dịch tự động giới hạn ở {max_allowed} Profiles antidetect đầu tiên.")
+
     if (req.auto_upload is None or req.auto_upload != 0) and not gpm_ids:
         raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất một Profile GPMLogin đích (hoặc bỏ chọn 'Tự động tải lên TikTok' nếu chỉ muốn render video)!")
     if req.min_video_duration is not None and req.max_video_duration is not None:
@@ -2159,6 +2225,14 @@ def update_campaign(campaign_id: int, req: CreateCampaignRequest):
         conn.close()
         raise HTTPException(status_code=400, detail="Vui lòng chỉ định thư mục chứa video cục bộ trên máy tính!")
     gpm_ids = req.gpm_profile_ids if req.gpm_profile_ids else ([req.gpm_profile_id] if req.gpm_profile_id else [])
+
+    from backend.modules.license_manager import get_license_tier_limits
+    tier_limits = get_license_tier_limits()
+    max_allowed = tier_limits.get("max_profiles", 999999)
+    if len(gpm_ids) > max_allowed:
+        gpm_ids = gpm_ids[:max_allowed]
+        log_event("WARNING", f"[{tier_limits.get('tier_display')}] Chiến dịch tự động giới hạn ở {max_allowed} Profiles antidetect đầu tiên.")
+
     if (req.auto_upload is None or req.auto_upload != 0) and not gpm_ids:
         conn.close()
         raise HTTPException(status_code=400, detail="Vui lòng chọn ít nhất một Profile GPMLogin đích (hoặc bỏ chọn 'Tự động tải lên TikTok' nếu chỉ muốn render video)!")
@@ -3538,7 +3612,10 @@ def render_smart_ai_video(req: SmartRenderVideoRequest):
         split_source_type=req.split_source_type or "local",
         split_folder=req.split_folder or "data/gameplay",
         split_keywords=req.split_keywords or "minecraft parkour, satisfying asmr, subway surfers",
-        split_provider=req.split_provider or "all"
+        split_provider=req.split_provider or "all",
+        tts_engine=getattr(req, "tts_engine", "edge-tts") or "edge-tts",
+        elevenlabs_voice_id=getattr(req, "elevenlabs_voice_id", None),
+        elevenlabs_model=getattr(req, "elevenlabs_model", "eleven_multilingual_v2")
     )
 
     if result.get("status") != "success":
@@ -3566,6 +3643,21 @@ def upload_tiktok(req: UploadVideoRequest):
     check_active_license("Đăng Video Lên TikTok")
     if not req.gpm_profile_id or not req.gpm_profile_id.strip():
         raise HTTPException(status_code=400, detail="Vui lòng chọn Profile GPMLogin để upload!")
+
+    from backend.modules.license_manager import get_license_tier_limits
+    tier_limits = get_license_tier_limits()
+    max_allowed = tier_limits.get("max_profiles", 999999)
+    if max_allowed < 999999:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT gpm_id FROM gpm_profiles ORDER BY followers_count DESC, id DESC LIMIT ?", (max_allowed,))
+        allowed_gpm_ids = [r["gpm_id"] for r in cursor.fetchall()]
+        conn.close()
+        if req.gpm_profile_id not in allowed_gpm_ids:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Gói Cá Nhân Pro giới hạn tối đa {max_allowed} Profiles antidetect. Profile này nằm ngoài danh sách 5 profile được cấp phép upload. Vui lòng nâng cấp lên Gói Studio Team để đăng bài không giới hạn!"
+            )
     if not req.video_path or not req.video_path.strip():
         raise HTTPException(status_code=400, detail="Đường dẫn file video không được để trống!")
     if not os.path.exists(req.video_path):
@@ -4590,6 +4682,7 @@ def browse_folder():
 # --- Licensing & Update System ---
 from backend.modules.license_manager import (
     get_license_info,
+    get_license_tier_limits,
     activate_license as do_activate_license,
     verify_license as do_verify_license,
     deactivate_license as do_deactivate_license,
@@ -4605,6 +4698,12 @@ class LicenseActivateRequest(BaseModel):
 def api_get_license_status():
     """Lấy thông tin trạng thái bản quyền và HWID của máy tính"""
     return get_license_info()
+
+@app.get("/api/license/limits")
+@app.get("/api/v2/license/limits")
+def api_get_license_limits():
+    """Lấy thông số giới hạn và đặc quyền kỹ thuật theo gói bản quyền"""
+    return get_license_tier_limits()
 
 @app.post("/api/license/activate")
 @app.post("/api/v2/license/activate")

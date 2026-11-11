@@ -13,15 +13,15 @@ export interface PlanConfig {
 export const PLAN_CONFIGS: Record<string, PlanConfig> = {
   pro_1pc: {
     code: 'pro_1pc',
-    name: 'Gói Cá Nhân (1 PC - Vĩnh Viễn)',
-    amount: 499000,
+    name: 'Gói Cá Nhân Pro (1 PC - Vĩnh Viễn)',
+    amount: 990000,
     durationDays: null,
     maxDevices: 1,
   },
   studio_3pc: {
     code: 'studio_3pc',
-    name: 'Gói Studio (3 PCs - Vĩnh Viễn)',
-    amount: 3990000,
+    name: 'Gói Studio Team (3 PCs - Vĩnh Viễn)',
+    amount: 2990000,
     durationDays: null,
     maxDevices: 3,
   },
@@ -35,15 +35,15 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
   // Tương thích ngược với các đơn hàng cũ
   monthly: {
     code: 'pro_1pc',
-    name: 'Gói Cá Nhân (1 PC - Vĩnh Viễn)',
-    amount: 499000,
+    name: 'Gói Cá Nhân Pro (1 PC - Vĩnh Viễn)',
+    amount: 990000,
     durationDays: null,
     maxDevices: 1,
   },
   yearly: {
     code: 'studio_3pc',
-    name: 'Gói Studio (3 PCs - Vĩnh Viễn)',
-    amount: 3990000,
+    name: 'Gói Studio Team (3 PCs - Vĩnh Viễn)',
+    amount: 2990000,
     durationDays: null,
     maxDevices: 3,
   },

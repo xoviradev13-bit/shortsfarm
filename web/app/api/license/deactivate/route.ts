@@ -49,13 +49,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const isPersonalPlan = license.plan === 'pro_1pc' || license.plan === 'monthly' || license.plan === 'trial';
+    let updatedNotes = license.notes || '';
+    let recentResetsCount = 0;
+
+    if (isPersonalPlan) {
+      // Kiểm tra tần suất đổi máy trong 30 ngày qua (tối đa 2 lần/tháng)
+      const resetRegex = /\[RESET:([^\]]+)\]/g;
+      const matches = Array.from(updatedNotes.matchAll(resetRegex));
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      const recentResets = matches.filter((m) => {
+        const d = new Date(m[1]);
+        return !isNaN(d.getTime()) && d > thirtyDaysAgo;
+      });
+
+      recentResetsCount = recentResets.length;
+
+      if (recentResetsCount >= 2) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              'Gói Cá Nhân Pro chỉ hỗ trợ đổi máy (Reset HWID) tối đa 2 lần trong vòng 30 ngày. Bạn đã sử dụng hết 2 lượt đổi máy trong tháng này. Vui lòng liên hệ Admin hỗ trợ hoặc nâng cấp lên Gói Studio Team để đổi máy linh hoạt!',
+            current_resets: recentResetsCount,
+            max_resets_per_month: 2,
+          },
+          { status: 403 }
+        );
+      }
+
+      // Thêm dấu mốc đổi máy mới
+      const newTimestamp = new Date().toISOString();
+      updatedNotes = `${updatedNotes} [RESET:${newTimestamp}]`.trim();
+    }
+
     // Gỡ HWID của máy tính này khỏi danh sách hwidList
     const oldHwidList = license.hwidList || [];
     const newHwidList = oldHwidList.filter((h) => h !== cleanHwid);
 
     await prisma.license.update({
       where: { id: license.id },
-      data: { hwidList: newHwidList },
+      data: {
+        hwidList: newHwidList,
+        notes: updatedNotes,
+      },
     });
 
     // Xóa bản ghi kích hoạt của máy tính này
@@ -66,9 +104,13 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const resetMsg = isPersonalPlan
+      ? ` (Gói Cá Nhân: Lượt đổi máy ${recentResetsCount + 1}/2 trong 30 ngày)`
+      : '';
+
     return NextResponse.json({
       success: true,
-      message: 'Đã hủy liên kết máy tính thành công. Mã bản quyền này có thể dùng trên máy tính khác.',
+      message: `Đã hủy liên kết máy tính thành công. Mã bản quyền có thể dùng trên máy tính khác.${resetMsg}`,
       current_devices: newHwidList.length,
       max_devices: license.maxDevices,
     });

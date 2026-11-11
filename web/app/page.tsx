@@ -51,6 +51,7 @@ import {
   Send,
   QrCode,
   Tag,
+  Building2,
 } from 'lucide-react';
 import { TRANSLATIONS, Language } from '@/lib/translations';
 
@@ -1962,7 +1963,7 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <div data-stagger className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch relative z-10">
+        <div data-stagger className="grid grid-cols-1 md:grid-cols-2 max-w-5xl mx-auto gap-8 items-stretch relative z-10">
           {/* Plan 1: Pro 1 PC */}
           <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
             <div>
@@ -1977,7 +1978,7 @@ export default function LandingPage() {
               <p className="text-xs text-slate-500 mt-1 min-h-[36px]">{t.pricing.plan1Desc}</p>
 
               <div className="my-6 pb-6 border-b border-slate-100">
-                <span className="text-4xl font-extrabold text-slate-900">499.000{t.pricing.currency}</span>
+                <span className="text-4xl font-extrabold text-slate-900">990.000{t.pricing.currency}</span>
                 <span className="text-xs text-slate-500 block mt-1">{t.pricing.payOnce}</span>
               </div>
 
@@ -1993,7 +1994,7 @@ export default function LandingPage() {
 
             <button
               type="button"
-              onClick={() => openCheckoutModal('pro_1pc', t.pricing.plan1Name, 499000, t.pricing.plan1Desc)}
+              onClick={() => openCheckoutModal('pro_1pc', t.pricing.plan1Name, 990000, t.pricing.plan1Desc)}
               className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition"
             >
               {t.pricing.buyBtn}
@@ -2022,7 +2023,7 @@ export default function LandingPage() {
               <p className="text-xs text-slate-500 mt-1 min-h-[36px]">{t.pricing.plan2Desc}</p>
 
               <div className="my-6 pb-6 border-b border-slate-100">
-                <span className="text-4xl font-extrabold text-rose-600">3.990.000{t.pricing.currency}</span>
+                <span className="text-4xl font-extrabold text-rose-600">2.990.000{t.pricing.currency}</span>
                 <span className="text-xs text-slate-500 block mt-1">{t.pricing.payOnce}</span>
               </div>
 
@@ -2038,49 +2039,34 @@ export default function LandingPage() {
 
             <button
               type="button"
-              onClick={() => openCheckoutModal('studio_3pc', t.pricing.plan2Name, 3990000, t.pricing.plan2Desc)}
+              onClick={() => openCheckoutModal('studio_3pc', t.pricing.plan2Name, 2990000, t.pricing.plan2Desc)}
               className="w-full py-4 rounded-xl bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-extrabold text-sm shadow-lg shadow-rose-500/30 transition"
             >
               {t.pricing.buyBtn}
             </button>
           </div>
+        </div>
 
-          {/* Plan 3: Agency 5 PCs */}
-          <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  {t.pricing.lifetimeBadge}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">5 PCs HWID</span>
-              </div>
-
-              <h3 className="text-2xl font-extrabold text-slate-900">{t.pricing.plan3Name}</h3>
-              <p className="text-xs text-slate-500 mt-1 min-h-[36px]">{t.pricing.plan3Desc}</p>
-
-              <div className="my-6 pb-6 border-b border-slate-100">
-                <span className="text-4xl font-extrabold text-slate-900">8.500.000{t.pricing.currency}</span>
-                <span className="text-xs text-slate-500 block mt-1">{t.pricing.payOnce}</span>
-              </div>
-
-              <ul className="space-y-3 text-xs text-slate-700 mb-8 font-medium">
-                {t.pricing.features3.map((feat, i) => (
-                  <li key={i} className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-indigo-600 shrink-0" />
-                    <span>{feat}</span>
-                  </li>
-                ))}
-              </ul>
+        {/* Agency / Large Farm Consultation Banner */}
+        <div className="max-w-5xl mx-auto mt-8 p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 border border-slate-700/60 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 text-white relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0">
+              <Building2 className="w-6 h-6 text-indigo-400" />
             </div>
-
-            <button
-              type="button"
-              onClick={() => openCheckoutModal('agency_5pc', t.pricing.plan3Name, 8500000, t.pricing.plan3Desc)}
-              className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition"
-            >
-              {t.pricing.buyBtn}
-            </button>
+            <div>
+              <h4 className="font-bold text-base text-white">Vận hành Agency hoặc Studio quy mô lớn (&gt; 5 máy)?</h4>
+              <p className="text-xs text-slate-300 mt-1">
+                Liên hệ trực tiếp qua Zalo / Telegram để nhận tư vấn kiến trúc dàn máy, setup mạng nội bộ và chính sách chiết khấu số lượng lớn.
+              </p>
+            </div>
           </div>
+          <a
+            href="#contact"
+            className="shrink-0 px-6 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs transition shadow-md flex items-center gap-2"
+          >
+            <span>Tư Vấn Gói Doanh Nghiệp</span>
+            <ArrowRight className="w-4 h-4" />
+          </a>
         </div>
 
         <p className="text-center text-xs text-slate-500 mt-10">
@@ -2635,7 +2621,7 @@ export default function LandingPage() {
                       rows={6}
                       value={contactForm.message}
                       onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                      placeholder={lang === 'vi' ? 'Nội dung cần hỗ trợ, số lượng kênh muốn nuôi hoặc yêu cầu demo...' : lang === 'zh' ? '请输入您的具体需求或要咨询的频道规模...' : 'Describe your channels or business needs...'}
+                      placeholder={lang === 'vi' ? 'Nội dung cần hỗ trợ, quy mô số lượng kênh vận hành hoặc yêu cầu demo...' : lang === 'zh' ? '请输入您的具体需求或要咨询的频道规模...' : 'Describe your channels or business needs...'}
                       className="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900 resize-none min-h-[140px]"
                     />
                   </div>
@@ -2755,30 +2741,51 @@ export default function LandingPage() {
               </h4>
               <ul className="space-y-2 text-xs">
                 <li>
-                  <a href="#browsers" className="hover:text-rose-600 transition">{t.footer.col3Links[0]}</a>
+                  <a href="#contact" className="hover:text-rose-600 transition">{t.footer.col3Links[0]}</a>
                 </li>
                 <li>
                   <a href="#faq" className="hover:text-rose-600 transition">{t.footer.col3Links[1]}</a>
                 </li>
                 <li>
-                  <a href="#faq" className="hover:text-rose-600 transition">{t.footer.col3Links[2]}</a>
+                  <Link href="/terms" className="hover:text-rose-600 transition">{t.footer.col3Links[2]}</Link>
                 </li>
                 <li>
-                  <Link href="/admin" className="hover:text-rose-600 font-semibold text-slate-800 transition flex items-center gap-1.5">
+                  <Link href="/terms" className="hover:text-rose-600 transition flex items-center gap-1">
                     <span>{t.footer.col3Links[3]}</span>
-                    <ArrowRight className="w-3 h-3 text-rose-500" />
                   </Link>
                 </li>
                 <li>
-                  <a href="#contact" className="hover:text-rose-600 transition">{t.footer.col3Links[4]}</a>
+                  <Link href="/privacy" className="hover:text-rose-600 transition flex items-center gap-1">
+                    <span>{t.footer.col3Links[4]}</span>
+                  </Link>
                 </li>
+                {t.footer.col3Links[5] && (
+                  <li>
+                    <Link href="/admin" className="hover:text-rose-600 font-semibold text-slate-700 transition flex items-center gap-1">
+                      <span>{t.footer.col3Links[5]}</span>
+                      <ArrowRight className="w-3 h-3 text-rose-500" />
+                    </Link>
+                  </li>
+                )}
               </ul>
             </div>
           </div>
 
           {/* Sub-Footer Divider Bar */}
           <div className="pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
-            <p>{t.footer.copyright}</p>
+            <div className="flex flex-wrap items-center gap-4">
+              <p>{t.footer.copyright}</p>
+              <span className="hidden sm:inline text-slate-300">•</span>
+              <div className="flex items-center gap-3">
+                <Link href="/terms" className="hover:text-rose-600 transition">
+                  {lang === 'vi' ? 'Điều khoản dịch vụ' : 'Terms of Service'}
+                </Link>
+                <span>•</span>
+                <Link href="/privacy" className="hover:text-rose-600 transition">
+                  {lang === 'vi' ? 'Chính sách riêng tư' : 'Privacy Policy'}
+                </Link>
+              </div>
+            </div>
             <div className="flex items-center gap-2 text-slate-600">
               <ShieldCheck className="w-4 h-4 text-rose-600" />
               <span>{t.footer.securityBadge}</span>

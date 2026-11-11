@@ -8,11 +8,6 @@
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <span class="badge badge-info" id="studioVideoCountBadge">0 Video</span>
                                 <button type="button" class="btn btn-secondary btn-sm has-tooltip tooltip-left"
-                                    onclick="openVariantsReportModal()"
-                                    data-tooltip="Báo cáo phân tích hiệu suất A/B Testing">
-                                    <i class="fa-solid fa-chart-pie" style="color:#c084fc;"></i> Báo Cáo A/B
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-sm has-tooltip tooltip-left"
                                     id="btnRefreshStudioVideos" onclick="refreshStudioVideos()"
                                     data-tooltip="Làm mới & quét đồng bộ thư mục video">
                                     <i class="fa-solid fa-arrows-rotate" id="iconRefreshStudio"></i>
@@ -89,8 +84,27 @@
                                 Trình duyệt không hỗ trợ video MP4.
                             </video>
 
+                            <!-- Plan v3.0 Universal Safe Zone Overlay (TikTok, YouTube Shorts, FB Reels) -->
+                            <div id="studioUniversalSafeZoneOverlay" class="universal-safe-zone-overlay" style="display:none; position:absolute; inset:0; pointer-events:none; z-index:15;">
+                                <div style="position:absolute; top:0; left:0; right:0; height:10.4%; background:rgba(239,68,68,0.25); border-bottom:1.5px dashed #ef4444; display:flex; align-items:center; justify-content:center; color:#fca5a5; font-size:9.5px; font-weight:700;">
+                                    TOP UI CHE (Search / Tabs)
+                                </div>
+                                <div style="position:absolute; top:12.5%; left:12%; right:12%; height:9.3%; background:rgba(59,130,246,0.2); border:1.5px dashed #3b82f6; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#93c5fd; font-size:9.5px; font-weight:700;">
+                                    ⭐ VÙNG TITLE / HOOK CARD
+                                </div>
+                                <div style="position:absolute; top:52%; left:15%; right:15%; height:13%; background:rgba(34,197,94,0.22); border:1.5px dashed #22c55e; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#86efac; font-size:9.5px; font-weight:700; text-align:center;">
+                                    ⭐ VÙNG PHỤ ĐỀ (100% Safe)
+                                </div>
+                                <div style="position:absolute; top:12%; right:0; width:13%; bottom:26%; background:rgba(245,158,11,0.2); border-left:1.5px dashed #f59e0b; display:flex; align-items:center; justify-content:center; color:#fcd34d; font-size:9px; font-weight:700; writing-mode:vertical-rl;">
+                                    ICON CHE
+                                </div>
+                                <div style="position:absolute; bottom:0; left:0; right:0; height:26%; background:rgba(239,68,68,0.25); border-top:1.5px dashed #ef4444; display:flex; align-items:center; justify-content:center; color:#fca5a5; font-size:9.5px; font-weight:700;">
+                                    BOTTOM UI CHE (Subscribe / Caption)
+                                </div>
+                            </div>
+
                             <!-- TikTok UI Overlay Simulation -->
-                            <div class="tiktok-overlay-mockup">
+                            <div class="tiktok-overlay-mockup platform-mockup-overlay" id="tiktokOverlayMockup">
                                 <div class="tiktok-top-bar">
                                     <span>Đang theo dõi</span>
                                     <span style="border-bottom: 2px solid #fff; padding-bottom: 2px;">Dành cho
@@ -126,15 +140,139 @@
                                         Kiếm Tiền... #xuhuong #fyp</div>
                                 </div>
                             </div>
+
+                            <!-- YouTube Shorts UI Overlay Simulation -->
+                            <div class="shorts-overlay-mockup platform-mockup-overlay" id="youtubeShortsOverlayMockup" style="display:none;">
+                                <div class="shorts-top-bar">
+                                    <span style="font-weight:800; font-size:14px; letter-spacing:-0.5px;"><i class="fa-brands fa-youtube text-danger"></i> Shorts</span>
+                                    <div style="display:flex; gap:14px; align-items:center;">
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                        <i class="fa-solid fa-camera"></i>
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </div>
+                                </div>
+
+                                <div class="shorts-side-actions">
+                                    <div class="shorts-action-btn">
+                                        <i class="fa-solid fa-thumbs-up"></i>
+                                        <span>32.8K</span>
+                                    </div>
+                                    <div class="shorts-action-btn">
+                                        <i class="fa-solid fa-thumbs-down"></i>
+                                        <span>Dislike</span>
+                                    </div>
+                                    <div class="shorts-action-btn">
+                                        <i class="fa-solid fa-comment-dots"></i>
+                                        <span>642</span>
+                                    </div>
+                                    <div class="shorts-action-btn">
+                                        <i class="fa-solid fa-share"></i>
+                                        <span>Chia sẻ</span>
+                                    </div>
+                                    <div class="shorts-action-btn">
+                                        <i class="fa-solid fa-rotate"></i>
+                                        <span>Remix</span>
+                                    </div>
+                                    <div class="shorts-sound-box">
+                                        <i class="fa-solid fa-music" style="font-size:10px;"></i>
+                                    </div>
+                                </div>
+
+                                <div class="shorts-caption-area">
+                                    <div class="shorts-channel-row">
+                                        <div class="shorts-avatar"><i class="fa-solid fa-user"></i></div>
+                                        <span class="shorts-channel-name" id="shortsOverlayChannel">@startalk</span>
+                                        <button class="shorts-sub-btn">Đăng ký</button>
+                                    </div>
+                                    <div class="shorts-title" id="shortsOverlayTitle">Video chuẩn hóa Shorts 9:16 #shorts #viral</div>
+                                    <div class="shorts-sound-tag">
+                                        <i class="fa-solid fa-music"></i> <span>Âm thanh gốc - YouTube</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Facebook Reels UI Overlay Simulation -->
+                            <div class="reels-overlay-mockup platform-mockup-overlay" id="facebookReelsOverlayMockup" style="display:none;">
+                                <div class="reels-top-bar">
+                                    <span style="font-weight:800; font-size:14px;"><i class="fa-brands fa-facebook text-primary"></i> Reels</span>
+                                    <div style="display:flex; gap:14px; align-items:center;">
+                                        <i class="fa-solid fa-camera"></i>
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                    </div>
+                                </div>
+
+                                <div class="reels-side-actions">
+                                    <div class="reels-action-btn">
+                                        <i class="fa-solid fa-thumbs-up" style="color:#1877f2;"></i>
+                                        <span>19.4K</span>
+                                    </div>
+                                    <div class="reels-action-btn">
+                                        <i class="fa-solid fa-comment"></i>
+                                        <span>418</span>
+                                    </div>
+                                    <div class="reels-action-btn">
+                                        <i class="fa-solid fa-share"></i>
+                                        <span>Chia sẻ</span>
+                                    </div>
+                                    <div class="reels-action-btn">
+                                        <i class="fa-solid fa-ellipsis"></i>
+                                    </div>
+                                    <div class="tiktok-music-disc">
+                                        <i class="fa-solid fa-music" style="font-size:11px; color:#fff;"></i>
+                                    </div>
+                                </div>
+
+                                <div class="reels-caption-area">
+                                    <div class="reels-page-row">
+                                        <div class="reels-avatar"><i class="fa-solid fa-circle-user"></i></div>
+                                        <span class="reels-page-name" id="reelsOverlayPage">StarTalk Official</span>
+                                        <span class="reels-follow-btn">&bull; Theo dõi</span>
+                                    </div>
+                                    <div class="reels-caption" id="reelsOverlayCaption">Khám phá vũ trụ cùng chuyên gia #reels #khoahoc</div>
+                                    <div class="reels-sound-tag">
+                                        <i class="fa-solid fa-music"></i> <span>Nhạc nền Reels thịnh hành</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Under-Phone Action Buttons -->
                         <div
-                            style="display:flex; gap:10px; width:100%; justify-content:center; height:32px; align-items:center;">
+                            style="display:flex; gap:8px; width:100%; justify-content:center; height:32px; align-items:center;">
                             <button class="btn btn-secondary btn-sm" id="btnStudioPlayToggle"
                                 onclick="toggleStudioPlayback()">
                                 <i class="fa-solid fa-play"></i> Phát Video
                             </button>
+                            <div class="custom-dropdown-wrap" id="studioPlatformDropdownWrap" style="position:relative;">
+                                <button type="button" class="btn btn-secondary btn-sm" id="btnStudioPlatformSelect"
+                                    onclick="toggleStudioPlatformDropdown(event)"
+                                    style="height:32px; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; padding:0 10px; min-width:105px; justify-content:space-between;">
+                                    <span id="studioPlatformSelectedLabel" style="display:inline-flex; align-items:center; gap:6px;">
+                                        <i class="fa-brands fa-tiktok" style="color:#ff0050;"></i>
+                                        <span>TikTok</span>
+                                    </span>
+                                    <i class="fa-solid fa-chevron-down" style="font-size:9px; opacity:0.7;"></i>
+                                </button>
+                                <div class="studio-platform-menu" id="studioPlatformMenu"
+                                    style="display:none; position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:#0f172a; border:1px solid rgba(255,255,255,0.15); border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:1000; min-width:150px; padding:4px 0;">
+                                    <div class="studio-platform-opt" onclick="selectStudioPlatform('tiktok')"
+                                        style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:11.5px; cursor:pointer;">
+                                        <i class="fa-brands fa-tiktok" style="color:#ff0050; width:16px;"></i> <span>TikTok</span>
+                                    </div>
+                                    <div class="studio-platform-opt" onclick="selectStudioPlatform('youtube_shorts')"
+                                        style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:11.5px; cursor:pointer;">
+                                        <i class="fa-brands fa-youtube" style="color:#ff0000; width:16px;"></i> <span>YouTube Shorts</span>
+                                    </div>
+                                    <div class="studio-platform-opt" onclick="selectStudioPlatform('facebook_reels')"
+                                        style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:11.5px; cursor:pointer;">
+                                        <i class="fa-brands fa-facebook" style="color:#1877f2; width:16px;"></i> <span>Facebook Reels</span>
+                                    </div>
+                                    <div class="studio-platform-opt" onclick="selectStudioPlatform('clean')"
+                                        style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:11.5px; cursor:pointer;">
+                                        <i class="fa-solid fa-eye-slash" style="color:#94a3b8; width:16px;"></i> <span>Ẩn Giao Diện</span>
+                                    </div>
+                                </div>
+                            </div>
                             <button class="btn btn-primary btn-sm" id="btnStudioUploadGpm"
                                 onclick="openUploadModalForActiveStudioVideo()">
                                 <i class="fa-solid fa-cloud-arrow-up"></i> Đăng Nick
@@ -279,7 +417,7 @@
                                     <label
                                         style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--text-primary); cursor:pointer; margin:0;">
                                         <input type="checkbox" id="studioUseAiImages"
-                                            onchange="document.getElementById('studioAiStoryWrap').style.display = this.checked ? 'flex' : 'none';">
+                                            onchange="toggleAiStoryCard('studio', this.checked);">
                                         <span><i class="fa-solid fa-wand-magic-sparkles" style="color:#ec4899;"></i> Chế
                                             Độ AI Storytelling</span>
                                     </label>
@@ -327,22 +465,27 @@
                                             </select>
                                         </div>
                                         <div style="min-width:0;">
-                                            <label title="Model Video AI:"
+                                            <label title="Phong cách kịch bản AI:"
                                                 style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; height:18px; line-height:18px;"><i
-                                                    class="fa-solid fa-film" style="color:#f59e0b;"></i> Model Video
-                                                AI:</label>
-                                            <select id="studioAiVideoModel" class="custom-select"
+                                                    class="fa-solid fa-pen-nib" style="color:#a855f7;"></i> Phong cách
+                                                kịch bản AI:</label>
+                                            <select id="studioMpNarrationStyle" class="custom-select"
                                                 style="font-size:11.5px; height:36px; width:100%;">
-                                                <option value="fal_ltx" selected>⚡ LTX-Video (Fal.ai - Siêu tốc 5s)
+                                                <option value="giat_gan" selected>⚡ Giật gân TikTok (Gây tò mò cực độ)
                                                 </option>
-                                                <option value="fal_wan">🎬 Wan 2.1 (Fal.ai - Cinema Grade 14B)</option>
-                                                <option value="kling">🔥 Kling 1.5 Video</option>
+                                                <option value="cang_thang">🕵️ Căng thẳng hồi hộp (Truyện án / Bí ẩn)
+                                                </option>
+                                                <option value="hai_huoc">😂 Hài hước dí dỏm</option>
+                                                <option value="chuyen_nghiep">🎙️ Kể chuyện điện ảnh, truyền cảm
+                                                </option>
+                                                <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh
+                                                </option>
                                             </select>
                                         </div>
                                         <div style="min-width:0;">
                                             <label title="Phong cách ảnh AI:"
                                                 style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; height:18px; line-height:18px;"><i
-                                                    class="fa-solid fa-palette" style="color:#a855f7;"></i> Phong cách
+                                                    class="fa-solid fa-palette" style="color:#ec4899;"></i> Phong cách
                                                 ảnh AI:</label>
                                             <select id="studioImageStyle" class="custom-select"
                                                 style="font-size:11.5px; height:36px; width:100%;">
@@ -353,6 +496,19 @@
                                                 <option value="dark_fantasy">🏰 Kỳ Ảo U Tối</option>
                                                 <option value="3d_render">🎨 Hoạt Hình 3D Pixar</option>
                                                 <option value="comic">💥 Truyện Tranh Comic</option>
+                                            </select>
+                                        </div>
+                                        <div style="min-width:0;">
+                                            <label title="Model Video AI:"
+                                                style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; height:18px; line-height:18px;"><i
+                                                    class="fa-solid fa-film" style="color:#f59e0b;"></i> Model Video
+                                                AI:</label>
+                                            <select id="studioAiVideoModel" class="custom-select"
+                                                style="font-size:11.5px; height:36px; width:100%;">
+                                                <option value="fal_ltx" selected>⚡ LTX-Video (Fal.ai - Siêu tốc 5s)
+                                                </option>
+                                                <option value="fal_wan">🎬 Wan 2.1 (Fal.ai - Cinema Grade 14B)</option>
+                                                <option value="kling">🔥 Kling 1.5 Video</option>
                                             </select>
                                         </div>
                                     </div>
@@ -418,7 +574,7 @@
                                     style="display:flex; flex-direction:column; gap:12px; margin-top:14px; padding-top:12px; border-top:1px dashed rgba(192,132,252,0.25);">
                                     <!-- Engine Selector: Edge-TTS vs ElevenLabs -->
                                     <div
-                                        style="background:rgba(0,0,0,0.25); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                                        style="background:rgba(0,0,0,0.25); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); margin-bottom:8px;">
                                         <label
                                             style="font-size:11.5px; font-weight:700; color:#fff; margin-bottom:6px; display:block;">
                                             <i class="fa-solid fa-bolt text-cyan"></i> Chọn Bộ Máy Sinh Giọng:
@@ -457,9 +613,9 @@
                                     <div id="studioEdgeTtsWrap"
                                         style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                                         <div>
-                                            <label
-                                                style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;">Ngôn
-                                                ngữ kịch bản:</label>
+                                            <div style="display:flex; align-items:center; margin-bottom:6px; height:20px;">
+                                                <label style="font-size:11px; color:var(--text-muted); margin:0;">Ngôn ngữ kịch bản:</label>
+                                            </div>
                                             <select id="studioMpNarrationLanguage" class="custom-select"
                                                 style="font-size:11.5px; height:36px; width:100%;">
                                                 <option value="vi" selected>🇻🇳 Tiếng Việt</option>
@@ -473,9 +629,14 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label
-                                                style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;">Giọng
-                                                đọc Edge-TTS:</label>
+                                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; height:20px;">
+                                                <label style="font-size:11px; color:var(--text-muted); margin:0;">Giọng đọc Edge-TTS:</label>
+                                                <button type="button" class="btn-voice-preview"
+                                                    onclick="playVoicePreview('studioMpVoiceGender', 'studioMpNarrationLanguage', this)"
+                                                    title="Nghe thử">
+                                                    <i class="fa-solid fa-volume-high"></i>
+                                                </button>
+                                            </div>
                                             <select id="studioMpVoiceGender" class="custom-select"
                                                 style="font-size:11.5px; height:36px; width:100%;">
                                                 <option value="male" selected>👦 Giọng Nam Chuẩn</option>
@@ -491,7 +652,7 @@
 
                                     <!-- ElevenLabs Config (Shows when elevenlabs is selected) -->
                                     <div id="studioElevenLabsWrap"
-                                        style="display:none; background:rgba(192,132,252,0.05); padding:12px; border-radius:8px; border:1px solid rgba(192,132,252,0.2);">
+                                        style="display:none; background:rgba(192,132,252,0.05); padding:12px; border-radius:8px; border:1px solid rgba(192,132,252,0.2); margin-top:14px;">
                                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                                             <div>
                                                 <label
@@ -523,28 +684,9 @@
                                         </div>
                                     </div>
 
-                                    <!-- Phong cách kịch bản & quy tắc Shorts -->
-                                    <div style="display:grid; grid-template-columns:1fr; gap:8px;">
-                                        <div>
-                                            <label
-                                                style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;">Phong
-                                                cách kịch bản AI:</label>
-                                            <select id="studioMpNarrationStyle" class="custom-select"
-                                                style="font-size:11.5px; height:36px; width:100%;">
-                                                <option value="giat_gan" selected>⚡ Giật gân TikTok (Gây tò mò cực độ)
-                                                </option>
-                                                <option value="cang_thang">🕵️ Căng thẳng hồi hộp (Truyện án / Bí ẩn)
-                                                </option>
-                                                <option value="hai_huoc">😂 Hài hước dí dỏm</option>
-                                                <option value="chuyen_nghiep">🎙️ Kể chuyện điện ảnh, truyền cảm
-                                                </option>
-                                                <option value="nhanh_tiktok">⏩ Tóm tắt nhịp nhanh
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
 
-                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px;">
+
+                                    <div id="studioDisableNarrationWrap" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; padding-top:4px;">
                                         <label
                                             style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary); cursor:pointer;">
                                             <input type="checkbox" id="studioDisableNarrationForShorts" checked
@@ -598,14 +740,22 @@
                                         </select>
                                     </div>
                                     <div style="display:flex; flex-direction:column; gap:6px; margin-top:2px;">
-                                        <label
-                                            style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
-                                            <input type="checkbox" id="studioEnableSubtitles" checked
-                                                style="accent-color:#a855f7;"
-                                                onchange="document.getElementById('studioSubtitleOptionsWrap').style.display = this.checked ? 'grid' : 'none';">
-                                            <span><i class="fa-solid fa-closed-captioning" style="color:#eab308;"></i>
-                                                Tự Động Nhận Diện & Tạo Phụ Đề AI</span>
-                                        </label>
+                                        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; position:relative; z-index:25;">
+                                            <label
+                                                style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer; margin:0;">
+                                                <input type="checkbox" id="studioEnableSubtitles" checked
+                                                    style="accent-color:#a855f7;"
+                                                    onchange="document.getElementById('studioSubtitleOptionsWrap').style.display = this.checked ? 'grid' : 'none';">
+                                                <span><i class="fa-solid fa-closed-captioning" style="color:#eab308;"></i>
+                                                    Tự Động Nhận Diện & Tạo Phụ Đề AI</span>
+                                            </label>
+                                            <button type="button" class="btn btn-secondary btn-xs has-tooltip tooltip-left" id="btnToggleSafeZoneOverlay"
+                                                onclick="toggleStudioSafeZoneOverlay(this)"
+                                                data-tooltip="Bật/Tắt lưới Vùng An Toàn (TikTok, Shorts, Reels)"
+                                                style="font-size:10.5px; padding:2px 8px; height:24px; display:inline-flex; align-items:center; gap:5px; border-radius:6px; flex-shrink:0;">
+                                                <i class="fa-solid fa-shield-halved text-cyan"></i> <span>Safe Zone</span>
+                                            </button>
+                                        </div>
 
                                         <!-- Phong cách & Vị trí phụ đề Studio (Giống Image 2) -->
                                         <div id="studioSubtitleOptionsWrap"
@@ -631,9 +781,9 @@
                                                     trí hiển thị chữ:</label>
                                                 <select id="studioSubtitlePosition" class="input-field"
                                                     style="font-size:11px; height:32px; padding:2px 8px; width:100%;">
-                                                    <option value="center" selected>Chính Giữa Màn Hình (Focus)
+                                                    <option value="center" selected>🛡️ Chính Giữa (Universal Safe Zone - Khuyên dùng)
                                                     </option>
-                                                    <option value="bottom">Gần Đáy Màn Hình (Sát mô tả)</option>
+                                                    <option value="bottom">📐 1/3 Dưới (Lower-Third Safe Zone)</option>
                                                 </select>
                                             </div>
                                         </div>

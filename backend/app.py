@@ -4138,7 +4138,7 @@ def get_api_keys():
     raw = (db_settings.get("YOUTUBE_API_KEYS") or db_settings.get("YOUTUBE_API_KEY") or os.getenv("YOUTUBE_API_KEYS") or os.getenv("YOUTUBE_API_KEY") or "").strip()
     deepseek = (db_settings.get("DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or cfg.DEEPSEEK_API_KEY or "").strip()
     gemini = (db_settings.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY") or cfg.GEMINI_API_KEY or "").strip()
-    gemini_base_url = (db_settings.get("GEMINI_BASE_URL") or os.getenv("GEMINI_BASE_URL") or getattr(cfg, 'GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com')).strip().rstrip("/")
+    gemini_base_url = (db_settings.get("GEMINI_BASE_URL") or os.getenv("GEMINI_BASE_URL") or "").strip().rstrip("/")
     openai = (db_settings.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY") or cfg.OPENAI_API_KEY or "").strip()
     pexels = (db_settings.get("PEXELS_API_KEY") or os.getenv("PEXELS_API_KEY") or "").strip()
     pixabay = (db_settings.get("PIXABAY_API_KEY") or os.getenv("PIXABAY_API_KEY") or "").strip()
@@ -4240,6 +4240,13 @@ def save_api_keys(req: SaveApiKeysRequest):
         updates["PIXABAY_API_KEY"] = req.pixabay_api_key.strip()
     if req.pollinations_api_key is not None:
         updates["POLLINATIONS_API_KEY"] = req.pollinations_api_key.strip()
+    if req.fal_api_key is not None:
+        updates["FAL_KEY"] = req.fal_api_key.strip()
+        updates["FAL_API_KEY"] = req.fal_api_key.strip()
+    if req.kling_access_key is not None:
+        updates["KLING_ACCESS_KEY"] = req.kling_access_key.strip()
+    if req.kling_secret_key is not None:
+        updates["KLING_SECRET_KEY"] = req.kling_secret_key.strip()
     if req.elevenlabs_api_key is not None:
         el_k = req.elevenlabs_api_key.strip()
         updates["ELEVENLABS_API_KEY"] = el_k

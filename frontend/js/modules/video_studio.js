@@ -463,6 +463,14 @@ function selectStudioVideo(videoId, playType = null, partNum = 1) {
     if (captionEl) {
         captionEl.textContent = (v.ai_title || v.title || 'Video ngắn viral TikTok Beta') + ' ' + (v.ai_tags || '#fyp #xuhuong');
     }
+    const shortsTitle = document.getElementById('shortsOverlayTitle');
+    const shortsChannel = document.getElementById('shortsOverlayChannel');
+    const reelsCaption = document.getElementById('reelsOverlayCaption');
+    const reelsPage = document.getElementById('reelsOverlayPage');
+    if (shortsTitle) shortsTitle.textContent = (v.ai_title || v.title || 'Video ngắn viral') + ' #shorts';
+    if (shortsChannel) shortsChannel.textContent = v.channel_title ? `@${v.channel_title.replace(/\s+/g, '').toLowerCase()}` : '@creator';
+    if (reelsCaption) reelsCaption.textContent = (v.ai_title || v.title || 'Video ngắn viral') + ' #reels';
+    if (reelsPage) reelsPage.textContent = v.channel_title || 'Fanpage Official';
     if (partBadge) {
         if (activePlaybackType === 'original') {
             partBadge.textContent = 'VIDEO GỐC';
@@ -863,7 +871,69 @@ function formatNumber(num) {
     return num.toString();
 }
 
+function toggleStudioSafeZoneOverlay(btn) {
+    const overlay = document.getElementById('studioUniversalSafeZoneOverlay');
+    if (!overlay) return;
+    const isVisible = overlay.style.display !== 'none';
+    overlay.style.display = isVisible ? 'none' : 'block';
+    if (btn) {
+        btn.classList.toggle('active', !isVisible);
+        btn.style.borderColor = !isVisible ? 'var(--accent-cyan)' : '';
+        btn.style.color = !isVisible ? 'var(--accent-cyan)' : '';
+    }
+}
+
+function switchStudioPlatformPreview(platform) {
+    const tt = document.getElementById('tiktokOverlayMockup');
+    const yt = document.getElementById('youtubeShortsOverlayMockup');
+    const fb = document.getElementById('facebookReelsOverlayMockup');
+    
+    if (tt) tt.style.display = (platform === 'tiktok') ? 'flex' : 'none';
+    if (yt) yt.style.display = (platform === 'youtube_shorts') ? 'flex' : 'none';
+    if (fb) fb.style.display = (platform === 'facebook_reels') ? 'flex' : 'none';
+}
+
+function toggleStudioPlatformDropdown(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('studioPlatformMenu');
+    if (!menu) return;
+    const isShown = menu.style.display !== 'none';
+    menu.style.display = isShown ? 'none' : 'block';
+}
+
+function selectStudioPlatform(platform) {
+    const label = document.getElementById('studioPlatformSelectedLabel');
+    if (label) {
+        if (platform === 'tiktok') {
+            label.innerHTML = '<i class="fa-brands fa-tiktok" style="color:#ff0050;"></i> <span>TikTok</span>';
+        } else if (platform === 'youtube_shorts') {
+            label.innerHTML = '<i class="fa-brands fa-youtube" style="color:#ff0000;"></i> <span>Shorts</span>';
+        } else if (platform === 'facebook_reels') {
+            label.innerHTML = '<i class="fa-brands fa-facebook" style="color:#1877f2;"></i> <span>Reels</span>';
+        } else {
+            label.innerHTML = '<i class="fa-solid fa-eye-slash" style="color:var(--text-muted);"></i> <span>Ẩn UI</span>';
+        }
+    }
+    const menu = document.getElementById('studioPlatformMenu');
+    if (menu) menu.style.display = 'none';
+
+    switchStudioPlatformPreview(platform);
+}
+
+// Close platform dropdown on outer click
+document.addEventListener('click', function (e) {
+    const wrap = document.getElementById('studioPlatformDropdownWrap');
+    const menu = document.getElementById('studioPlatformMenu');
+    if (menu && menu.style.display !== 'none' && wrap && !wrap.contains(e.target)) {
+        menu.style.display = 'none';
+    }
+});
+
 // Module Window Exposures
+window.toggleStudioSafeZoneOverlay = toggleStudioSafeZoneOverlay;
+window.switchStudioPlatformPreview = switchStudioPlatformPreview;
+window.toggleStudioPlatformDropdown = toggleStudioPlatformDropdown;
+window.selectStudioPlatform = selectStudioPlatform;
 window.applyStudioPreset = applyStudioPreset;
 window.clearStudioFilters = clearStudioFilters;
 window.closeEditStudioVideoModal = closeEditStudioVideoModal;

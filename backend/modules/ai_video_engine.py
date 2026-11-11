@@ -1105,31 +1105,49 @@ class AIVideoEngine:
 
         # 🎬 NẾU BẬT CHẾ ĐỘ AI STORY: TẠO VIDEO MỚI 100% BẰNG ẢNH AI & LỒNG TIẾNG AI
         if use_ai_images:
-            log_event("INFO", f"🎬 [AI STORY MODE BẬT] Video {video_id}: Đang tạo video hoàn toàn mới 100% bằng Ảnh AI ({image_style}) và Lồng tiếng AI...")
             raw_text = " ".join([s.get("text", "") for s in (transcript_segments or [])]) or video_title
-            mp_res = ai_story_engine.process_ai_story_video(
-                raw_transcript=raw_text,
-                video_id=video_id,
-                video_title=video_title,
-                channel_name=channel_name,
-                output_dir=output_dir,
-                target_duration=float(target_duration),
-                target_language=narration_language,
-                script_style=narration_style,
-                image_style=image_style or "cinematic",
-                visual_source=visual_source or "ai",
-                ai_image_model=ai_image_model or "flux",
-                ai_video_model=ai_video_model or "fal_ltx",
-                stock_provider=stock_provider or "all",
-                voice_gender=voice_gender,
-                enable_subtitles=bool(enable_subtitles if enable_subtitles is not None else True),
-                subtitle_style=subtitle_style or "karaoke_yellow",
-                subtitle_position=subtitle_position or "center",
-                bgm_folder=bgm_folder,
-                bgm_volume=bgm_volume if bgm_volume is not None else 0.15,
-                ai_provider=custom_provider,
-                ai_model=custom_model
-            )
+            
+            # Nếu người dùng chọn cắt nhiều tập (Series nhiều Part theo chuẩn Master Bible & Character Anchors)
+            if clips_count and clips_count > 1:
+                log_event("INFO", f"🎬 [EPISODIC AI STORY BẬT] Video {video_id}: Đang tạo Series {clips_count} tập với Master Bible và Neo nhân vật đồng nhất...")
+                mp_res = ai_story_engine.process_episodic_story_series(
+                    raw_transcript=raw_text,
+                    video_id=video_id,
+                    video_title=video_title,
+                    channel_name=channel_name,
+                    target_language=narration_language,
+                    visual_source=visual_source or "ai",
+                    ai_image_model=ai_image_model or "flux",
+                    enable_subtitles=bool(enable_subtitles if enable_subtitles is not None else True),
+                    subtitle_style=subtitle_style or "karaoke_yellow",
+                    bgm_folder=bgm_folder,
+                    num_parts=clips_count
+                )
+            else:
+                log_event("INFO", f"🎬 [AI STORY MODE BẬT] Video {video_id}: Đang tạo video hoàn toàn mới 100% bằng Ảnh AI ({image_style}) và Lồng tiếng AI...")
+                mp_res = ai_story_engine.process_ai_story_video(
+                    raw_transcript=raw_text,
+                    video_id=video_id,
+                    video_title=video_title,
+                    channel_name=channel_name,
+                    output_dir=output_dir,
+                    target_duration=float(target_duration),
+                    target_language=narration_language,
+                    script_style=narration_style,
+                    image_style=image_style or "cinematic",
+                    visual_source=visual_source or "ai",
+                    ai_image_model=ai_image_model or "flux",
+                    ai_video_model=ai_video_model or "fal_ltx",
+                    stock_provider=stock_provider or "all",
+                    voice_gender=voice_gender,
+                    enable_subtitles=bool(enable_subtitles if enable_subtitles is not None else True),
+                    subtitle_style=subtitle_style or "karaoke_yellow",
+                    subtitle_position=subtitle_position or "center",
+                    bgm_folder=bgm_folder,
+                    bgm_volume=bgm_volume if bgm_volume is not None else 0.15,
+                    ai_provider=custom_provider,
+                    ai_model=custom_model
+                )
             if mp_res.get("status") == "success":
                 try:
                     conn = get_connection()

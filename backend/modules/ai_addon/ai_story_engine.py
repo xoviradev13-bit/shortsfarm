@@ -277,6 +277,10 @@ CRITICAL INSTRUCTIONS:
    - "narration": Spoken narration for this scene in {lang_name}. Keep it concise, natural, spoken voice only. (Approx 15-25 words per scene).
    - "image_prompt": A highly-detailed visual prompt IN ENGLISH describing what appears on screen. Focus on physical objects, lighting, mood, camera angle, and action. Style: {visual_style_note}. Absolutely NO text or words inside the image.
    - "stock_query": 2-4 English search keywords for finding real stock footage or real photography on Pexels/Pixabay (e.g. "dark ocean storm", "doctor surgery hospital", "ancient gold coins", "hacker dark room").
+   - "camera_motion": Exactly one of ["push_in", "drift", "mood", "static"]. (Default "push_in").
+   - "has_person": true if human, character, face, or hands appear; false for landscape, objects, nature, or vehicle scenes.
+   - "face_prominence": approximate fraction of frame occupied by faces (0.0 to 1.0).
+   - "is_action": true if high motion / fast-paced event; false if dialogue, emotional, or establishing.
 6. OPEN WITH AN ADDICTIVE 3-SECOND HOOK in Scene 1.
 7. FINAL SCENE: Include a punchy climax or cliffhanger call-to-action.
 8. RETURN VALID JSON ONLY IN THIS FORMAT:
@@ -290,7 +294,11 @@ CRITICAL INSTRUCTIONS:
       "scene_number": 1,
       "narration": "Narration text in {lang_name}...",
       "image_prompt": "Detailed English image prompt...",
-      "stock_query": "2-4 English keywords for real stock footage..."
+      "stock_query": "2-4 English keywords for real stock footage...",
+      "camera_motion": "push_in",
+      "has_person": false,
+      "face_prominence": 0.0,
+      "is_action": false
     }}
   ]
 }}"""
@@ -322,9 +330,11 @@ CRITICAL INSTRUCTIONS:
                         ip = sc.get("image_prompt", "")
                         if char_anchor and char_anchor.lower()[:25] not in ip.lower():
                             sc["image_prompt"] = f"{char_anchor}, {env_anchor}, {ip}".strip(", ")
-                        if not sc.get("motion_prompt"):
-                            c_mot = sc.get("camera_motion", "smooth forward push-in")
-                            sc["motion_prompt"] = f"Cinematic {c_mot}, high temporal consistency, natural movement, 4k"
+                        c_mot = sc.get("camera_motion", "push_in")
+                        if c_mot not in ("push_in", "drift", "mood", "static"):
+                            c_mot = "push_in"
+                        sc["camera_motion"] = c_mot
+                        sc["motion_prompt"] = c_mot
 
                     log_event("INFO", f"🎬 [AI STORY ENGINE] Đã sinh kịch bản {len(scenes)} cảnh chuẩn Storyboard Anchor (Nhân vật: '{char_anchor[:45]}...')")
                     return {
@@ -372,10 +382,10 @@ CRITICAL INSTRUCTIONS:
         """Tạo ảnh gradient nghệ thuật chuẩn dọc 1080x1920 bằng PIL phòng ngừa mạng lỗi"""
         width, height = 1080, 1920
         colors = [
-            ((15, 15, 26), (45, 20, 44)),
-            ((10, 25, 47), (23, 42, 69)),
-            ((20, 10, 35), (50, 15, 40)),
-            ((18, 22, 34), (32, 45, 60))
+            ((35, 55, 95), (80, 40, 90)),
+            ((25, 65, 85), (50, 85, 110)),
+            ((45, 30, 75), (95, 45, 70)),
+            ((40, 50, 75), (70, 85, 110))
         ]
         top_c, bot_c = random.choice(colors)
         base = Image.new("RGB", (width, height), top_c)
@@ -571,19 +581,66 @@ CRITICAL INSTRUCTIONS:
             p_name = "FLUX.1"
             m_name = "flux-1-schnell"
 
+        # 3.5. Nếu có FAL_KEY -> Ưu tiên sinh ảnh FLUX.1 siêu tốc qua Fal.ai (100% sắc nét, 1s/ảnh, không rate limit)
+        fal_key = get_setting("FAL_KEY") or get_setting("FAL_API_KEY") or os.getenv("FAL_KEY") or os.getenv("FAL_API_KEY") or ""
+        if fal_key and ":" in fal_key:
+            try:
+                fal_headers = {
+                    "Authorization": f"Key {fal_key.strip()}",
+                    "Content-Type": "application/json"
+                }
+                fal_payload = {
+                    "prompt": full_prompt[:1000],
+                    "image_size": {"width": 1080, "height": 1920},
+                    "num_inference_steps": 4,
+                    "num_images": 1,
+                    "enable_safety_checker": False
+                }
+                res_fal = requests.post("https://fal.run/fal-ai/flux/schnell", headers=fal_headers, json=fal_payload, timeout=35)
+                if res_fal.status_code == 200:
+                    data_fal = res_fal.json()
+                    imgs = data_fal.get("images", [])
+                    if imgs and imgs[0].get("url"):
+                        dl = requests.get(imgs[0]["url"], timeout=30)
+                        if dl.status_code == 200 and len(dl.content) > 5000:
+                            with open(output_path, "wb") as f:
+                                f.write(dl.content)
+                            log_event("INFO", f"⚡ [FAL.AI FLUX] Cảnh #{scene_num}: Đã sinh ảnh FLUX chuẩn 1080x1920 thành công.")
+                            return True
+                else:
+                    logger.warning(f"Fal.ai FLUX phản hồi ({res_fal.status_code}): {res_fal.text[:200]}")
+            except Exception as e_fal:
+                logger.warning(f"Lỗi gọi Fal.ai FLUX: {e_fal}")
+
         # 4. Sinh ảnh qua Pollinations.ai (URL miễn phí)
         try:
             encoded_prompt = urllib.parse.quote(full_prompt[:300])
             seed = random.randint(100, 999999)
-            url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?nologo=true&seed={seed}"
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }
-            from backend.database import get_setting
             poll_token = get_setting("POLLINATIONS_API_KEY", "") or os.getenv("POLLINATIONS_API_KEY", "")
             if poll_token:
+                url = f"https://gen.pollinations.ai/image/{encoded_prompt}?model=flux&nologo=true&seed={seed}&width=1080&height=1920"
                 headers["Authorization"] = f"Bearer {poll_token.strip()}"
-            resp = requests.get(url, headers=headers, timeout=20)
+            else:
+                url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?nologo=true&seed={seed}"
+            resp = requests.get(url, headers=headers, timeout=25)
+            # Nếu Token trả phí hết usage / hết hạn -> Tự động chuyển về Free Tier không gắn Token
+            if resp.status_code in (401, 402, 403) and poll_token:
+                if "FREE_LIMIT" not in resp.text:
+                    logger.warning(f"⚠️ [POLLINATIONS] Token hết usage hoặc không hợp lệ ({resp.status_code}). Tự động chuyển về chế độ Free Tier.")
+                    headers.pop("Authorization", None)
+                    resp = requests.get(url, headers=headers, timeout=25)
+
+            # Tự động xử lý giới hạn tần suất miễn phí (Pollinations 1 ảnh / 45s)
+            if resp.status_code == 402 and "FREE_LIMIT" in resp.text:
+                m_retry = re.search(r"Retry after (\d+)s", resp.text)
+                wait_sec = (int(m_retry.group(1)) + 2) if m_retry else 45
+                wait_sec = min(50, max(5, wait_sec))
+                logger.info(f"⏳ [POLLINATIONS FLUX] Đang đợi cooldown {wait_sec}s để sinh ảnh FLUX Cảnh #{scene_num}...")
+                time.sleep(wait_sec)
+                resp = requests.get(url, headers=headers, timeout=35)
             dur_ms = int((time.time() - t0) * 1000)
             if resp.status_code == 200 and len(resp.content) > 5000:
                 with open(output_path, "wb") as f:
@@ -640,13 +697,16 @@ CRITICAL INSTRUCTIONS:
             source_q = stock_query or prompt
             scene_words = [w.strip('.,;:"\'[]()!?-').lower() for w in source_q.split() if w.strip('.,;:"\'[]()!?-').lower() not in stop_words and len(w.strip('.,;:"\'[]()!?-')) > 2]
 
-            # Ghép mỏ neo chủ đề + từ khóa phân cảnh: Đảm bảo đúng 100% ngách nội dung (nếu là video tình yêu -> tìm tình yêu, video phỏng vấn -> tìm phỏng vấn, video quái vật -> tìm quái vật)
-            if topic_anchor and scene_words:
+            # Ghép mỏ neo chủ đề + từ khóa phân cảnh (ưu tiên từ khóa tiếng Anh thuần để Pixabay/Pexels tìm chính xác 100%)
+            is_ascii_anchor = all(ord(c) < 128 for c in topic_anchor)
+            if is_ascii_anchor and topic_anchor and scene_words:
                 search_term = f"{topic_anchor} {' '.join(scene_words[:2])}"
-            elif topic_anchor:
+            elif scene_words:
+                search_term = " ".join(scene_words[:3])
+            elif is_ascii_anchor and topic_anchor:
                 search_term = topic_anchor
             else:
-                search_term = " ".join(scene_words[:3]) or "cinematic vertical photography"
+                search_term = "cinematic vertical photography"
 
             pexels_key, pixabay_key = stock_footage_manager.get_api_keys()
             photo_url = None
@@ -784,23 +844,22 @@ CRITICAL INSTRUCTIONS:
                 last_v = "0:v"
 
                 for i in range(1, len(clips)):
-                    offset = max(0.1, round(cum_dur - T, 3))
+                    # Plan v3.0 Sync-safe xfade offset: exact cumulative duration of prior audio segments
+                    offset = max(0.1, round(cum_dur, 3))
                     out_v = f"v{i}" if i < len(clips) - 1 else "outv"
                     filter_parts.append(f"[{last_v}][{i}:v]xfade=transition=fade:duration={T}:offset={offset}[{out_v}]")
-                    cum_dur = cum_dur + durations[i] - T
+                    cum_dur = cum_dur + durations[i]
                     last_v = out_v
 
                 filter_complex_str = ";".join(filter_parts)
+                encoder_flags = get_optimal_video_encoder_flags()
 
                 cmd_xfade = [
                     self.ffmpeg_bin, "-y",
                     *inputs,
                     "-filter_complex", filter_complex_str,
                     "-map", "[outv]",
-                    "-c:v", "libx264",
-                    "-preset", "veryfast",
-                    "-crf", "22",
-                    "-pix_fmt", "yuv420p",
+                    *encoder_flags,
                     "-an",
                     output_path
                 ]
@@ -898,19 +957,30 @@ CRITICAL INSTRUCTIONS:
         )
 
         # Bước 1: LLM Phân tích & Viết lại kịch bản phân cảnh
-        scene_data = self.rewrite_to_scenes(
-            raw_transcript=raw_transcript,
-            video_title=video_title,
-            target_duration=target_duration,
-            target_language=target_language,
-            script_style=script_style,
-            image_style=image_style,
-            ai_provider=ai_provider,
-            ai_model=ai_model,
-            video_id=video_id
-        )
-
-        scenes = scene_data.get("scenes", [])
+        custom_scenes = kwargs.get("custom_scenes")
+        if custom_scenes:
+            scenes = custom_scenes
+            scene_data = {
+                "scenes": scenes,
+                "viral_title": kwargs.get("custom_title") or video_title,
+                "hook": kwargs.get("custom_hook") or (scenes[0].get("narration") if scenes else ""),
+                "description": kwargs.get("custom_description") or "",
+                "hashtags": kwargs.get("custom_hashtags") or "#viral #fyp",
+                "language": target_language or "vi"
+            }
+        else:
+            scene_data = self.rewrite_to_scenes(
+                raw_transcript=raw_transcript,
+                video_title=video_title,
+                target_duration=target_duration,
+                target_language=target_language,
+                script_style=script_style,
+                image_style=image_style,
+                ai_provider=ai_provider,
+                ai_model=ai_model,
+                video_id=video_id
+            )
+            scenes = scene_data.get("scenes", [])
         if not scenes:
             return {"status": "error", "message": "Không thể tạo phân cảnh kịch bản từ transcript."}
 
@@ -1017,24 +1087,56 @@ CRITICAL INSTRUCTIONS:
             f"🎬 [AI STORYTELLING] Chuẩn bị {len(scenes)} cảnh (Nguồn: {visual_source.upper()}, Model AI: {ai_image_model.upper()}, Stock: {stock_provider.upper()})..."
         )
 
+        transition_d = 0.25
+
         for idx, scene in enumerate(scenes):
             img_prompt = scene.get("image_prompt", "")
             stock_q = scene.get("stock_query") or img_prompt or video_title
             img_path = str(temp_work_dir / f"img_scene_{idx + 1}.jpg")
             clip_path = str(temp_work_dir / f"clip_scene_{idx + 1}.mp4")
-            dur = scene_durations[idx] if idx < len(scene_durations) else 5.0
+            # Plan v3.0 Sync-safe xfade: Mọi clip trừ clip cuối dài thêm transition_d giây để bù thời gian chuyển cảnh
+            base_dur = scene_durations[idx] if idx < len(scene_durations) else 5.0
+            dur = base_dur + (transition_d if idx < len(scenes) - 1 else 0.0)
             motion = motions[idx % len(motions)]
 
-            # Xác định xem phân cảnh này nên dùng Stock quay thật hay Ảnh AI
-            use_stock = False
-            if visual_source == "stock":
-                use_stock = True
-            elif visual_source == "mixed":
-                # Mix xen kẽ: Cảnh chẵn (0, 2, 4...) dùng cảnh quay thật Stock, cảnh lẻ dùng Ảnh AI
-                use_stock = (idx % 2 == 0)
+            # Plan v3.0 Smart Scene Routing (O1 Zero Torsion + O6 Smart Mix)
+            has_person = bool(scene.get("has_person", False))
+            face_prominence = float(scene.get("face_prominence", 0.0))
+            is_action = bool(scene.get("is_action", False))
+            is_hook = (idx == 0)
+            is_climax = (idx == len(scenes) - 1)
+
+            if not has_person:
+                lower_ip = img_prompt.lower()
+                if any(k in lower_ip for k in ["man", "woman", "person", "girl", "boy", "face", "portrait", "hands", "soldier", "detective", "doctor", "crowd", "people"]):
+                    has_person = True
+
+            # Quy tắc định tuyến ưu tiên từ trên xuống:
+            # 1. Có người/khuôn mặt -> Tuyệt đối không dùng I2V để triệt tiêu vặn vẹo (dùng Ken Burns hoặc Stock)
+            if has_person or face_prominence >= 0.15:
+                if visual_source in ("stock", "mixed") and is_action:
+                    route_choice = "stock"
+                else:
+                    route_choice = "ken_burns"
+            # 2. Cảnh hành động không có người -> LTX hoặc Stock
+            elif is_action:
+                route_choice = "ai_video" if visual_source in ("ai_video", "mixed") else "stock"
+            # 3. Hook hoặc Climax không có người -> LTX hoặc Stock
+            elif is_hook or is_climax:
+                route_choice = "ai_video" if visual_source in ("ai_video", "mixed") else "stock"
+            # 4. Cảnh tĩnh / phong cảnh / hội thoại
+            else:
+                if visual_source == "stock":
+                    route_choice = "stock"
+                elif visual_source == "ai_video":
+                    route_choice = "ai_video"
+                else:
+                    route_choice = "ken_burns"
 
             clip_ready = False
-            if use_stock:
+
+            # Xử lý nếu định tuyến vào Stock Footage
+            if route_choice == "stock":
                 stock_res = stock_footage_manager.fetch_stock_scene(
                     query=stock_q,
                     duration=dur,
@@ -1045,8 +1147,14 @@ CRITICAL INSTRUCTIONS:
                 )
                 if stock_res:
                     if stock_res.get("type") == "video_clip":
-                        scene_video_clips.append(stock_res["path"])
-                        clip_ready = True
+                        # Conform clip stock (tự động blur nền nếu là video 16:9 ngang)
+                        conformed_stock = str(temp_work_dir / f"stock_conf_{idx + 1}.mp4")
+                        if ai_video_generator.conform_video_clip(stock_res["path"], conformed_stock, dur, background_mode="blur"):
+                            scene_video_clips.append(conformed_stock)
+                            clip_ready = True
+                        else:
+                            scene_video_clips.append(stock_res["path"])
+                            clip_ready = True
                     elif stock_res.get("type") == "photo_image":
                         ok = self.create_scene_video_clip(
                             image_path=stock_res["path"],
@@ -1058,9 +1166,9 @@ CRITICAL INSTRUCTIONS:
                             scene_video_clips.append(clip_path)
                             clip_ready = True
 
-            # Nếu không dùng stock hoặc stock không tìm thấy tư liệu -> Tạo ảnh AI hoặc video AI
+            # Xử lý nếu định tuyến vào AI Video hoặc Ken Burns
             if not clip_ready:
-                # 1. Sinh ảnh keyframe chuẩn phong cách cho phân cảnh
+                # Sinh ảnh keyframe chuẩn phong cách cho phân cảnh
                 self.generate_scene_image(
                     prompt=img_prompt,
                     scene_num=idx + 1,
@@ -1072,14 +1180,13 @@ CRITICAL INSTRUCTIONS:
                     video_id=video_id
                 )
 
-                # 2. Nếu chọn nguồn là AI Video -> Sinh clip video AI thực thụ (Image-to-Video / Text-to-Video)
-                if visual_source == "ai_video":
+                if route_choice == "ai_video":
                     v_res = ai_video_generator.generate_scene_video(
                         prompt=img_prompt,
                         image_path=img_path,
                         duration=dur,
                         output_clip_path=clip_path,
-                        motion_prompt=scene.get("motion_prompt", ""),
+                        motion_prompt=scene.get("camera_motion", "push_in"),
                         model_choice=ai_video_model or "fal_ltx",
                         scene_num=idx + 1,
                         video_id=video_id
@@ -1090,7 +1197,7 @@ CRITICAL INSTRUCTIONS:
                     else:
                         log_event("WARNING", f"Lỗi sinh video AI cảnh #{idx + 1} ({v_res.get('message')}). Fallback sang Ken Burns.")
 
-                # 3. Fallback mượt mà sang chuyển động Ken Burns nếu chưa có clip
+                # Fallback Ken Burns (2D camera path, 100% không méo vặn vẹo)
                 if not clip_ready:
                     ok = self.create_scene_video_clip(
                         image_path=img_path,
@@ -1146,7 +1253,8 @@ CRITICAL INSTRUCTIONS:
                 max_duration=total_audio_duration,
                 style_name=subtitle_style or SUBTITLE_STYLE,
                 position=subtitle_position or SUBTITLE_POSITION,
-                font_size=SUBTITLE_FONT_SIZE
+                font_size=SUBTITLE_FONT_SIZE,
+                hook_title=viral_title or scene_data.get("hook")
             )
         else:
             logger.info(f"🚫 [AI STORY] Bỏ qua tạo phụ đề cho video {video_id} (Người dùng tắt Tự động nhận diện & tạo phụ đề AI).")
@@ -1167,6 +1275,9 @@ CRITICAL INSTRUCTIONS:
             parts.append(f"[{safe_channel}]")
         parts.append(safe_title or "AI_Story_Video")
         parts.append(f"{video_id}_AIStory")
+        part_num = kwargs.get("part_number")
+        if part_num:
+            parts.append(f"Part{part_num}")
         final_filename = "_".join(parts) + ".mp4"
         final_output_path = str(target_dir / final_filename)
 
@@ -1248,6 +1359,97 @@ CRITICAL INSTRUCTIONS:
             err_msg = res.stderr.decode("utf-8", errors="replace")[-400:]
             logger.error(f"Render AI Story thất bại: {err_msg}")
             return {"status": "error", "message": f"Lỗi render video AI Story: {err_msg}"}
+
+    def process_episodic_story_series(
+        self,
+        raw_transcript: str,
+        video_id: str,
+        video_title: str,
+        channel_name: str = "",
+        target_language: str = "vi",
+        ethnicity: str = "auto",
+        visual_source: str = "ai",
+        ai_image_model: str = "flux",
+        enable_subtitles: bool = True,
+        subtitle_style: str = "karaoke_yellow",
+        bgm_folder: str = "cinematic",
+        force_regenerate_script: bool = False,
+        target_part: Optional[int] = None,
+        num_parts: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Quy trình sản xuất trọn bộ Series TikTok nhiều tập (Episodic Bible Arc):
+        1. Gọi episodic_generator để phân tích thể loại, tạo Master Bible và kịch bản phân cảnh từng tập (Part 1, 2, 3...)
+        2. Tự động render từng tập với các neo nhân vật đồng nhất và cliffhanger hoàn hảo.
+        """
+        from backend.modules.ai_addon.episodic_generator import generate_episodic_series
+
+        log_event("INFO", f"🎬 [EPISODIC SERIES] Bắt đầu sản xuất series cho video '{video_title}' ({video_id}, {num_parts or 'auto'} parts)")
+
+        series_data = generate_episodic_series(
+            transcript=raw_transcript,
+            title=video_title,
+            num_parts=num_parts,
+            language=target_language,
+            ethnicity=ethnicity,
+            image_model=ai_image_model,
+            force=force_regenerate_script
+        )
+
+        if not series_data or not series_data.get("parts"):
+            return {"status": "error", "message": "Không thể tạo kịch bản episodic series từ transcript."}
+
+        bible = series_data.get("bible", {})
+        parts = series_data.get("parts", [])
+        rendered_outputs = []
+        total_time = 0.0
+
+        for p in parts:
+            p_num = p.get("part_number", 1)
+            if target_part is not None and p_num != target_part:
+                continue
+
+            p_title = p.get("part_title") or f"{bible.get('series_title', video_title)} - Part {p_num}"
+            p_scenes = p.get("scenes", [])
+            p_hook = p.get("hook", "")
+            p_summary = p.get("summary", "")
+
+            log_event("INFO", f"🚀 [EPISODIC RENDER] Render Part {p_num}/{len(parts)}: '{p_title}' ({len(p_scenes)} scenes)")
+
+            p_res = self.process_ai_story_video(
+                raw_transcript="",
+                video_id=video_id,
+                video_title=p_title,
+                channel_name=channel_name,
+                target_duration=64.0,
+                target_language=target_language,
+                visual_source=visual_source,
+                ai_image_model=ai_image_model,
+                enable_subtitles=enable_subtitles,
+                subtitle_style=subtitle_style,
+                bgm_folder=bgm_folder,
+                custom_scenes=p_scenes,
+                custom_title=p_title,
+                custom_hook=p_hook,
+                custom_description=p_summary,
+                part_number=p_num
+            )
+
+            if p_res.get("status") == "success" and p_res.get("rendered_file"):
+                rendered_outputs.append(p_res["rendered_file"])
+                total_time += p_res.get("total_duration", 0.0)
+            else:
+                log_event("WARNING", f"Render thất bại cho Part {p_num}: {p_res.get('message')}")
+
+        return {
+            "status": "success" if rendered_outputs else "error",
+            "series_title": bible.get("series_title", video_title),
+            "bible": bible,
+            "parts_count": len(rendered_outputs),
+            "rendered_files": rendered_outputs,
+            "rendered_file": rendered_outputs[0] if rendered_outputs else None,
+            "total_duration": total_time
+        }
 
     # Aliases
     process_moneyprinter_video = process_ai_story_video

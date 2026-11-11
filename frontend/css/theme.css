@@ -362,9 +362,23 @@ body.light-mode .multi-select-search-wrap {
     border-bottom: 1px solid #e2e8f0 !important;
 }
 
-body.light-mode .multi-select-search-input {
+body.light-mode .multi-select-search-input,
+body.light-mode .multi-select-search-wrap input,
+body.light-mode .multi-select-search-wrap input[type="text"] {
     background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
     color: #0f172a !important;
+}
+
+body.light-mode .multi-select-search-input:focus,
+body.light-mode .multi-select-search-wrap input:focus,
+body.light-mode .multi-select-search-wrap input[type="text"]:focus {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 body.light-mode .multi-select-item {
@@ -1113,8 +1127,9 @@ body.light-mode .svc-meta {
 }
 
 body.light-mode .studio-phone-mockup-wrap {
-    background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 /* ── Audio Studio & Floating Preview Dock (Light Mode) ── */
@@ -1211,15 +1226,12 @@ body.light-mode body.sidebar-collapsed .nav-item::after {
     background: #0f172a !important;
     color: #f8fafc !important;
     border: 1px solid rgba(2, 132, 199, 0.4) !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25), 0 4px 6px -2px rgba(15, 23, 42, 0.1) !important;
 }
 
-body.light-mode .has-tooltip::before {
+body.light-mode .has-tooltip::before,
+body.light-mode .has-tooltip.tooltip-left:not(.tooltip-side-left)::before {
     border-color: transparent transparent #0f172a transparent !important;
-}
-
-body.light-mode .has-tooltip.tooltip-left::before {
-    border-color: transparent transparent transparent #0f172a !important;
 }
 
 body.light-mode .has-tooltip.tooltip-top::before {

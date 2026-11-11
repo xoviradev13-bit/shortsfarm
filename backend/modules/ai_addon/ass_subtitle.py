@@ -1,6 +1,24 @@
 import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+from PIL import Image, ImageDraw, ImageFont
+
+from backend.modules.ai_addon.safe_zones import (
+    MARGIN_V,
+    MARGIN_L,
+    MARGIN_R,
+    HOOK_CARD_TOP_Y,
+    HOOK_CARD_BOTTOM_Y,
+    HOOK_CARD_HEIGHT,
+    COLOR_AMBER_BGR,
+    COLOR_WHITE_BGR,
+    COLOR_BLACK_BGR,
+    COLOR_CYAN_BGR,
+    COLOR_PINK_BGR,
+    COLOR_GREEN_BGR,
+    get_subtitle_margin_v,
+    default_subtitle_position
+)
 
 def format_ass_time(seconds: float) -> str:
     """Đổi giây (float) sang định dạng thời gian ASS: H:MM:SS.cc"""
@@ -12,12 +30,14 @@ def format_ass_time(seconds: float) -> str:
         centis = 99
     return f"{hrs}:{mins:02d}:{secs:02d}.{centis:02d}"
 
+
 class ASSSubtitleGenerator:
     """
-    Tạo file phụ đề ASS chuẩn TikTok Viral (Karaoke Pop-up Style):
-    - Đặt ở vùng an toàn (Safe Zone): Tránh thanh menu dưới và icon bên phải của TikTok.
-    - Chữ in hoa (UPPERCASE), font đậm, viền đen dày chống chìm màu nền.
-    - Hiệu ứng đổi màu từ đang phát âm (Vàng Neon / Trắng).
+    Tạo file phụ đề ASS chuẩn Plan v3.0 (Universal Safe Zone & Two-Layer Neon Glow):
+    - Đặt ở Vùng An Toàn Phổ Quát (Universal Safe Zone): Né 100% UI TikTok, YouTube Shorts & Facebook Reels.
+    - Hai Layer chuyên nghiệp: Layer 0 là quầng sáng Glow mờ ảo, Layer 1 là chữ sắc nét.
+    - Chữ in hoa (UPPERCASE), font đậm, viền tương phản.
+    - Hỗ trợ tạo Hook Card (Title Card) trong 3 giây đầu tiên ở dải Y 240-420.
     """
 
     def generate_karaoke_ass(
@@ -33,40 +53,48 @@ class ASSSubtitleGenerator:
         primary_color: Optional[str] = None,
         highlight_color: Optional[str] = None,
         outline_color: str = "&H00000000&",
-        margin_v: Optional[int] = None
+        margin_v: Optional[int] = None,
+        campaign_platforms: Optional[List[str]] = None,
+        hook_title: Optional[str] = None,
+        hook_duration: float = 3.5
     ) -> Optional[str]:
         """
-        Sinh file .ass từ transcript segments có word-level timestamps.
-        start_offset: Thời điểm bắt đầu của đoạn cắt (để đồng bộ time với clip đã cắt).
+        Sinh file .ass hai tầng (Layer 0: Glow outline, Layer 1: Crisp text/karaoke)
+        chuẩn Universal Safe Zone cho cả TikTok, YouTube Shorts và Facebook Reels.
         """
-        # Map style preset
         s_name = (style_name or "karaoke_yellow").lower()
+
+        # Map style preset to BGR colors
+        glow_color = COLOR_AMBER_BGR  # &H000B9EF5 (Amber #F59E0B)
         if not primary_color or not highlight_color:
             if s_name == "classic_white":
-                primary_color = "&H00FFFFFF&"
+                primary_color = COLOR_WHITE_BGR
                 highlight_color = "&H00E2E8F0&"
+                glow_color = "&H00CCCCCC&"
             elif s_name == "tiktok_gradient":
-                primary_color = "&H00FEF200&"  # Cyan
-                highlight_color = "&H00552CFE&"  # TikTok Pink
+                primary_color = COLOR_CYAN_BGR   # Cyan
+                highlight_color = COLOR_PINK_BGR  # TikTok Pink
+                glow_color = COLOR_PINK_BGR
             elif s_name == "green_neon":
-                primary_color = "&H00FFFFFF&"
-                highlight_color = "&H0000FF00&"  # Bright Neon Green
-            else:  # karaoke_yellow default
-                primary_color = "&H00FFFFFF&"
-                highlight_color = "&H0000FFFF&"  # Yellow Neon
+                primary_color = COLOR_WHITE_BGR
+                highlight_color = COLOR_GREEN_BGR  # Bright Neon Green
+                glow_color = COLOR_GREEN_BGR
+            else:  # karaoke_yellow / neon amber default
+                primary_color = COLOR_WHITE_BGR
+                highlight_color = COLOR_AMBER_BGR  # Amber #F59E0B -> &H000B9EF5
+                glow_color = COLOR_AMBER_BGR
 
-        # Map position preset
-        pos = (position or "center").lower()
+        # Map position preset to Safe Zone MarginV
         if margin_v is None:
-            if pos == "bottom":
-                margin_v = 340  # Sát phần mô tả
-            else:
-                margin_v = 680  # Chính giữa an toàn TikTok (Focus Safe Zone)
+            margin_v = get_subtitle_margin_v(position or "center", campaign_platforms)
 
-        f_size = font_size or 54
-        # Header chuẩn ASS cho tỉ lệ 1080x1920
+        f_size = font_size or 64
+        margin_l = MARGIN_L  # 160px
+        margin_r = MARGIN_R  # 160px
+
+        # Header chuẩn ASS cho tỉ lệ 1080x1920 (Plan v3.0 Two-Layer NeonSub)
         header = f"""[Script Info]
-Title: TikTok Viral Subtitles
+Title: TikTok Viral Universal Safe Zone Subtitles v3.0
 ScriptType: v4.00+
 WrapStyle: 0
 ScaledBorderAndShadow: yes
@@ -76,14 +104,27 @@ PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: TikTokKaraoke,{font_name},{f_size},{primary_color},{highlight_color},{outline_color},&H80000000&,1,0,0,0,100,100,1,0,1,6,3,2,60,60,{margin_v},1
+Style: NeonSub,{font_name},{f_size},{primary_color},{highlight_color},{outline_color},&H00000000&,1,0,0,0,100,100,0,0,1,3,0,2,{margin_l},{margin_r},{margin_v},1
+Style: TikTokKaraoke,{font_name},{f_size},{primary_color},{highlight_color},{outline_color},&H00000000&,1,0,0,0,100,100,0,0,1,3,0,2,{margin_l},{margin_r},{margin_v},1
+Style: HookCardStyle,{font_name},52,{primary_color},{highlight_color},{outline_color},&H00000000&,1,0,0,0,100,100,0,0,1,4,0,8,120,120,{1920 - HOOK_CARD_BOTTOM_Y},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
         events = []
-        # Duyệt qua các segments
+
+        # Hook Title Card (nếu có, xuất hiện ở 3-4 giây đầu ở dải Y 240-420, Alignment 8 = Top Center)
+        if hook_title and hook_title.strip():
+            h_clean = hook_title.strip().upper()
+            h_start_str = format_ass_time(0.0)
+            h_end_str = format_ass_time(hook_duration)
+            # Layer 0 Glow cho Hook Card
+            events.append(f"Dialogue: 0,{h_start_str},{h_end_str},HookCardStyle,,0,0,0,,{{\\bord8\\blur8\\3c{glow_color}&\\1a&HFF&\\3a&H40&}}{h_clean}")
+            # Layer 1 Crisp Text cho Hook Card
+            events.append(f"Dialogue: 1,{h_start_str},{h_end_str},HookCardStyle,,0,0,0,,{{\\bord4\\3c{COLOR_BLACK_BGR}&}}{h_clean}")
+
+        # Duyệt qua các segments phụ đề
         for seg in transcript_segments:
             seg_start = seg.get("start", 0.0)
             seg_end = seg.get("end", 0.0)
@@ -105,7 +146,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     t_start = format_ass_time(rel_start)
                     t_end = format_ass_time(rel_end)
                     clean_txt = seg.get("text", "").strip().upper()
-                    events.append(f"Dialogue: 0,{t_start},{t_end},TikTokKaraoke,,0,0,0,,{clean_txt}")
+                    # Layer 0: Glow outline
+                    events.append(f"Dialogue: 0,{t_start},{t_end},NeonSub,,0,0,0,,{{\\bord8\\blur6\\3c{glow_color}&\\1a&HFF&\\3a&H50&}}{clean_txt}")
+                    # Layer 1: Crisp text
+                    events.append(f"Dialogue: 1,{t_start},{t_end},NeonSub,,0,0,0,,{clean_txt}")
                 continue
 
             # Gom nhóm từ 3-4 từ mỗi dòng để đọc dễ và không bị tràn màn hình dọc
@@ -132,16 +176,23 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
                 # Tạo mã karaoke {\k<centiseconds>} cho từng từ
                 karaoke_text_parts = []
+                raw_words = []
                 for w in chunk:
                     w_dur = max(0.1, w["end"] - w["start"])
                     cs = int(round(w_dur * 100))
                     clean_w = w["word"].strip().upper()
                     karaoke_text_parts.append(f"{{\\k{cs}}}{clean_w}")
+                    raw_words.append(clean_w)
 
                 dialogue_text = " ".join(karaoke_text_parts)
+                raw_text = " ".join(raw_words)
                 t_start = format_ass_time(c_start)
                 t_end = format_ass_time(c_end)
-                events.append(f"Dialogue: 0,{t_start},{t_end},TikTokKaraoke,,0,0,0,,{dialogue_text}")
+
+                # Layer 0: Soft Blurred Neon Glow
+                events.append(f"Dialogue: 0,{t_start},{t_end},NeonSub,,0,0,0,,{{\\bord8\\blur6\\3c{glow_color}&\\1a&HFF&\\3a&H50&}}{raw_text}")
+                # Layer 1: Crisp Karaoke Foreground
+                events.append(f"Dialogue: 1,{t_start},{t_end},NeonSub,,0,0,0,,{dialogue_text}")
 
         # Ghi file .ass
         try:
@@ -153,5 +204,28 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             return output_ass_path
         except Exception as e:
             return None
+
+    def generate_hook_pill_png(
+        self,
+        output_path: str,
+        width: int = 960,
+        height: int = 150,
+        radius: int = 24,
+        bg_color: tuple = (0, 0, 0, 140)
+    ) -> bool:
+        """
+        Tạo ảnh nền Pill mờ bán trong suốt (55% opacity #000000, bo góc 24px)
+        để lót dưới tiêu đề Hook Card ở dải Y 240-420.
+        """
+        try:
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            draw.rounded_rectangle([(0, 0), (width, height)], radius=radius, fill=bg_color)
+            img.save(output_path, "PNG")
+            return True
+        except Exception:
+            return False
+
 
 ass_subtitle_generator = ASSSubtitleGenerator()

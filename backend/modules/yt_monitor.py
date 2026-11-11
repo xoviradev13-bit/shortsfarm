@@ -444,11 +444,20 @@ class YouTubeRSSMonitor:
             eff_use_ai_images = False
 
         # H. Image Style, Visual Source, AI Image Model & Stock Provider (Channel > Campaign > Mặc định):
-        eff_img_style = (channel_obj.get("image_style") if channel_obj and channel_obj.get("image_style") else None) or (camp.get("image_style") if camp and camp.get("image_style") else None) or "cinematic"
-        eff_v_source = (channel_obj.get("visual_source") if channel_obj and channel_obj.get("visual_source") else None) or (camp.get("visual_source") if camp and camp.get("visual_source") else None) or "ai"
-        eff_ai_model = (channel_obj.get("ai_image_model") if channel_obj and channel_obj.get("ai_image_model") else None) or (camp.get("ai_image_model") if camp and camp.get("ai_image_model") else None) or "flux"
-        eff_v_model = (channel_obj.get("ai_video_model") if channel_obj and channel_obj.get("ai_video_model") else None) or (camp.get("ai_video_model") if camp and camp.get("ai_video_model") else None) or "fal_ltx"
-        eff_stock_p = (channel_obj.get("stock_provider") if channel_obj and channel_obj.get("stock_provider") else None) or (camp.get("stock_provider") if camp and camp.get("stock_provider") else None) or "all"
+        ch_img_style = channel_obj.get("image_style") if channel_obj else None
+        eff_img_style = ch_img_style if ch_img_style and ch_img_style not in ("inherit", "") else ((camp.get("image_style") if camp and camp.get("image_style") else None) or "cinematic")
+
+        ch_v_source = channel_obj.get("visual_source") if channel_obj else None
+        eff_v_source = ch_v_source if ch_v_source and ch_v_source not in ("inherit", "") else ((camp.get("visual_source") if camp and camp.get("visual_source") else None) or "ai")
+
+        ch_ai_model = channel_obj.get("ai_image_model") if channel_obj else None
+        eff_ai_model = ch_ai_model if ch_ai_model and ch_ai_model not in ("inherit", "") else ((camp.get("ai_image_model") if camp and camp.get("ai_image_model") else None) or "flux")
+
+        ch_v_model = channel_obj.get("ai_video_model") if channel_obj else None
+        eff_v_model = ch_v_model if ch_v_model and ch_v_model not in ("inherit", "") else ((camp.get("ai_video_model") if camp and camp.get("ai_video_model") else None) or "fal_ltx")
+
+        ch_stock_p = channel_obj.get("stock_provider") if channel_obj else None
+        eff_stock_p = ch_stock_p if ch_stock_p and ch_stock_p not in ("inherit", "") else ((camp.get("stock_provider") if camp and camp.get("stock_provider") else None) or "all")
 
         return {
             "narration_enabled": eff_enabled,

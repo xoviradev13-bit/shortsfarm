@@ -13,6 +13,48 @@ from backend.logger import get_logger
 
 logger = get_logger("ai_curator")
 
+# ---------------------------------------------------------------------------
+# Gemini route cache — probed once per process lifetime
+# None = not tested yet | "direct" = Google reachable | "proxy" = use Worker
+# ---------------------------------------------------------------------------
+_GEMINI_FALLBACK_WORKER = "https://gemini-proxy.thenguyenfiner.workers.dev"
+_GEMINI_DIRECT_HOST     = "https://generativelanguage.googleapis.com"
+_gemini_route_cache: Optional[str] = None  # type: ignore[assignment]
+
+def _probe_gemini_direct(timeout: float = 4.0) -> bool:
+    """HEAD request to Google API host.  Returns True if reachable."""
+    try:
+        requests.head(_GEMINI_DIRECT_HOST, timeout=timeout)
+        return True
+    except Exception:
+        return False
+
+def _resolve_gemini_base_url(user_url: str) -> str:
+    """
+    Resolution order:
+      1. User has set their own URL → use it unconditionally.
+      2. First call this session → probe Google direct (4 s timeout).
+         - Reachable  → cache "direct", return Google URL.
+         - Unreachable → cache "proxy",  return Worker URL.
+      3. Subsequent calls → return cached choice instantly.
+    """
+    global _gemini_route_cache
+
+    # 1. User-configured URL always wins
+    if user_url:
+        return user_url.rstrip("/")
+
+    # 2 & 3. Auto-detect / cached
+    if _gemini_route_cache is None:
+        reachable = _probe_gemini_direct()
+        _gemini_route_cache = "direct" if reachable else "proxy"
+        logger.info(f"Gemini route probe → {_gemini_route_cache} "
+                    f"({'Google direct' if reachable else 'Cloudflare Worker fallback'})")
+
+    if _gemini_route_cache == "direct":
+        return _GEMINI_DIRECT_HOST
+    return _GEMINI_FALLBACK_WORKER
+
 def classify_ai_call_error(status_code: int, err_text: str, provider: str) -> str:
     err_lower = (err_text or "").lower()
     if status_code == 429 or "rate limit" in err_lower or "quota" in err_lower or "resourceexhausted" in err_lower:
@@ -78,7 +120,7 @@ class LLMCurator:
         return {
             "deepseek_key": cfg.DEEPSEEK_API_KEY or os.getenv("DEEPSEEK_API_KEY", ""),
             "gemini_key": cfg.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY", ""),
-            "gemini_base_url": getattr(cfg, "GEMINI_BASE_URL", os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com")).rstrip("/"),
+            "gemini_base_url": (getattr(cfg, "GEMINI_BASE_URL", "") or os.getenv("GEMINI_BASE_URL", "") or "").rstrip("/"),
             "openai_key": cfg.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", ""),
             "provider": cfg.AI_PROVIDER or os.getenv("AI_PROVIDER", "deepseek").lower(),
             "deepseek_model": cfg.DEEPSEEK_MODEL or os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
@@ -173,7 +215,7 @@ class LLMCurator:
         video_id: str
     ) -> Optional[str]:
         cfg = self._get_active_config()
-        base_url = (cfg.get("gemini_base_url") or "https://generativelanguage.googleapis.com").rstrip("/")
+        base_url = _resolve_gemini_base_url(cfg.get("gemini_base_url", ""))
 
         models_to_try = [model]
         for candidate in ["gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.8-flash"]:

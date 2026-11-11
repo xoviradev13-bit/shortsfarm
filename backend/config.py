@@ -99,7 +99,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 # Cấu hình AI Cloud API & Local Models
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
+GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "").rstrip("/")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")  # "openai" | "gemini" | "deepseek"
 DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")  # "deepseek-chat" | "deepseek-reasoner"
@@ -163,7 +163,7 @@ def save_env_config(updates: Dict[str, str]) -> bool:
     GPM_API_BASE_URL = os.getenv("GPM_API_BASE_URL", "http://127.0.0.1:9495/api/v1")
     DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
+    GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "").rstrip("/")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")
     DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")

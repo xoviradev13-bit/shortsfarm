@@ -1700,6 +1700,18 @@ async function openEditCampaignModal(id) {
         const aiModelSel = document.getElementById('editCampaignAiModel');
         if (aiModelSel) aiModelSel.value = c.ai_model || 'default';
 
+        // Load Hook Angle & Variants Mode for Edit Campaign
+        const editVarModeSel = document.getElementById('editCampaignVariantMode');
+        const editHookAngleSel = document.getElementById('editCampaignHookAngle');
+        const isVariantsMode = (c.generate_variants === 1);
+        if (editVarModeSel) {
+            editVarModeSel.value = isVariantsMode ? 'variants' : 'single';
+            syncCampaignVariantModeUI('edit', editVarModeSel.value);
+        }
+        if (editHookAngleSel) {
+            editHookAngleSel.value = c.hook_angle || 'auto';
+        }
+
         const subSwitch = document.getElementById('editCampaignSubtitleSwitch');
         if (subSwitch) subSwitch.checked = c.subtitle_enabled === 1;
 

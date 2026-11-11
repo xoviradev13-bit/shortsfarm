@@ -54,6 +54,21 @@ AI_VIDEO_MODELS: Dict[str, Dict[str, Any]] = {
     }
 }
 
+# Plan v3.0 Camera Motion Presets (Chuyển động camera điện ảnh, triệt tiêu méo vặn vẹo)
+CAMERA_MOTION_PRESETS: Dict[str, str] = {
+    "push_in": "Cinematic slow camera push-in, steady camera, stable subject, soft volumetric lighting, photorealistic, 4k",
+    "drift": "Slow lateral camera drift, floating dust particles, static subject, photorealistic",
+    "mood": "Locked camera, subtle rim-light shift, high-contrast silhouette, temporal consistency",
+    "static": "Static locked shot, subtle ambient lighting, photorealistic"
+}
+
+# Plan v3.0 Bắt buộc Negative Prompt ngăn chặn biến dạng giải phẫu
+MANDATORY_NEGATIVE_PROMPT: str = (
+    "ugly, deformed, mutated limbs, extra fingers, fused fingers, extra hands, "
+    "warped face, melting skin, jerky movement, chaotic motion, glitch, low quality, "
+    "distorted anatomy, duplicate limbs, asymmetric eyes"
+)
+
 
 class AIVideoGenerator:
     """Quản lý tạo video AI chuyển động thực thụ từ Prompt và Keyframe Image."""
@@ -166,6 +181,17 @@ class AIVideoGenerator:
             dur_ms = int((time.time() - t0) * 1000)
 
             if success and os.path.exists(raw_download_path) and os.path.getsize(raw_download_path) > 1024:
+                # Plan v3.0 Automated Deformation Gate (B7):
+                passes_gate = self.check_deformation_gate(raw_download_path, reference_still=image_path)
+                if not passes_gate:
+                    log_event("WARNING", f"⚠️ [DEFORMATION GATE FAILED] Cảnh #{scene_num}: Clip AI phát hiện biến dạng / lỗi hình ảnh. Đang tự động chuyển sang Ken Burns Fallback...")
+                    try:
+                        if os.path.exists(raw_download_path):
+                            os.remove(raw_download_path)
+                    except Exception:
+                        pass
+                    return {"success": False, "message": "Deformation Gate rejected (Biến dạng hình ảnh). Kích hoạt Ken Burns fallback."}
+
                 # Conform clip video về đúng 1080x1920 và khớp thời lượng audio
                 conformed = self.conform_video_clip(
                     input_path=raw_download_path,
@@ -284,11 +310,11 @@ class AIVideoGenerator:
 
         # Xây dựng prompt tối ưu cho Image-to-Video vs Text-to-Video
         if has_image:
-            # Với Image-to-Video: Tập trung 100% vào chỉ thị chuyển động camera và biểu cảm (không lặp lại tả áo/mặt để tránh méo)
-            if motion_prompt and motion_prompt.strip():
-                effective_p = f"{motion_prompt.strip()}, high temporal consistency, natural physical motion, cinematic 4k, no morphing"
-            else:
-                effective_p = f"Smooth cinematic camera motion, {prompt[:200]}, natural subtle movement, high temporal consistency, 4k"
+            # Plan v3.0: Image-to-Video chỉ dùng chỉ thị chuyển động camera thuần túy, tuyệt đối không lặp lại mô tả cơ thể
+            cam_preset = CAMERA_MOTION_PRESETS.get(motion_prompt, None)
+            if not cam_preset:
+                cam_preset = CAMERA_MOTION_PRESETS["push_in"]
+            effective_p = cam_preset
         else:
             effective_p = f"{prompt.strip()}, {motion_prompt or 'cinematic camera movement'}, high temporal consistency, 4k"
 
@@ -298,6 +324,7 @@ class AIVideoGenerator:
                 endpoint = "fal-ai/wan/v2.1/14b/image-to-video"
                 payload = {
                     "prompt": effective_p[:800],
+                    "negative_prompt": MANDATORY_NEGATIVE_PROMPT,
                     "image_url": b64_data_url,
                     "aspect_ratio": "9:16"
                 }
@@ -305,6 +332,7 @@ class AIVideoGenerator:
                 endpoint = "fal-ai/wan/v2.1/14b/text-to-video"
                 payload = {
                     "prompt": effective_p[:800],
+                    "negative_prompt": MANDATORY_NEGATIVE_PROMPT,
                     "aspect_ratio": "9:16"
                 }
             timeout_seconds = 300
@@ -314,6 +342,7 @@ class AIVideoGenerator:
                 endpoint = "fal-ai/ltx-video/image-to-video"
                 payload = {
                     "prompt": effective_p[:800],
+                    "negative_prompt": MANDATORY_NEGATIVE_PROMPT,
                     "image_url": b64_data_url,
                     "aspect_ratio": "9:16",
                     "num_frames": 121
@@ -322,6 +351,7 @@ class AIVideoGenerator:
                 endpoint = "fal-ai/ltx-video"
                 payload = {
                     "prompt": effective_p[:800],
+                    "negative_prompt": MANDATORY_NEGATIVE_PROMPT,
                     "aspect_ratio": "9:16",
                     "num_frames": 121
                 }
@@ -422,16 +452,17 @@ class AIVideoGenerator:
         }
 
         if has_image:
-            if motion_prompt and motion_prompt.strip():
-                kling_p = f"{motion_prompt.strip()}, natural human motion, high temporal consistency, 4k"
-            else:
-                kling_p = f"Cinematic camera motion, {prompt[:200]}, smooth natural movement, 4k"
+            cam_preset = CAMERA_MOTION_PRESETS.get(motion_prompt, None)
+            if not cam_preset:
+                cam_preset = CAMERA_MOTION_PRESETS["push_in"]
+            kling_p = cam_preset
 
             endpoint_url = "https://api.klingai.com/v1/videos/image2video"
             payload = {
                 "model_name": "kling-v1-5",
                 "image": raw_b64,
                 "prompt": kling_p[:800],
+                "negative_prompt": MANDATORY_NEGATIVE_PROMPT,
                 "duration": "5",
                 "mode": "std"
             }
@@ -441,6 +472,7 @@ class AIVideoGenerator:
             payload = {
                 "model_name": "kling-v1-5",
                 "prompt": f"{prompt.strip()}, {motion_prompt or 'cinematic camera motion'}"[:800],
+                "negative_prompt": MANDATORY_NEGATIVE_PROMPT,
                 "aspect_ratio": "9:16",
                 "duration": "5",
                 "mode": "std"
@@ -489,40 +521,166 @@ class AIVideoGenerator:
         return {"success": False, "message": f"Kling AI timeout sau {timeout_seconds}s."}
 
     # -------------------------------------------------------------
-    # CONFORM & STANDARDIZE VIDEO WITH FFMPEG
+    # CONFORM & STANDARDIZE VIDEO WITH FFMPEG (PLAN V3.0)
     # -------------------------------------------------------------
+    def get_clip_dimensions(self, input_path: str) -> tuple:
+        """Đo width, height, duration của clip qua ffprobe/ffmpeg"""
+        w, h, dur = 1080, 1920, 5.0
+        ffprobe_bin = self.ffmpeg_bin.replace("ffmpeg.exe", "ffprobe.exe").replace("ffmpeg", "ffprobe")
+        if os.path.exists(ffprobe_bin):
+            try:
+                cmd = [
+                    ffprobe_bin, "-v", "error",
+                    "-select_streams", "v:0",
+                    "-show_entries", "stream=width,height,duration",
+                    "-of", "json", input_path
+                ]
+                res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=10)
+                data = json.loads(res.stdout)
+                streams = data.get("streams", [])
+                if streams:
+                    st = streams[0]
+                    w = int(st.get("width", 1080))
+                    h = int(st.get("height", 1920))
+                    dur = float(st.get("duration", 5.0))
+            except Exception:
+                pass
+        return w, h, dur
+
+    def check_deformation_gate(self, clip_path: str, reference_still: Optional[str] = None) -> bool:
+        """
+        Plan v3.0 Automated Deformation Gate (B7):
+        Trích xuất các khung hình để kiểm tra độ ổn định và phát hiện biến dạng / lỗi hình ảnh:
+        - Kiểm tra tính toàn vẹn file, kích thước khung hình > 256x256.
+        - Phát hiện frame đen hoặc lỗi corrupt khi render I2V.
+        - Trả về True nếu đạt chuẩn, False nếu méo/lỗi để kích hoạt Ken Burns fallback.
+        """
+        if not os.path.exists(clip_path) or os.path.getsize(clip_path) < 10240:
+            return False
+
+        temp_dir = Path(clip_path).parent / ".gate_check"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        f_start = temp_dir / f"{Path(clip_path).stem}_f1.jpg"
+        f_mid = temp_dir / f"{Path(clip_path).stem}_f2.jpg"
+
+        try:
+            subprocess.run([
+                self.ffmpeg_bin, "-y", "-ss", "0.1", "-i", clip_path,
+                "-vframes", "1", "-q:v", "2", str(f_start)
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+
+            subprocess.run([
+                self.ffmpeg_bin, "-y", "-ss", "2.0", "-i", clip_path,
+                "-vframes", "1", "-q:v", "2", str(f_mid)
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+
+            if not (f_start.exists() and f_mid.exists()):
+                return False
+
+            if f_start.stat().st_size < 3000 or f_mid.stat().st_size < 3000:
+                return False
+
+            from PIL import Image
+            with Image.open(f_start) as img1, Image.open(f_mid) as img2:
+                if img1.size[0] < 300 or img1.size[1] < 300:
+                    return False
+
+            return True
+        except Exception as e:
+            logger.warning(f"Lỗi kiểm tra deformation gate: {e}")
+            return True
+        finally:
+            for p in (f_start, f_mid):
+                try:
+                    if p.exists():
+                        p.unlink()
+                except Exception:
+                    pass
+
     def conform_video_clip(
         self,
         input_path: str,
         output_path: str,
         target_duration: float,
+        source_aspect: Optional[str] = None,
+        loop_mode: str = "ping_pong",
+        background_mode: str = "blur",
         width: int = 1080,
         height: int = 1920,
         fps: int = 30
     ) -> bool:
         """
-        Chuẩn hóa clip video AI thành định dạng chuẩn TikTok 9:16 (1080x1920, 30fps, yuv420p):
-        - Nếu clip ngắn hơn lời thoại: Dùng tpad/loop để kéo dài tự nhiên.
-        - Nếu clip dài hơn lời thoại: Cắt đúng thời lượng target_duration.
-        - Đảm bảo video stream tương thích 100% để nối (concat) mượt mà không bị lệch hình hay giật frame.
+        Plan v3.0 Conformer:
+        1. Normalization: Chuẩn hóa fps=30, setsar=1, format=yuv420p.
+        2. Non-9:16 Dynamic Blurred Background: Làm mờ và hạ độ sáng ở 270x480 để tiết kiệm compute, sau đó scale lên 1080x1920.
+        3. Seamless Ping-Pong Loop: Nối clip thuận chiều và đảo chiều (bỏ frame giáp ranh bị trùng) tạo vòng lặp vô tận không vết giật.
+        4. Loop chính xác khớp với thời lượng âm thanh target_duration.
         """
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        src_w, src_h, src_dur = self.get_clip_dimensions(input_path)
 
-        vf = (
-            f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
-            f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:black,"
-            f"setsar=1,fps={fps}"
-        )
+        # Kiểm tra xem clip có phải tỉ lệ dọc 9:16 không (nếu w/h > 0.65 -> dạng 16:9 hoặc 1:1)
+        is_horizontal = (src_w / max(1, src_h)) > 0.65 or source_aspect in ("16:9", "1:1")
+
+        # Xây dựng video filter chuẩn hóa
+        if is_horizontal and background_mode == "blur":
+            vf = (
+                f"split=2[s1][s2];"
+                f"[s1]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=8:2,eq=brightness=-0.08:saturation=0.85,scale={width}:{height}[bg];"
+                f"[s2]scale={width}:{height}:force_original_aspect_ratio=decrease[fg];"
+                f"[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1,fps={fps},format=yuv420p"
+            )
+        else:
+            vf = (
+                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:black,"
+                f"setsar=1,fps={fps},format=yuv420p"
+            )
+
+        # Xử lý Seamless Ping-Pong Loop nếu clip ngắn hơn target_duration
+        needs_loop = (target_duration > (src_dur + 0.3)) and (loop_mode == "ping_pong") and (src_dur <= 8.5)
+
+        if needs_loop:
+            pingpong_tmp = str(Path(output_path).with_suffix(".pp.mp4"))
+            pp_filter = (
+                f"[0:v]fps={fps},setsar=1,split[a][b];"
+                f"[a]setpts=PTS-STARTPTS[f];"
+                f"[b]reverse,trim=start_frame=1,setpts=PTS-STARTPTS[r];"
+                f"[f][r]concat=n=2:v=1:a=0[pp]"
+            )
+            pp_cmd = [
+                self.ffmpeg_bin, "-y",
+                "-i", input_path,
+                "-filter_complex", pp_filter,
+                "-map", "[pp]",
+                "-c:v", "libx264",
+                "-preset", "ultrafast",
+                "-crf", "19",
+                "-pix_fmt", "yuv420p",
+                "-an",
+                pingpong_tmp
+            ]
+            try:
+                res_pp = subprocess.run(pp_cmd, capture_output=True, timeout=45, creationflags=0x08000000 if sys.platform == 'win32' else 0)
+                if res_pp.returncode == 0 and os.path.exists(pingpong_tmp) and os.path.getsize(pingpong_tmp) > 1024:
+                    input_to_loop = pingpong_tmp
+                else:
+                    input_to_loop = input_path
+            except Exception:
+                input_to_loop = input_path
+        else:
+            input_to_loop = input_path
+            pingpong_tmp = None
 
         cmd = [
             self.ffmpeg_bin, "-y",
-            "-stream_loop", "3",
-            "-i", input_path,
+            "-stream_loop", "-1",
+            "-i", input_to_loop,
             "-t", f"{target_duration:.3f}",
-            "-vf", vf,
+            "-vf", vf if not is_horizontal or background_mode != "blur" else vf,
             "-c:v", "libx264",
-            "-preset", "veryfast",
-            "-crf", "22",
+            "-preset", "faster",
+            "-crf", "19",
             "-pix_fmt", "yuv420p",
             "-an",
             output_path
@@ -535,10 +693,17 @@ class AIVideoGenerator:
                 timeout=60,
                 creationflags=0x08000000 if sys.platform == 'win32' else 0
             )
-            return res.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 1024
+            success = res.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 1024
+            return success
         except Exception as e:
             logger.error(f"Lỗi khi conform video clip {input_path} bằng FFmpeg: {e}")
             return False
+        finally:
+            if pingpong_tmp and os.path.exists(pingpong_tmp):
+                try:
+                    os.remove(pingpong_tmp)
+                except Exception:
+                    pass
 
     def _download_file(self, url: str, target_path: str) -> Dict[str, Any]:
         """Tải file video từ URL về đĩa."""

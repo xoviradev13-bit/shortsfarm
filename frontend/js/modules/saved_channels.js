@@ -918,15 +918,15 @@ async function openChannelSettingsModal(channelId) {
         chMpImgSwitch.checked = (channel.use_ai_images === 1);
         toggleAiStoryCard('settingChannel', chMpImgSwitch.checked);
     }
-    if (chMpImgStyle && channel.image_style) chMpImgStyle.value = channel.image_style;
+    if (chMpImgStyle) chMpImgStyle.value = channel.image_style || 'inherit';
     const chVisualSource = document.getElementById('settingChannelVisualSource');
-    if (chVisualSource && channel.visual_source) chVisualSource.value = channel.visual_source;
+    if (chVisualSource) chVisualSource.value = channel.visual_source || 'inherit';
     const chAiModel = document.getElementById('settingChannelAiImageModel');
-    if (chAiModel && channel.ai_image_model) chAiModel.value = channel.ai_image_model;
+    if (chAiModel) chAiModel.value = channel.ai_image_model || 'inherit';
     const chAiVideoModel = document.getElementById('settingChannelAiVideoModel');
-    if (chAiVideoModel && channel.ai_video_model) chAiVideoModel.value = channel.ai_video_model;
+    if (chAiVideoModel) chAiVideoModel.value = channel.ai_video_model || 'inherit';
     const chStockProvider = document.getElementById('settingChannelStockProvider');
-    if (chStockProvider && channel.stock_provider) chStockProvider.value = channel.stock_provider;
+    if (chStockProvider) chStockProvider.value = channel.stock_provider || 'inherit';
 
 
     const chKbSwitch = document.getElementById('settingChannelKenBurnsSwitch');
@@ -1091,11 +1091,11 @@ async function saveChannelSettings(btn) {
         ken_burns_enabled: document.getElementById('settingChannelKenBurnsSwitch')?.checked ? 1 : 0,
         endcard_enabled: document.getElementById('settingChannelEndcardSwitch')?.checked ? 1 : 0,
         use_ai_images: document.getElementById('settingChannelUseAiImages')?.checked ? 1 : 0,
-        image_style: document.getElementById('settingChannelImageStyle')?.value || 'cinematic',
-        visual_source: document.getElementById('settingChannelVisualSource')?.value || 'ai',
-        ai_image_model: document.getElementById('settingChannelAiImageModel')?.value || 'flux',
-        ai_video_model: document.getElementById('settingChannelAiVideoModel')?.value || 'fal_ltx',
-        stock_provider: document.getElementById('settingChannelStockProvider')?.value || 'all',
+        image_style: document.getElementById('settingChannelImageStyle')?.value || 'inherit',
+        visual_source: document.getElementById('settingChannelVisualSource')?.value || 'inherit',
+        ai_image_model: document.getElementById('settingChannelAiImageModel')?.value || 'inherit',
+        ai_video_model: document.getElementById('settingChannelAiVideoModel')?.value || 'inherit',
+        stock_provider: document.getElementById('settingChannelStockProvider')?.value || 'inherit',
         hook_angle: document.getElementById('settingChannelHookAngle')?.value || 'inherit',
         generate_variants: (() => {
             const vm = document.getElementById('settingChannelVariantMode')?.value || 'inherit';

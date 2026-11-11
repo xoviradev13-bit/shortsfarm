@@ -261,14 +261,14 @@ function toggleAiStoryCard(prefix, isChecked) {
     const wrap = document.getElementById(wrapId);
     if (wrap) wrap.style.display = isChecked ? (prefix === 'studio' ? 'flex' : 'block') : 'none';
 
-    // Ẩn 2 checkbox Shorts (Tắt phụ đề cho Shorts & Giữ âm thanh gốc cho Shorts) khi bật AI Story; hiện lại khi tắt
-    let subShortsWrapId = prefix === 'campaign' ? 'campaignDisableSubtitleWrap' : (prefix === 'editCampaign' ? 'editCampaignDisableSubtitleWrap' : 'settingChannelDisableSubtitleWrap');
-    let narrShortsWrapId = prefix === 'campaign' ? 'campaignDisableNarrationWrap' : (prefix === 'editCampaign' ? 'editCampaignDisableNarrationWrap' : 'settingChannelDisableNarrationWrap');
+    // Ẩn các tùy chọn Shorts (Tắt phụ đề cho Shorts & Tắt lồng tiếng / Giữ âm thanh gốc cho Shorts) khi bật AI Story; hiện lại khi tắt
+    let subShortsWrapId = prefix === 'campaign' ? 'campaignDisableSubtitleWrap' : (prefix === 'editCampaign' ? 'editCampaignDisableSubtitleWrap' : (prefix === 'studio' ? 'studioDisableSubtitleWrap' : 'settingChannelDisableSubtitleWrap'));
+    let narrShortsWrapId = prefix === 'campaign' ? 'campaignDisableNarrationWrap' : (prefix === 'editCampaign' ? 'editCampaignDisableNarrationWrap' : (prefix === 'studio' ? 'studioDisableNarrationWrap' : 'settingChannelDisableNarrationWrap'));
 
     const subShortsWrap = document.getElementById(subShortsWrapId);
     const narrShortsWrap = document.getElementById(narrShortsWrapId);
     if (subShortsWrap) subShortsWrap.style.display = isChecked ? 'none' : 'block';
-    if (narrShortsWrap) narrShortsWrap.style.display = isChecked ? 'none' : 'block';
+    if (narrShortsWrap) narrShortsWrap.style.display = isChecked ? 'none' : 'grid';
 
     // Khi bật AI Story, tự động kích hoạt & mở panel Lồng Tiếng AI nếu đang tắt để người dùng thấy rõ giọng đọc
     if (isChecked) {

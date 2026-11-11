@@ -130,63 +130,53 @@ function resetSavedFilters() {
     renderSavedChannelsTable();
 }
 
+// Cached Intl.Collator for high-performance localized string sorting
+const viCollator = new Intl.Collator('vi', { sensitivity: 'base' });
+
+let _savedSearchDebounceTimer = null;
+function debouncedRenderSavedChannelsTable() {
+    if (_savedSearchDebounceTimer) clearTimeout(_savedSearchDebounceTimer);
+    _savedSearchDebounceTimer = setTimeout(() => {
+        renderSavedChannelsTable();
+    }, 150);
+}
+
 function getFilteredSavedChannels() {
     const statusFilter = document.getElementById('filterSavedStatus') ? document.getElementById('filterSavedStatus').value : 'all';
     const keyword = (document.getElementById('searchSavedKeyword') ? document.getElementById('searchSavedKeyword').value : '').trim().toLowerCase();
+    const countryUpper = savedFilterCountry !== 'all' ? savedFilterCountry.toUpperCase() : null;
 
-    let list = cachedSavedChannels.slice();
-
-    // 1. Status Filter
-    if (statusFilter === 'active') {
-        list = list.filter(c => c.is_active === 1);
-    } else if (statusFilter === 'inactive') {
-        list = list.filter(c => c.is_active === 0);
-    }
-
-    // 2. Country Filter
-    if (savedFilterCountry !== 'all') {
-        list = list.filter(c => (c.country || 'N/A').toUpperCase() === savedFilterCountry.toUpperCase());
-    }
-
-    // 3. Min Views Filter
-    if (savedFilterMinViews > 0) {
-        list = list.filter(c => (c.avg_views || 0) >= savedFilterMinViews);
-    }
-
-    // 4. Min Subs Filter
-    if (savedFilterMinSubs > 0) {
-        list = list.filter(c => (c.subscriber_count || 0) >= savedFilterMinSubs);
-    }
-
-    // 5. Cadence Filter
-    if (savedFilterCadence === 'daily') {
-        list = list.filter(c => c.upload_cadence_days > 0 && c.upload_cadence_days <= 1.0);
-    } else if (savedFilterCadence === 'frequent') {
-        list = list.filter(c => c.upload_cadence_days > 0 && c.upload_cadence_days <= 3.0);
-    } else if (savedFilterCadence === 'weekly') {
-        list = list.filter(c => c.upload_cadence_days > 0 && c.upload_cadence_days <= 7.0);
-    }
-
-    // 6. Keyword Filter
-    if (keyword) {
-        list = list.filter(c => {
+    // Single-pass combined filter (eliminates 5 intermediate array allocations)
+    let list = cachedSavedChannels.filter(c => {
+        if (statusFilter === 'active' && c.is_active !== 1) return false;
+        if (statusFilter === 'inactive' && c.is_active !== 0) return false;
+        if (countryUpper && (c.country || 'N/A').toUpperCase() !== countryUpper) return false;
+        if (savedFilterMinViews > 0 && (c.avg_views || 0) < savedFilterMinViews) return false;
+        if (savedFilterMinSubs > 0 && (c.subscriber_count || 0) < savedFilterMinSubs) return false;
+        if (savedFilterCadence === 'daily' && !(c.upload_cadence_days > 0 && c.upload_cadence_days <= 1.0)) return false;
+        if (savedFilterCadence === 'frequent' && !(c.upload_cadence_days > 0 && c.upload_cadence_days <= 3.0)) return false;
+        if (savedFilterCadence === 'weekly' && !(c.upload_cadence_days > 0 && c.upload_cadence_days <= 7.0)) return false;
+        if (keyword) {
             const title = (c.title || '').toLowerCase();
             const displayName = (c.display_name || '').toLowerCase();
             const cid = (c.channel_id || '').toLowerCase();
             const handle = (c.handle || '').toLowerCase();
             const country = (c.country || '').toLowerCase();
-            return title.includes(keyword) || displayName.includes(keyword) || cid.includes(keyword) || handle.includes(keyword) || country.includes(keyword);
-        });
-    }
+            if (!title.includes(keyword) && !displayName.includes(keyword) && !cid.includes(keyword) && !handle.includes(keyword) && !country.includes(keyword)) {
+                return false;
+            }
+        }
+        return true;
+    });
 
-    // 7. Sort
+    // Sort
     if (savedSortField !== 'default') {
         list.sort((a, b) => {
             let res = 0;
             if (savedSortField === 'title') {
                 const ta = a.display_name || a.title || '';
                 const tb = b.display_name || b.title || '';
-                res = ta.localeCompare(tb, 'vi', { sensitivity: 'base' });
+                res = viCollator.compare(ta, tb);
             } else if (savedSortField === 'country') {
                 res = (a.country || '').localeCompare(b.country || '');
             } else if (savedSortField === 'subscriber_count') {
@@ -1313,6 +1303,7 @@ window.openChannelUrl = openChannelUrl;
 window.openCurrentChannelYouTube = openCurrentChannelYouTube;
 window.refreshActiveChannelStats = refreshActiveChannelStats;
 window.refreshChannelStatsFromMenu = refreshChannelStatsFromMenu;
+window.debouncedRenderSavedChannelsTable = debouncedRenderSavedChannelsTable;
 window.renderSavedChannelsTable = renderSavedChannelsTable;
 window.resetSavedFilters = resetSavedFilters;
 window.saveChannelSettings = saveChannelSettings;

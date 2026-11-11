@@ -3567,45 +3567,63 @@
         };
     }
 
+    const _transCache = new Map();
     function translateTextString(text, lang) {
         if (!text || typeof text !== 'string') return null;
         const normalized = text.trim().replace(/\s+/g, ' ');
         if (!normalized) return null;
 
-        // 1. Direct Static Match
-        if (phraseMap[normalized]) {
-            return lang === 'vi' ? normalized : (phraseMap[normalized][lang] || normalized);
+        const cacheKey = lang + ':' + normalized;
+        if (_transCache.has(cacheKey)) {
+            return _transCache.get(cacheKey);
         }
 
-        // 2. Colon Stripping Match
-        if (normalized.endsWith(':')) {
+        let result = null;
+
+        // 1. Direct Static Match
+        if (phraseMap[normalized]) {
+            result = lang === 'vi' ? normalized : (phraseMap[normalized][lang] || normalized);
+        } else if (normalized.endsWith(':')) {
+            // 2. Colon Stripping Match
             const base = normalized.slice(0, -1).trim();
             if (phraseMap[base]) {
                 const trans = lang === 'vi' ? base : (phraseMap[base][lang] || base);
-                return trans + (lang === 'zh' ? '：' : ':');
+                result = trans + (lang === 'zh' ? '：' : ':');
             }
         }
 
-        // 3. Leading icon/bullet stripping match (e.g. "★ 15 phút (Chuẩn)", "⚡ Góc Tranh Luận", "• Mỗi ngày")
-        const iconMatch = normalized.match(/^([✅❌⚠️ℹ️🔥⚡💡★*•\-]\s*)(.*)$/);
-        if (iconMatch) {
-            const prefix = iconMatch[1];
-            const rest = iconMatch[2].trim();
-            if (phraseMap[rest]) {
-                const trans = lang === 'vi' ? rest : (phraseMap[rest][lang] || rest);
-                return prefix + trans;
+        if (!result) {
+            // 3. Leading icon/bullet stripping match (e.g. "★ 15 phút (Chuẩn)", "⚡ Góc Tranh Luận", "• Mỗi ngày")
+            const iconMatch = normalized.match(/^([✅❌⚠️ℹ️🔥⚡💡★*•\-]\s*)(.*)$/);
+            if (iconMatch) {
+                const prefix = iconMatch[1];
+                const rest = iconMatch[2].trim();
+                if (phraseMap[rest]) {
+                    const trans = lang === 'vi' ? rest : (phraseMap[rest][lang] || rest);
+                    result = prefix + trans;
+                }
             }
         }
 
-        // 4. Dynamic Regex Pattern Rules
-        for (let rule of patternRules) {
-            const m = normalized.match(rule.regex);
-            if (m) {
-                return lang === 'vi' ? normalized : rule.render(m, lang);
+        if (!result) {
+            // 4. Dynamic Regex Pattern Rules
+            for (let i = 0; i < patternRules.length; i++) {
+                const rule = patternRules[i];
+                const m = normalized.match(rule.regex);
+                if (m) {
+                    result = lang === 'vi' ? normalized : rule.render(m, lang);
+                    break;
+                }
             }
         }
 
-        return null;
+        // Bounded LRU cache to prevent memory leaks
+        if (_transCache.size > 3000) {
+            _transCache.clear();
+        }
+        _transCache.set(cacheKey, result);
+
+        return result;
     }
 
     // Deep TreeWalker Translator: walks all text nodes in any element
@@ -3747,6 +3765,7 @@
 
         syncDropdowns();
         applyTranslations(document);
+        setupMutationObserver();
 
         // Update Topbar
         if (typeof window.updateActiveTabHeaders === 'function') {
@@ -3831,35 +3850,57 @@
 
     // ─── MUTATION OBSERVER FOR DYNAMIC JAVASCRIPT RENDERING ───────────────────
     let mutationDebounceTimer = null;
-    function setupMutationObserver() {
-        const observer = new MutationObserver((mutations) => {
-            if (currentLang === 'vi') return; // No auto-translation needed for base Vietnamese
+    let mutationObserverInstance = null;
 
-            let shouldTranslate = false;
-            let targetNode = null;
-            for (let mutation of mutations) {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    shouldTranslate = true;
-                    break;
+    function setupMutationObserver() {
+        if (currentLang === 'vi') {
+            if (mutationObserverInstance) {
+                mutationObserverInstance.disconnect();
+                mutationObserverInstance = null;
+            }
+            return;
+        }
+
+        if (mutationObserverInstance) return; // Already active
+
+        const pendingTargets = new Set();
+        mutationObserverInstance = new MutationObserver((mutations) => {
+            if (currentLang === 'vi') return;
+
+            for (let i = 0; i < mutations.length; i++) {
+                const mutation = mutations[i];
+                const target = mutation.target;
+                if (!target) continue;
+
+                // Ignore clock ticks, logs terminal, and media elements to prevent infinite loops & high CPU
+                if (target.id === 'topbarClock' || target.id === 'logTerminal' || (target.closest && target.closest('#topbarClock, #logTerminal, #audioPreviewDock, #studioVideoPlayer'))) {
+                    continue;
                 }
-                if (mutation.type === 'attributes') {
-                    const el = mutation.target;
-                    if (el && (el.classList?.contains('modal') || el.classList?.contains('action-dropdown') || el.classList?.contains('show') || el.classList?.contains('active') || el.classList?.contains('tab-pane'))) {
-                        shouldTranslate = true;
-                        targetNode = el;
-                        break;
+
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    const el = target.nodeType === Node.ELEMENT_NODE ? target : target.parentElement;
+                    if (el) pendingTargets.add(el);
+                } else if (mutation.type === 'attributes') {
+                    if (target.classList && (target.classList.contains('modal') || target.classList.contains('action-dropdown') || target.classList.contains('show') || target.classList.contains('active') || target.classList.contains('tab-pane'))) {
+                        pendingTargets.add(target);
                     }
                 }
             }
-            if (shouldTranslate) {
+
+            if (pendingTargets.size > 0) {
                 if (mutationDebounceTimer) clearTimeout(mutationDebounceTimer);
                 mutationDebounceTimer = setTimeout(() => {
-                    translateDOM(targetNode || document.body);
-                }, 30);
+                    pendingTargets.forEach(node => {
+                        if (node && node.isConnected) {
+                            translateDOM(node);
+                        }
+                    });
+                    pendingTargets.clear();
+                }, 50);
             }
         });
 
-        observer.observe(document.body, {
+        mutationObserverInstance.observe(document.body, {
             childList: true,
             subtree: true,
             attributes: true,

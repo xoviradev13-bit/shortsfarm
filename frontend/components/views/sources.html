@@ -547,7 +547,7 @@
                                                 <i class="fa-solid fa-filter"></i>
                                                 <input type="text" id="searchSavedKeyword"
                                                     placeholder="Lọc nhanh tên kênh, ID, handle..."
-                                                    oninput="renderSavedChannelsTable()">
+                                                    oninput="debouncedRenderSavedChannelsTable()">
                                             </div>
                                             <span class="badge badge-info" id="badgeSavedCount">0 Kênh</span>
                                         </div>

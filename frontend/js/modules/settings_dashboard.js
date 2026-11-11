@@ -710,23 +710,19 @@ function isDateInRange(dateStr, rangeKey) {
 }
 
 function getFilteredAiLogs() {
-    let list = [...cachedAiLogs];
+    const targetModel = aiFilterModel !== 'all' ? aiFilterModel.toLowerCase() : null;
 
-    // 1. Filter Date
-    if (aiFilterDate !== 'all') {
-        list = list.filter(l => isDateInRange(l.created_at, aiFilterDate));
-    }
-
-    // 2. Filter Model
-    if (aiFilterModel !== 'all') {
-        const target = aiFilterModel.toLowerCase();
-        list = list.filter(l => {
+    // Single-pass combined filter
+    let list = cachedAiLogs.filter(l => {
+        if (aiFilterDate !== 'all' && !isDateInRange(l.created_at, aiFilterDate)) return false;
+        if (targetModel) {
             const m = (l.model || '').toLowerCase();
             const p = (l.provider || '').toLowerCase();
             const t = (l.task || '').toLowerCase();
-            return m.includes(target) || p.includes(target) || t.includes(target);
-        });
-    }
+            if (!m.includes(targetModel) && !p.includes(targetModel) && !t.includes(targetModel)) return false;
+        }
+        return true;
+    });
 
     // 3. Sort
     list.sort((a, b) => {

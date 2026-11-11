@@ -158,24 +158,27 @@ document.addEventListener('DOMContentLoaded', () => {
     applyCachedSchedulerState();
     setupNavigation();
     loadDashboardStats();
-    loadGpmProfiles();
-    loadVideos();
-    loadSavedChannels();
     loadCampaigns();
     loadPipelineStatus();
-    loadSchedulerSettings();
-    loadTelegramChannels();
-    loadFollowerThresholds();
-    loadFollowerSchedulerBadge();
-    checkScanProgress();
-    loadSystemTraySettings();
-    applyColumnVisibility();
     startTopbarClock();
     initLanguageVoiceAutoSync();
-    ensureAudioCategoriesLoaded();
     if (typeof loadActiveBrowser === 'function') loadActiveBrowser();
     if (window.themeManager && typeof window.themeManager.init === 'function') window.themeManager.init();
     if (window.i18n && typeof window.i18n.applyTranslations === 'function') window.i18n.applyTranslations();
+
+    // Defer non-critical background data loading so initial UI paints instantly
+    const deferLoad = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
+    deferLoad(() => {
+        loadVideos();
+        loadSavedChannels();
+        loadGpmProfiles();
+        loadFollowerThresholds();
+        loadFollowerSchedulerBadge();
+        loadSystemTraySettings();
+        applyColumnVisibility();
+        ensureAudioCategoriesLoaded();
+        checkScanProgress();
+    });
     document.addEventListener('appLanguageChanged', () => {
         if (typeof window.updateActiveTabHeaders === 'function') {
             window.updateActiveTabHeaders();
@@ -300,8 +303,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSaveDetail.addEventListener('click', toggleSaveFromDetailModal);
     }
 
-    // Auto refresh logs & stats every 8 seconds
+    // Auto refresh logs & stats every 8 seconds (paused when tab hidden, resumes on return)
     setInterval(loadDashboardStats, 8000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) loadDashboardStats();
+    });
 });
 
 // HTML Escaper for safe rendering
@@ -443,12 +449,18 @@ function markInputError(elOrId, message = '', type = 'error') {
         errorMsgEl.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> <span>${escapeHtml(message)}</span>`;
     }
 
-    // Auto-remove error state when user changes or types in the field
+    // Auto-remove error state when user changes or types in the field (clean up previous listener to prevent leaks)
+    if (el._clearErrorHandler) {
+        el.removeEventListener('input', el._clearErrorHandler);
+        el.removeEventListener('change', el._clearErrorHandler);
+    }
     const clearHandler = () => {
         clearInputError(el);
         el.removeEventListener('input', clearHandler);
         el.removeEventListener('change', clearHandler);
+        el._clearErrorHandler = null;
     };
+    el._clearErrorHandler = clearHandler;
     el.addEventListener('input', clearHandler);
     el.addEventListener('change', clearHandler);
 
@@ -736,9 +748,12 @@ function playVoicePreview(voiceSelectId, langSelectId, btnEl) {
     }
 
     // Toggle stop if already playing
-    if (voiceNarratorPreviewAudio && !voiceNarratorPreviewAudio.paused) {
-        voiceNarratorPreviewAudio.pause();
-        voiceNarratorPreviewAudio.currentTime = 0;
+    if (voiceNarratorPreviewAudio) {
+        try {
+            voiceNarratorPreviewAudio.pause();
+            voiceNarratorPreviewAudio.src = '';
+            voiceNarratorPreviewAudio.load();
+        } catch (_) { }
         if (voiceNarratorPreviewBtn) {
             resetPreviewBtnState(voiceNarratorPreviewBtn);
         }
@@ -765,6 +780,7 @@ function playVoicePreview(voiceSelectId, langSelectId, btnEl) {
     audio.addEventListener('ended', () => {
         if (voiceNarratorPreviewBtn === btnEl) {
             resetPreviewBtnState(btnEl);
+            try { audio.src = ''; audio.load(); } catch (_) { }
             voiceNarratorPreviewAudio = null;
             voiceNarratorPreviewBtn = null;
         }
@@ -778,6 +794,7 @@ function playVoicePreview(voiceSelectId, langSelectId, btnEl) {
             btnEl.title = 'Không thể tải âm thanh nghe thử';
             setTimeout(() => {
                 resetPreviewBtnState(btnEl);
+                try { audio.src = ''; audio.load(); } catch (_) { }
                 voiceNarratorPreviewAudio = null;
                 voiceNarratorPreviewBtn = null;
             }, 2000);
@@ -833,6 +850,14 @@ function setupNavigation() {
 function switchTab(tabId) {
     if (document.activeElement && typeof document.activeElement.blur === 'function') {
         document.activeElement.blur();
+    }
+
+    // Pause any playing studio video when navigating away to free hardware decoders & CPU
+    if (tabId !== 'tab-video-studio') {
+        const studioVideo = document.getElementById('studioVideoPlayer');
+        if (studioVideo && !studioVideo.paused) {
+            try { studioVideo.pause(); } catch (_) { }
+        }
     }
     // Aliases support
     if (tabId === 'tab-youtube') {
@@ -1007,9 +1032,10 @@ function switchSourceSubTab(sub) {
     }
 }
 
-// Live ticking clock in sticky topbar
+// Live ticking clock in sticky topbar (pauses in background to save battery & CPU)
 function startTopbarClock() {
     function update() {
+        if (document.hidden) return;
         const el = document.getElementById('topbarClock');
         if (!el) return;
         const now = new Date();
@@ -1018,10 +1044,14 @@ function startTopbarClock() {
     }
     update();
     setInterval(update, 1000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) update();
+    });
 }
 
-// 1. Dashboard Stats
+// 1. Dashboard Stats (skips polling when window/tab is in background)
 async function loadDashboardStats() {
+    if (document.hidden) return;
     try {
         const res = await fetch('/api/dashboard/stats');
         const data = await res.json();
@@ -1064,13 +1094,17 @@ async function loadDashboardStats() {
             }
         }
 
-        // Update logs
+        // Update logs only when content has changed to avoid DOM churn & layout thrashing
         const logTerminal = document.getElementById('logTerminal');
-        if (data.recent_logs && data.recent_logs.length > 0) {
-            logTerminal.innerHTML = data.recent_logs.map(log => {
-                const cls = log.level === 'ERROR' ? 'error' : (log.level === 'WARNING' ? 'warning' : 'info');
-                return `<div class="log-line ${cls}">[${log.created_at || 'LOG'}] [${log.level}] ${escapeHtml(log.message)}</div>`;
-            }).join('');
+        if (logTerminal && data.recent_logs && data.recent_logs.length > 0) {
+            const logsSig = data.recent_logs.map(l => `${l.created_at || ''}:${l.level}:${l.message}`).join('|');
+            if (logTerminal._lastLogsSig !== logsSig) {
+                logTerminal._lastLogsSig = logsSig;
+                logTerminal.innerHTML = data.recent_logs.map(log => {
+                    const cls = log.level === 'ERROR' ? 'error' : (log.level === 'WARNING' ? 'warning' : 'info');
+                    return `<div class="log-line ${cls}">[${log.created_at || 'LOG'}] [${log.level}] ${escapeHtml(log.message)}</div>`;
+                }).join('');
+            }
         }
 
         // Update Active Issues button in Topbar

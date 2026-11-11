@@ -197,6 +197,7 @@ function toggleAudioFoldersPopover(event) {
         pop.style.display = 'block';
         const inp = document.getElementById('popoverFolderSearch');
         if (inp) inp.focus();
+        document.removeEventListener('click', onDocClickCloseAudioPopover);
         setTimeout(() => {
             document.addEventListener('click', onDocClickCloseAudioPopover);
         }, 10);
@@ -531,7 +532,11 @@ async function deleteAudioTrack(category, filename) {
 // Dừng hoàn toàn nghe thử
 function stopAudioPreview() {
     if (currentPreviewAudio) {
-        try { currentPreviewAudio.pause(); } catch (_) { }
+        try {
+            currentPreviewAudio.pause();
+            currentPreviewAudio.src = '';
+            currentPreviewAudio.load();
+        } catch (_) { }
         currentPreviewAudio = null;
     }
 

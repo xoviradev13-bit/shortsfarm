@@ -57,10 +57,14 @@ function filterStudioVideos(filter) {
     renderStudioVideoList();
 }
 
+let _studioSearchDebounceTimer = null;
 function onStudioSearchInput(val) {
-    studioSearchQuery = (val || '').toLowerCase().trim();
-    studioDisplayLimit = 30;
-    renderStudioVideoList();
+    if (_studioSearchDebounceTimer) clearTimeout(_studioSearchDebounceTimer);
+    _studioSearchDebounceTimer = setTimeout(() => {
+        studioSearchQuery = (val || '').toLowerCase().trim();
+        studioDisplayLimit = 30;
+        renderStudioVideoList();
+    }, 150);
 }
 
 function onStudioChannelFilterChange(val) {
@@ -89,12 +93,18 @@ function populateStudioChannelFilter() {
     const select = document.getElementById('studioChannelFilterSelect');
     if (!select) return;
     const currentVal = select.value;
-    const channels = Array.from(new Set(cachedVideos.map(v => v.channel_name).filter(Boolean))).sort();
+    // Single-pass O(N) frequency map instead of quadratic O(C * N) scan
+    const counts = {};
+    for (let i = 0; i < cachedVideos.length; i++) {
+        const ch = cachedVideos[i].channel_name;
+        if (ch) counts[ch] = (counts[ch] || 0) + 1;
+    }
+    const channels = Object.keys(counts).sort();
     let html = '<option value="">Tất cả kênh nguồn (' + cachedVideos.length + ' video)</option>';
-    channels.forEach(ch => {
-        const count = cachedVideos.filter(v => v.channel_name === ch).length;
-        html += `<option value="${escapeHtml(ch)}">${escapeHtml(ch)} (${count})</option>`;
-    });
+    for (let i = 0; i < channels.length; i++) {
+        const ch = channels[i];
+        html += `<option value="${escapeHtml(ch)}">${escapeHtml(ch)} (${counts[ch]})</option>`;
+    }
     select.innerHTML = html;
     if (channels.includes(currentVal)) {
         select.value = currentVal;
@@ -859,7 +869,7 @@ async function stopStudioRenderNow(btn) {
     }
     try {
         await fetch('/api/video/render-stop', { method: 'POST' });
-    } catch (_) {}
+    } catch (_) { }
     showToast('🛑 Đã gửi lệnh dừng Render video!', 'warning');
     const renderBtn = document.getElementById('btnStudioRenderAction');
     if (renderBtn) {
@@ -922,7 +932,7 @@ function switchStudioPlatformPreview(platform) {
     const tt = document.getElementById('tiktokOverlayMockup');
     const yt = document.getElementById('youtubeShortsOverlayMockup');
     const fb = document.getElementById('facebookReelsOverlayMockup');
-    
+
     if (tt) tt.style.display = (platform === 'tiktok') ? 'flex' : 'none';
     if (yt) yt.style.display = (platform === 'youtube_shorts') ? 'flex' : 'none';
     if (fb) fb.style.display = (platform === 'facebook_reels') ? 'flex' : 'none';

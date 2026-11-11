@@ -1,252 +1,240 @@
-            <section id="tab-gpm-farm" class="tab-pane">
-                <div class="glass-panel">
-                    <div class="panel-header" style="flex-wrap: wrap; gap: 12px;">
-                        <div>
-                            <h3><i class="fa-solid fa-robot"></i> Quản Lý Dàn Profile</h3>
-                            <p class="panel-sub">Quản lý dàn profile, tự động trích xuất follower và upload video
-                            </p>
-                        </div>
-                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                            <button class="btn btn-secondary" id="btnFollowerSchedulerModal"
-                                onclick="openFollowerSchedulerModal()"
-                                style="display:flex; align-items:center; gap:6px;"
-                                title="Cài đặt lịch quét follower tự động">
-                                <i class="fa-solid fa-clock text-accent"></i> <span>Lịch Quét Định Kỳ</span>
-                            </button>
-                            <button class="btn btn-secondary" id="btnThresholdSettingsModal"
-                                onclick="openThresholdSettingsModal()"
-                                style="display:flex; align-items:center; gap:6px;"
-                                data-i18n-title="profiles_threshold_btn_title"
-                                title="Cài đặt ngưỡng gửi thông báo tăng trưởng & chuẩn đạt chỉ tiêu">
-                                <i class="fa-solid fa-sliders text-accent"></i> <span
-                                    data-i18n="profiles_threshold_btn">Ngưỡng Thông Báo</span>
-                            </button>
-                            <button class="btn btn-accent" id="btnScanAllFollowersTab"
-                                onclick="scanAllProfilesFollowers(this)"
-                                style="display:flex; align-items:center; gap:6px; font-weight:700;">
-                                <i class="fa-solid fa-magnifying-glass-chart"></i> Quét Follower
-                            </button>
-                            <button class="btn btn-primary" id="btnSyncGpmTab" onclick="syncGPMProfiles(this)"
-                                style="display:flex; align-items:center; gap:6px;">
-                                <i class="fa-solid fa-arrows-rotate"></i> Đồng Bộ
-                            </button>
-                        </div>
-                    </div>
+<section id="tab-gpm-farm" class="tab-pane">
+    <div class="glass-panel">
+        <div class="panel-header" style="flex-wrap: wrap; gap: 12px;">
+            <div>
+                <h3><i class="fa-solid fa-robot"></i> Quản Lý Dàn Profile</h3>
+                <p class="panel-sub">Quản lý dàn profile, tự động trích xuất follower và upload video
+                </p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <button class="btn btn-secondary" id="btnFollowerSchedulerModal" onclick="openFollowerSchedulerModal()"
+                    style="display:flex; align-items:center; gap:6px;" title="Cài đặt lịch quét follower tự động">
+                    <i class="fa-solid fa-clock text-accent"></i> <span>Lịch Quét Định Kỳ</span>
+                </button>
+                <button class="btn btn-secondary" id="btnThresholdSettingsModal" onclick="openThresholdSettingsModal()"
+                    style="display:flex; align-items:center; gap:6px;" data-i18n-title="profiles_threshold_btn_title"
+                    title="Cài đặt ngưỡng gửi thông báo tăng trưởng & chuẩn đạt chỉ tiêu">
+                    <i class="fa-solid fa-sliders text-accent"></i> <span data-i18n="profiles_threshold_btn">Ngưỡng
+                        Thông Báo</span>
+                </button>
+                <button class="btn btn-accent" id="btnScanAllFollowersTab" onclick="scanAllProfilesFollowers(this)"
+                    style="display:flex; align-items:center; gap:6px; font-weight:700;">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i> Quét Follower
+                </button>
+                <button class="btn btn-primary" id="btnSyncGpmTab" onclick="syncGPMProfiles(this)"
+                    style="display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Đồng Bộ
+                </button>
+            </div>
+        </div>
 
-                    <!-- BĂNG THÔNG BÁO TIẾN ĐỘ QUÉT THỜI GIAN THỰC & NÚT DỪNG QUÉT (FULL WIDTH) -->
-                    <div id="scanProgressBarContainer"
-                        style="display:none; width: 100%; box-sizing: border-box; margin: 16px 0 12px 0; background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(59, 130, 246, 0.4); border-radius: var(--radius-md); padding: 14px 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <i class="fa-solid fa-spinner fa-spin text-cyan" style="font-size: 18px;"></i>
-                                <div>
-                                    <strong id="scanProgressTitle" style="color: #fff; font-size: 14px;">Đang quét
-                                        Follower...</strong>
-                                    <div id="scanProgressSubtitle"
-                                        style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">Chế độ
-                                        ZeroRAM siêu nhẹ, tự động cập nhật số liệu không mở trình duyệt</div>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 14px;">
-                                <span id="scanProgressPercent"
-                                    style="font-weight: 800; font-size: 15px; color: var(--accent-cyan); letter-spacing: 0.5px;">0%</span>
-                                <button type="button" class="btn btn-sm btn-danger" id="btnStopScanFollowers" onclick="stopAllProfilesScan(this)"
-                                    style="display: flex; align-items: center; gap: 6px; font-weight: 700;">
-                                    <i class="fa-solid fa-hand"></i> Dừng Quét
-                                </button>
-                            </div>
-                        </div>
-                        <div
-                            style="width: 100%; height: 7px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
-                            <div id="scanProgressBarFill"
-                                style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple)); transition: width 0.3s ease; border-radius: 4px;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- BỘ LỌC & SẮP XẾP PROFILE GPM -->
-                    <div class="table-toolbar mb-3" style="margin-top: 14px;">
-                        <!-- Row 1: Sắp xếp & Lọc trạng thái -->
-                        <div class="toolbar-row" style="margin-bottom: 8px;">
-                            <div class="toolbar-group">
-                                <!-- Sort Field -->
-                                <div class="sort-control">
-                                    <label for="sortGpmField"><i class="fa-solid fa-arrow-down-wide-short"></i> Sắp
-                                        xếp:</label>
-                                    <select id="sortGpmField" class="custom-select sort-select"
-                                        onchange="handleGpmSortChange(this.value)">
-                                        <option value="followers_count">Số Follower</option>
-                                        <option value="name">Tên Profile</option>
-                                        <option value="tiktok_username">Account Username</option>
-                                        <option value="eligible_10k">Đạt Chỉ Tiêu / Beta</option>
-                                        <option value="notify_status">Trạng thái theo dõi</option>
-                                        <option value="last_checked">Lần quét gần nhất</option>
-                                    </select>
-                                    <button type="button" class="btn btn-sm btn-secondary sort-dir-btn has-tooltip"
-                                        id="btnGpmSortDirection" onclick="toggleGpmSortDirection()"
-                                        data-tooltip="Chuyển đổi Tăng dần / Giảm dần">
-                                        <i class="fa-solid fa-arrow-down-wide-short" id="gpmSortDirIcon"></i>
-                                        <span id="gpmSortDirText">Giảm dần</span>
-                                    </button>
-                                </div>
-
-                                <!-- Filter 10K Status -->
-                                <!-- Filter Platform -->
-                                <div class="sort-control">
-                                    <label for="filterAccountPlatform"><i class="fa-solid fa-share-nodes"></i> Nền
-                                        tảng:</label>
-                                    <select id="filterAccountPlatform" class="custom-select sort-select"
-                                        onchange="renderGpmProfilesTable()">
-                                        <option value="all">Tất cả Nền tảng</option>
-                                        <option value="tiktok">TikTok</option>
-                                        <option value="youtube">YouTube</option>
-                                        <option value="facebook">Facebook</option>
-                                    </select>
-                                </div>
-
-                                <!-- Filter Browser -->
-                                <div class="sort-control">
-                                    <label for="filterAccountBrowser"><i class="fa-solid fa-window-restore"></i> Trình
-                                        duyệt:</label>
-                                    <select id="filterAccountBrowser" class="custom-select sort-select"
-                                        onchange="renderGpmProfilesTable()">
-                                        <option value="all" selected>Tất cả Trình duyệt</option>
-                                        <option value="gpm">GPMLogin</option>
-                                        <option value="genlogin">GenLogin</option>
-                                    </select>
-                                </div>
-
-                                <div class="sort-control">
-                                    <label for="filterGpm10k" style="cursor: pointer;"
-                                        onclick="openThresholdSettingsModal()"
-                                        title="Bấm để cài đặt ngưỡng thông báo và đạt chỉ tiêu"><i
-                                            class="fa-solid fa-trophy"></i> <span>Đạt Chỉ Tiêu:</span> <i
-                                            class="fa-solid fa-gear text-accent"
-                                            style="font-size: 10px; margin-left: 2px;"></i></label>
-                                    <select id="filterGpm10k" class="custom-select sort-select"
-                                        onchange="renderGpmProfilesTable()">
-                                        <option value="all">Tất cả trạng thái</option>
-                                        <option value="10k">🏆 Đã Đạt Chỉ Tiêu</option>
-                                        <option value="growing">🌱 Đang Nuôi (Chưa Đạt)</option>
-                                    </select>
-                                </div>
-
-                                <!-- Filter Notify Status -->
-                                <div class="sort-control">
-                                    <label for="filterGpmNotify"><i class="fa-solid fa-bell"></i> Theo dõi:</label>
-                                    <select id="filterGpmNotify" class="custom-select sort-select"
-                                        onchange="renderGpmProfilesTable()">
-                                        <option value="all">Tất cả</option>
-                                        <option value="tracking">🔔 Đang theo dõi</option>
-                                        <option value="sent">🔵 Đã gửi</option>
-                                        <option value="muted">⚪ Bỏ theo dõi</option>
-                                    </select>
-                                </div>
-
-                                <!-- Filter Nick Attached -->
-                                <div class="sort-control">
-                                    <label for="filterGpmNick"><i class="fa-brands fa-tiktok"></i> Tài khoản:</label>
-                                    <select id="filterGpmNick" class="custom-select sort-select"
-                                        onchange="renderGpmProfilesTable()">
-                                        <option value="all">Tất cả nick</option>
-                                        <option value="attached">✅ Đã gắn Nick</option>
-                                        <option value="unattached">⚠️ Chưa gắn Nick</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Row 2: Tìm kiếm & Reset -->
-                        <div class="toolbar-row">
-                            <div class="toolbar-group">
-                                <button type="button" class="btn-reset-filter has-tooltip tooltip-top"
-                                    onclick="resetGpmFilters()" data-tooltip="Khôi phục toàn bộ bộ lọc về mặc định">
-                                    <i class="fa-solid fa-rotate-left"></i> Đặt lại bộ lọc
-                                </button>
-                                <button type="button" class="btn btn-sm btn-export-csv has-tooltip tooltip-top"
-                                    onclick="exportGpmProfilesCsv()"
-                                    data-tooltip="Xuất danh sách profile đang hiển thị ra file CSV (Excel)">
-                                    <i class="fa-solid fa-file-csv"></i> Xuất CSV
-                                </button>
-                            </div>
-                            <div class="toolbar-group">
-                                <div class="table-search-box">
-                                    <i class="fa-solid fa-filter"></i>
-                                    <input type="text" id="searchGpmKeyword"
-                                        placeholder="Lọc nhanh tên profile, username, proxy..."
-                                        oninput="renderGpmProfilesTable()">
-                                </div>
-                                <span class="badge badge-info" id="badgeGpmCount">0 Profile</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive mt-3">
-                        <table class="data-table" id="gpmProfilesTable">
-                            <thead>
-                                <tr>
-                                    <th class="sortable" id="th-gpm-name" onclick="handleGpmHeaderSort('name')"
-                                        title="Bấm để sắp xếp theo Tên Profile">
-                                        Tên Profile <i class="fa-solid fa-sort sort-icon"></i>
-                                    </th>
-                                    <th style="width: 88px;">Nền Tảng</th>
-                                    <th class="sortable" id="th-gpm-tiktok_username"
-                                        onclick="handleGpmHeaderSort('tiktok_username')"
-                                        title="Bấm để sắp xếp theo Account Username">
-                                        Account Username <i class="fa-solid fa-sort sort-icon"></i>
-                                    </th>
-                                    <th class="sortable" id="th-gpm-followers_count"
-                                        onclick="handleGpmHeaderSort('followers_count')"
-                                        title="Bấm để sắp xếp theo Follower">
-                                        Followers <i class="fa-solid fa-sort sort-icon"></i>
-                                    </th>
-                                    <th class="sortable" id="th-gpm-eligible_10k"
-                                        onclick="handleGpmHeaderSort('eligible_10k')"
-                                        title="Bấm để sắp xếp theo trạng thái Đạt Chỉ Tiêu / Chuẩn Beta">
-                                        Đạt Chỉ Tiêu / Beta <i class="fa-solid fa-sort sort-icon"></i>
-                                    </th>
-                                    <th class="sortable" id="th-gpm-notify_status"
-                                        onclick="handleGpmHeaderSort('notify_status')"
-                                        title="Bấm để sắp xếp theo Trạng thái theo dõi">
-                                        Trạng Thái Theo Dõi <i class="fa-solid fa-sort sort-icon"></i>
-                                    </th>
-                                    <th style="text-align: center; width: 80px;">Thao Tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="gpmTableBody">
-                                <tr>
-                                    <td colspan="7" class="text-center py-4 text-muted">Chưa có profile nào. Hãy ấn
-                                        "Đồng Bộ" để nạp dữ liệu!</td>
-                                </tr>
-                            </tbody>
-                        </table>
+        <!-- BĂNG THÔNG BÁO TIẾN ĐỘ QUÉT THỜI GIAN THỰC & NÚT DỪNG QUÉT (FULL WIDTH) -->
+        <div id="scanProgressBarContainer"
+            style="display:none; width: 100%; box-sizing: border-box; margin: 16px 0 12px 0; background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(59, 130, 246, 0.4); border-radius: var(--radius-md); padding: 14px 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fa-solid fa-spinner fa-spin text-cyan" style="font-size: 18px;"></i>
+                    <div>
+                        <strong id="scanProgressTitle" style="color: #fff; font-size: 14px;">Đang quét
+                            Follower...</strong>
+                        <div id="scanProgressSubtitle"
+                            style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">Chế độ
+                            ZeroRAM siêu nhẹ, tự động cập nhật số liệu không mở trình duyệt</div>
                     </div>
                 </div>
-            </section>
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <span id="scanProgressPercent"
+                        style="font-weight: 800; font-size: 15px; color: var(--accent-cyan); letter-spacing: 0.5px;">0%</span>
+                    <button type="button" class="btn btn-sm btn-danger" id="btnStopScanFollowers"
+                        onclick="stopAllProfilesScan(this)"
+                        style="display: flex; align-items: center; gap: 6px; font-weight: 700;">
+                        <i class="fa-solid fa-hand"></i> Dừng Quét
+                    </button>
+                </div>
+            </div>
+            <div
+                style="width: 100%; height: 7px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
+                <div id="scanProgressBarFill"
+                    style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple)); transition: width 0.3s ease; border-radius: 4px;">
+                </div>
+            </div>
+        </div>
 
-            <!-- TAB 5: TRACKER & 10K ALERTS -->
-            <section id="tab-tracker" class="tab-pane">
-                <div class="glass-panel">
-                    <div class="panel-header">
-                        <div>
-                            <h3><i class="fa-solid fa-trophy text-gold"></i> Danh Sách Nick Đạt Chuẩn 10.000 Follower
-                            </h3>
-                            <p class="panel-sub">Các tài khoản đã đủ điều kiện tham gia Creator Rewards Program (TikTok
-                                Beta)</p>
-                        </div>
+        <!-- BỘ LỌC & SẮP XẾP PROFILE GPM -->
+        <div class="table-toolbar mb-3" style="margin-top: 14px;">
+            <!-- Row 1: Sắp xếp & Lọc trạng thái -->
+            <div class="toolbar-row" style="margin-bottom: 8px;">
+                <div class="toolbar-group">
+                    <!-- Sort Field -->
+                    <div class="sort-control">
+                        <label for="sortGpmField"><i class="fa-solid fa-arrow-down-wide-short"></i> Sắp
+                            xếp:</label>
+                        <select id="sortGpmField" class="custom-select sort-select"
+                            onchange="handleGpmSortChange(this.value)">
+                            <option value="followers_count">Số Follower</option>
+                            <option value="name">Tên Profile</option>
+                            <option value="tiktok_username">Account Username</option>
+                            <option value="eligible_10k">Đạt Chỉ Tiêu / Beta</option>
+                            <option value="notify_status">Trạng thái theo dõi</option>
+                            <option value="last_checked">Lần quét gần nhất</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-secondary sort-dir-btn has-tooltip"
+                            id="btnGpmSortDirection" onclick="toggleGpmSortDirection()"
+                            data-tooltip="Chuyển đổi Tăng dần / Giảm dần">
+                            <i class="fa-solid fa-arrow-down-wide-short" id="gpmSortDirIcon"></i>
+                            <span id="gpmSortDirText">Giảm dần</span>
+                        </button>
                     </div>
 
-                    <div class="cards-grid mt-3" id="eligibleCardsGrid">
-                        <!-- Sẽ được điền tự động bằng JavaScript -->
-                        <div class="card-empty-state">
-                            <i class="fa-solid fa-chart-line"></i>
-                            <p>Hệ thống đang theo dõi tăng trưởng các tài khoản TikTok. Khi có tài khoản đạt mốc 10.000
-                                Followers (đủ điều kiện tham gia TikTok Creator Rewards), thông tin tài khoản sẽ hiển
-                                thị tại đây và hệ thống sẽ tự động gửi thông báo qua Telegram.</p>
-                        </div>
+                    <!-- Filter 10K Status -->
+                    <!-- Filter Platform -->
+                    <div class="sort-control">
+                        <label for="filterAccountPlatform"><i class="fa-solid fa-share-nodes"></i> Nền
+                            tảng:</label>
+                        <select id="filterAccountPlatform" class="custom-select sort-select"
+                            onchange="renderGpmProfilesTable()">
+                            <option value="all">Tất cả Nền tảng</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="youtube">YouTube</option>
+                            <option value="facebook">Facebook</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter Browser -->
+                    <div class="sort-control">
+                        <label for="filterAccountBrowser"><i class="fa-solid fa-window-restore"></i> Trình
+                            duyệt:</label>
+                        <select id="filterAccountBrowser" class="custom-select sort-select"
+                            onchange="renderGpmProfilesTable()">
+                            <option value="all" selected>Tất cả Trình duyệt</option>
+                            <option value="gpm">GPMLogin</option>
+                            <option value="genlogin">GenLogin</option>
+                        </select>
+                    </div>
+
+                    <div class="sort-control">
+                        <label for="filterGpm10k" style="cursor: pointer;" onclick="openThresholdSettingsModal()"
+                            title="Bấm để cài đặt ngưỡng thông báo và đạt chỉ tiêu"><i class="fa-solid fa-trophy"></i>
+                            <span>Đạt Chỉ Tiêu:</span> <i class="fa-solid fa-gear text-accent"
+                                style="font-size: 10px; margin-left: 2px;"></i></label>
+                        <select id="filterGpm10k" class="custom-select sort-select" onchange="renderGpmProfilesTable()">
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="10k">🏆 Đã Đạt Chỉ Tiêu</option>
+                            <option value="growing">🌱 Đang Nuôi (Chưa Đạt)</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter Notify Status -->
+                    <div class="sort-control">
+                        <label for="filterGpmNotify"><i class="fa-solid fa-bell"></i> Theo dõi:</label>
+                        <select id="filterGpmNotify" class="custom-select sort-select"
+                            onchange="renderGpmProfilesTable()">
+                            <option value="all">Tất cả</option>
+                            <option value="tracking">🔔 Đang theo dõi</option>
+                            <option value="sent">🔵 Đã gửi</option>
+                            <option value="muted">⚪ Bỏ theo dõi</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter Nick Attached -->
+                    <div class="sort-control">
+                        <label for="filterGpmNick"><i class="fa-brands fa-tiktok"></i> Tài khoản:</label>
+                        <select id="filterGpmNick" class="custom-select sort-select"
+                            onchange="renderGpmProfilesTable()">
+                            <option value="all">Tất cả nick</option>
+                            <option value="attached">✅ Đã gắn Nick</option>
+                            <option value="unattached">⚠️ Chưa gắn Nick</option>
+                        </select>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <!-- TAB: AI USAGE & COST MANAGEMENT (TRUNG TÂM QUẢN LÝ CHI PHÍ AI) -->
+            <!-- Row 2: Tìm kiếm & Reset -->
+            <div class="toolbar-row">
+                <div class="toolbar-group">
+                    <button type="button" class="btn-reset-filter has-tooltip tooltip-top" onclick="resetGpmFilters()"
+                        data-tooltip="Khôi phục toàn bộ bộ lọc về mặc định">
+                        <i class="fa-solid fa-rotate-left"></i> Đặt lại bộ lọc
+                    </button>
+                    <button type="button" class="btn btn-sm btn-export-csv has-tooltip tooltip-top"
+                        onclick="exportGpmProfilesCsv()"
+                        data-tooltip="Xuất danh sách profile đang hiển thị ra file CSV (Excel)">
+                        <i class="fa-solid fa-file-csv"></i> Xuất CSV
+                    </button>
+                </div>
+                <div class="toolbar-group">
+                    <div class="table-search-box">
+                        <i class="fa-solid fa-filter"></i>
+                        <input type="text" id="searchGpmKeyword" placeholder="Lọc nhanh tên profile, username, proxy..."
+                            oninput="debouncedRenderGpmProfilesTable()">
+                    </div>
+                    <span class="badge badge-info" id="badgeGpmCount">0 Profile</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive mt-3">
+            <table class="data-table" id="gpmProfilesTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" id="th-gpm-name" onclick="handleGpmHeaderSort('name')"
+                            title="Bấm để sắp xếp theo Tên Profile">
+                            Tên Profile <i class="fa-solid fa-sort sort-icon"></i>
+                        </th>
+                        <th style="width: 88px;">Nền Tảng</th>
+                        <th class="sortable" id="th-gpm-tiktok_username"
+                            onclick="handleGpmHeaderSort('tiktok_username')"
+                            title="Bấm để sắp xếp theo Account Username">
+                            Account Username <i class="fa-solid fa-sort sort-icon"></i>
+                        </th>
+                        <th class="sortable" id="th-gpm-followers_count"
+                            onclick="handleGpmHeaderSort('followers_count')" title="Bấm để sắp xếp theo Follower">
+                            Followers <i class="fa-solid fa-sort sort-icon"></i>
+                        </th>
+                        <th class="sortable" id="th-gpm-eligible_10k" onclick="handleGpmHeaderSort('eligible_10k')"
+                            title="Bấm để sắp xếp theo trạng thái Đạt Chỉ Tiêu / Chuẩn Beta">
+                            Đạt Chỉ Tiêu / Beta <i class="fa-solid fa-sort sort-icon"></i>
+                        </th>
+                        <th class="sortable" id="th-gpm-notify_status" onclick="handleGpmHeaderSort('notify_status')"
+                            title="Bấm để sắp xếp theo Trạng thái theo dõi">
+                            Trạng Thái Theo Dõi <i class="fa-solid fa-sort sort-icon"></i>
+                        </th>
+                        <th style="text-align: center; width: 80px;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="gpmTableBody">
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">Chưa có profile nào. Hãy ấn
+                            "Đồng Bộ" để nạp dữ liệu!</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- TAB 5: TRACKER & 10K ALERTS -->
+<section id="tab-tracker" class="tab-pane">
+    <div class="glass-panel">
+        <div class="panel-header">
+            <div>
+                <h3><i class="fa-solid fa-trophy text-gold"></i> Danh Sách Nick Đạt Chuẩn 10.000 Follower
+                </h3>
+                <p class="panel-sub">Các tài khoản đã đủ điều kiện tham gia Creator Rewards Program (TikTok
+                    Beta)</p>
+            </div>
+        </div>
+
+        <div class="cards-grid mt-3" id="eligibleCardsGrid">
+            <!-- Sẽ được điền tự động bằng JavaScript -->
+            <div class="card-empty-state">
+                <i class="fa-solid fa-chart-line"></i>
+                <p>Hệ thống đang theo dõi tăng trưởng các tài khoản TikTok. Khi có tài khoản đạt mốc 10.000
+                    Followers (đủ điều kiện tham gia TikTok Creator Rewards), thông tin tài khoản sẽ hiển
+                    thị tại đây và hệ thống sẽ tự động gửi thông báo qua Telegram.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TAB: AI USAGE & COST MANAGEMENT (TRUNG TÂM QUẢN LÝ CHI PHÍ AI) -->

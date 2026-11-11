@@ -159,6 +159,17 @@ async function exportGpmProfilesCsv() {
     downloadCsv(`dan_tai_khoan_gpm_${dateStr}.csv`, rows);
 }
 
+// Cached Intl.Collator for high-performance localized string sorting
+const viCollator = new Intl.Collator('vi', { sensitivity: 'base' });
+
+let _gpmSearchDebounceTimer = null;
+function debouncedRenderGpmProfilesTable() {
+    if (_gpmSearchDebounceTimer) clearTimeout(_gpmSearchDebounceTimer);
+    _gpmSearchDebounceTimer = setTimeout(() => {
+        renderGpmProfilesTable();
+    }, 150);
+}
+
 function renderGpmProfilesTable() {
     const tbody = document.getElementById('gpmTableBody');
     const eligibleGrid = document.getElementById('eligibleCardsGrid');
@@ -171,60 +182,49 @@ function renderGpmProfilesTable() {
     const filterBrowser = document.getElementById('filterAccountBrowser') ? document.getElementById('filterAccountBrowser').value : 'all';
     const keyword = (document.getElementById('searchGpmKeyword') ? document.getElementById('searchGpmKeyword').value : '').trim().toLowerCase();
 
-    let list = (cachedGpmProfiles || []).slice();
+    // Single-pass combined filter (eliminates 4 intermediate array allocations)
+    let list = (cachedGpmProfiles || []).filter(p => {
+        // 1. 10K Filter
+        if (filter10k === '10k' && !isProfileEligible(p)) return false;
+        if (filter10k === 'growing' && isProfileEligible(p)) return false;
 
-    // 1. Lọc theo chuẩn 10K
-    if (filter10k === '10k') {
-        list = list.filter(p => isProfileEligible(p));
-    } else if (filter10k === 'growing') {
-        list = list.filter(p => !isProfileEligible(p));
-    }
+        // 2. Notify Filter
+        if (filterNotify === 'tracking' && (p.notify_status || 'tracking').toLowerCase() !== 'tracking') return false;
+        if (filterNotify === 'sent' && (p.notify_status || '').toLowerCase() !== 'sent') return false;
+        if (filterNotify === 'muted' && (p.notify_status || '').toLowerCase() !== 'muted') return false;
 
-    // 2. Lọc theo trạng thái theo dõi 10K
-    if (filterNotify === 'tracking') {
-        list = list.filter(p => (p.notify_status || 'tracking').toLowerCase() === 'tracking');
-    } else if (filterNotify === 'sent') {
-        list = list.filter(p => (p.notify_status || '').toLowerCase() === 'sent');
-    } else if (filterNotify === 'muted') {
-        list = list.filter(p => (p.notify_status || '').toLowerCase() === 'muted');
-    }
+        // 3. Nick Attached Filter
+        const hasNick = Boolean(p.tiktok_username && p.tiktok_username.trim());
+        if (filterNick === 'attached' && !hasNick) return false;
+        if (filterNick === 'unattached' && hasNick) return false;
 
-    // 3. Lọc theo trạng thái gán nick
-    if (filterNick === 'attached') {
-        list = list.filter(p => Boolean(p.tiktok_username && p.tiktok_username.trim()));
-    } else if (filterNick === 'unattached') {
-        list = list.filter(p => !Boolean(p.tiktok_username && p.tiktok_username.trim()));
-    }
+        // Platform & Browser Filter
+        if (filterPlatform && filterPlatform !== 'all' && (p.platform || 'tiktok').toLowerCase() !== filterPlatform.toLowerCase()) return false;
+        if (filterBrowser && filterBrowser !== 'all' && (p.browser_type || 'gpm').toLowerCase() !== filterBrowser.toLowerCase()) return false;
 
-    // Lọc theo Nền tảng & Trình duyệt
-    if (filterPlatform && filterPlatform !== 'all') {
-        list = list.filter(p => (p.platform || 'tiktok').toLowerCase() === filterPlatform.toLowerCase());
-    }
-    if (filterBrowser && filterBrowser !== 'all') {
-        list = list.filter(p => (p.browser_type || 'gpm').toLowerCase() === filterBrowser.toLowerCase());
-    }
-
-    // 4. Lọc từ khóa
-    if (keyword) {
-        list = list.filter(p => {
+        // 4. Keyword Filter
+        if (keyword) {
             const name = (p.name || '').toLowerCase();
             const u = (p.tiktok_username || '').toLowerCase();
             const proxy = (p.raw_proxy || '').toLowerCase();
             const gid = (p.gpm_id || '').toLowerCase();
             const nstat = (p.notify_status || 'tracking').toLowerCase();
-            return name.includes(keyword) || u.includes(keyword) || proxy.includes(keyword) || gid.includes(keyword) || nstat.includes(keyword);
-        });
-    }
+            if (!name.includes(keyword) && !u.includes(keyword) && !proxy.includes(keyword) && !gid.includes(keyword) && !nstat.includes(keyword)) {
+                return false;
+            }
+        }
+        return true;
+    });
 
-    // 5. Sắp xếp
+    // 5. Sắp xếp với cached Collator
     list.sort((a, b) => {
         let res = 0;
         if (gpmSortField === 'followers_count') {
             res = (a.followers_count || 0) - (b.followers_count || 0);
         } else if (gpmSortField === 'name') {
-            res = (a.name || '').localeCompare(b.name || '', 'vi', { sensitivity: 'base' });
+            res = viCollator.compare(a.name || '', b.name || '');
         } else if (gpmSortField === 'tiktok_username') {
-            res = (a.tiktok_username || '').localeCompare(b.tiktok_username || '', 'vi', { sensitivity: 'base' });
+            res = viCollator.compare(a.tiktok_username || '', b.tiktok_username || '');
         } else if (gpmSortField === 'eligible_10k') {
             const ea = isProfileEligible(a) ? 1 : 0;
             const eb = isProfileEligible(b) ? 1 : 0;
@@ -2168,6 +2168,7 @@ window.scanAllProfilesFollowers = scanAllProfilesFollowers;
 window.stopAllProfilesScan = stopAllProfilesScan;
 window.checkScanProgress = checkScanProgress;
 window.loadGpmProfiles = loadGpmProfiles;
+window.debouncedRenderGpmProfilesTable = debouncedRenderGpmProfilesTable;
 window.renderGpmProfilesTable = renderGpmProfilesTable;
 window.openEditUsernameModal = openEditUsernameModal;
 window.closeEditUsernameModal = closeEditUsernameModal;

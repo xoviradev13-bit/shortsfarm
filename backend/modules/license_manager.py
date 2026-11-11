@@ -4,6 +4,7 @@ import re
 import platform
 import uuid
 import hashlib
+import hmac
 import json
 import urllib.request
 import urllib.error
@@ -12,6 +13,24 @@ from typing import Dict, Any, Optional, Tuple
 
 from backend.config import APP_VERSION, LICENSE_PORTAL_URL, FALLBACK_PORTAL_URL
 from backend.database import get_setting, set_setting
+
+# Secret salt / client key dùng xác thực chữ ký bản quyền chống chỉnh sửa DB
+CLIENT_LICENSE_SALT = "SS_SECURE_SALT_v1_9c8f2b1a7d4e3f60"
+
+def compute_license_signature(license_key: str, hwid: str) -> str:
+    """Tạo / Kiểm tra chữ ký HMAC-SHA256 liên kết chặt giữa License Key và HWID"""
+    clean_key = (license_key or "").strip().upper()
+    clean_hwid = (hwid or "").strip().upper()
+    data = f"{clean_key}:{clean_hwid}".encode("utf-8")
+    return hmac.new(CLIENT_LICENSE_SALT.encode("utf-8"), data, hashlib.sha256).hexdigest()
+
+def verify_signature_authenticity(license_key: str, hwid: str, signature: str) -> bool:
+    """Xác minh tính hợp lệ của chữ ký đã lưu chống tamper"""
+    if not signature or not license_key or not hwid:
+        return False
+    expected = compute_license_signature(license_key, hwid)
+    # Hỗ trợ cả constant-time compare
+    return hmac.compare_digest(signature.strip().lower(), expected.lower())
 
 PLAN_NAMES: Dict[str, str] = {
     "pro_1pc": "Gói Cá Nhân (1 PC - Vĩnh Viễn)",
@@ -145,8 +164,17 @@ def get_license_info() -> Dict[str, Any]:
         expires_display = "Vĩnh viễn (Trọn đời)" if status == "active" else "—"
 
     # Chống giả mạo CSDL cục bộ (Tamper Resistance):
-    # Nếu key có trong DB nhưng không có chữ ký số hợp lệ từ server
-    is_tampered = bool(key) and status == "active" and not signature
+    # Kiểm tra chữ ký HMAC giữa key và hwid:
+    # Nếu key có trong DB nhưng không có chữ ký hoặc chữ ký không khớp với HWID của máy này
+    is_tampered = False
+    if bool(key) and status == "active":
+        if not signature:
+            is_tampered = True
+        elif not verify_signature_authenticity(key, hwid, signature):
+            # Nếu server trả về chữ ký HMAC chuẩn, đối chiếu trực tiếp.
+            # Tránh trường hợp user copy sqlite database hoặc tự sửa license_status='active' trên máy khác
+            is_tampered = True
+
     if is_tampered:
         status = "invalid"
 
@@ -203,6 +231,9 @@ def activate_license(license_key: str) -> Dict[str, Any]:
 
             # Lưu vào Database máy
             sig = lic_data.get("signature") or resp.get("signature") or ""
+            if not sig:
+                # Nếu server chưa triển khai signature HMAC, tự tính toán theo salt bí mật đồng bộ
+                sig = compute_license_signature(clean_key, hwid)
             set_setting("license_key", clean_key)
             set_setting("license_status", "active")
             set_setting("license_plan", plan)
@@ -243,11 +274,12 @@ def verify_license(force_remote: bool = False) -> Dict[str, Any]:
     if not info["license_key"]:
         return {"valid": False, "status": "unlicensed", "message": "Chưa kích hoạt bản quyền."}
 
-    # Nếu không bắt buộc gọi remote và đã kiểm tra trong vòng 6 tiếng gần nhất
+    # Nếu không bắt buộc gọi remote và đã kiểm tra trong vòng 2 tiếng gần nhất
+    # Cache 2 giờ (7200 giây) cho tất cả các gói bản quyền vĩnh viễn (1 PC / 3 PC / 5 PC)
     if not force_remote and info["last_verified"]:
         try:
             last_dt = datetime.fromisoformat(info["last_verified"])
-            if (datetime.now() - last_dt).total_seconds() < 21600 and info["is_active"]:
+            if (datetime.now() - last_dt).total_seconds() < 7200 and info["is_active"]:
                 return {"valid": True, "status": info["status"], "cached": True}
         except Exception:
             pass
@@ -275,6 +307,8 @@ def verify_license(force_remote: bool = False) -> Dict[str, Any]:
             if max_d:
                 set_setting("license_max_devices", str(max_d))
             sig = resp.get("signature") or ""
+            if not sig:
+                sig = compute_license_signature(info["license_key"], hwid)
             if sig:
                 set_setting("license_signature", sig)
             return {"valid": True, "status": "active", "message": "Bản quyền hợp lệ."}

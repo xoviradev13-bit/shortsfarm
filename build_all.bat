@@ -7,6 +7,13 @@ echo   SHORTSSTACK & AI VIDEO ENGINE - BUILD PIPELINE
 echo ========================================================
 echo.
 
+REM 0. PyArmor Obfuscation (Mã hóa chống decompile)
+echo [0/3] Dang ma hoa cac module bao mat bang PyArmor...
+python obfuscate_core.py
+if %errorlevel% neq 0 (
+    echo [CANH BAO] Qua trinh ma hoa PyArmor gap su co, tiep tuc voi PyInstaller goc...
+)
+
 REM 1. PyInstaller Build
 echo [1/3] Dang dong goi Executable voi PyInstaller...
 python -m PyInstaller --clean --noconfirm ShortsStack.spec

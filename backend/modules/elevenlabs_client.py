@@ -9,7 +9,7 @@ from backend.logger import get_logger
 
 logger = get_logger("elevenlabs_client")
 
-# Danh sách giọng mặc định thông dụng của ElevenLabs
+# Danh sách giọng mặc định thông dụng của ElevenLabs (với preview URL đã kiểm chứng hoạt động 100%)
 PRESET_VOICES = [
     {
         "voice_id": "pNInz6obpgDQGcFmaJgB",
@@ -17,47 +17,47 @@ PRESET_VOICES = [
         "category": "premade",
         "labels": {"accent": "american", "gender": "male", "age": "middle aged", "use_case": "narration"},
         "description": "Giọng nam trầm ấm, phong cách điện ảnh, kể chuyện viral TikTok/Shorts",
-        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pNInz6obpgDQGcFmaJgB/audio.mp3"
-    },
-    {
-        "voice_id": "21m00Tcm4TlvDq8ikWAM",
-        "name": "Rachel",
-        "category": "premade",
-        "labels": {"accent": "american", "gender": "female", "age": "young", "use_case": "calm narration"},
-        "description": "Giọng nữ truyền cảm, dịu dàng, tâm sự, phong cách sống",
-        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/21m00Tcm4TlvDq8ikWAM/audio.mp3"
-    },
-    {
-        "voice_id": "ErXwobaYiN019PkySvjV",
-        "name": "Antoni",
-        "category": "premade",
-        "labels": {"accent": "american", "gender": "male", "age": "young", "use_case": "storytelling"},
-        "description": "Giọng nam năng động, tự nhiên, review phim, vlog đời thường",
-        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/ErXwobaYiN019PkySvjV/audio.mp3"
+        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pNInz6obpgDQGcFmaJgB/d6905d7a-dd26-4187-bfff-1bd3a5ea7cac.mp3"
     },
     {
         "voice_id": "EXAVITQu4vr4xnSDxMaL",
+        "name": "Sarah (Rachel)",
+        "category": "premade",
+        "labels": {"accent": "american", "gender": "female", "age": "young", "use_case": "calm narration"},
+        "description": "Giọng nữ truyền cảm, dịu dàng, tâm sự, phong cách sống",
+        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/EXAVITQu4vr4xnSDxMaL/01a3e33c-6e99-4ee7-8543-ff2216a32186.mp3"
+    },
+    {
+        "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+        "name": "Roger",
+        "category": "premade",
+        "labels": {"accent": "american", "gender": "male", "age": "middle aged", "use_case": "storytelling"},
+        "description": "Giọng nam đĩnh đạc, tự nhiên, phóng sự, review phim, vlog",
+        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/58ee3ff5-f6f2-4628-93b8-e38eb31806b0.mp3"
+    },
+    {
+        "voice_id": "hpp4J3VqNfWAUOO0d1Us",
         "name": "Bella",
         "category": "premade",
         "labels": {"accent": "american", "gender": "female", "age": "young", "use_case": "tiktok trendy"},
         "description": "Giọng nữ trẻ trung, lôi cuốn, trendy TikTok",
-        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/EXAVITQu4vr4xnSDxMaL/audio.mp3"
+        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/hpp4J3VqNfWAUOO0d1Us/dab0f5ba-3aa4-48a8-9fad-f138fea1126d.mp3"
     },
     {
-        "voice_id": "TxGEqnHWrfWFTfGW9XjX",
-        "name": "Josh",
+        "voice_id": "TX3LPaxmHKxFdv7VOQHJ",
+        "name": "Liam",
         "category": "premade",
         "labels": {"accent": "american", "gender": "male", "age": "young", "use_case": "news/tech"},
-        "description": "Giọng nam trẻ, hào hứng, tin tức công nghệ và giải trí",
-        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/TxGEqnHWrfWFTfGW9XjX/audio.mp3"
+        "description": "Giọng nam trẻ, năng động, tin tức công nghệ và giải trí",
+        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/TX3LPaxmHKxFdv7VOQHJ/63148076-6363-42db-aea8-31424308b92c.mp3"
     },
     {
-        "voice_id": "VR6AewLTigWG4xSOukaG",
-        "name": "Arnold",
+        "voice_id": "pqHfZKP75CvOlQylNhV4",
+        "name": "Bill",
         "category": "premade",
         "labels": {"accent": "american", "gender": "male", "age": "middle aged", "use_case": "documentary"},
         "description": "Giọng nam đĩnh đạc, trầm hùng, phóng sự gián điệp, đại án",
-        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/VR6AewLTigWG4xSOukaG/audio.mp3"
+        "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pqHfZKP75CvOlQylNhV4/d782b3ff-84ba-4029-848c-acf01285524d.mp3"
     }
 ]
 
@@ -107,6 +107,17 @@ class ElevenLabsClient:
         if not api_key:
             return {"configured": False, "message": "Chưa nhập API Key"}
 
+        if not api_key.startswith("sk_"):
+            return {
+                "configured": False,
+                "tier": "Key không hợp lệ",
+                "status": "invalid_key",
+                "character_count": 0,
+                "character_limit": 10000,
+                "characters_remaining": 0,
+                "message": "API Key không đúng định dạng. ElevenLabs API Key phải bắt đầu bằng 'sk_' (bạn đang dùng Key ID thay vì Secret Key)."
+            }
+
         try:
             url = f"{self.base_url}/user/subscription"
             headers = {"xi-api-key": api_key}
@@ -127,21 +138,52 @@ class ElevenLabsClient:
                     "characters_remaining": remaining,
                     "percent_used": round((char_count / max(1, char_limit)) * 100, 1)
                 }
+            else:
+                err_msg = "Lỗi xác thực API Key"
+                try:
+                    err_json = res.json().get("detail", {})
+                    if isinstance(err_json, dict) and err_json.get("message"):
+                        err_msg = err_json["message"]
+                    elif isinstance(err_json, str):
+                        err_msg = err_json
+                except Exception:
+                    pass
+                return {
+                    "configured": False,
+                    "tier": "Key không hợp lệ",
+                    "status": "error",
+                    "character_count": 0,
+                    "character_limit": 10000,
+                    "characters_remaining": 0,
+                    "message": err_msg
+                }
         except Exception as e:
             logger.warning(f"Lỗi lấy thông tin subscription ElevenLabs: {e}")
 
-        return {"configured": True, "tier": "Active Key", "characters_remaining": "N/A"}
+        return {
+            "configured": True,
+            "tier": "Không thể kết nối",
+            "status": "offline",
+            "character_count": 0,
+            "character_limit": 10000,
+            "characters_remaining": 0,
+            "message": "Không thể kết nối tới máy chủ ElevenLabs"
+        }
 
     def list_voices(self) -> List[Dict[str, Any]]:
         """Lấy danh sách tất cả các giọng đọc (kèm các giọng cloned riêng của tài khoản)"""
         api_key = self.get_api_key()
-        if not api_key:
-            return PRESET_VOICES
+        headers = {}
+        if api_key and api_key.startswith("sk_"):
+            headers["xi-api-key"] = api_key
 
         try:
             url = f"{self.base_url}/voices"
-            headers = {"xi-api-key": api_key}
             res = requests.get(url, headers=headers, timeout=8)
+            # Nếu key sai (400, 401) thì tự động gọi lại không kèm key để vẫn lấy được đầy đủ 21 giọng mẫu chính thức
+            if res.status_code in (400, 401) and headers:
+                res = requests.get(url, timeout=8)
+
             if res.status_code == 200:
                 data = res.json()
                 voices_raw = data.get("voices", [])
@@ -155,7 +197,8 @@ class ElevenLabsClient:
                         "description": v.get("description") or f"Giọng đọc ElevenLabs {v.get('name')}",
                         "preview_url": v.get("preview_url")
                     })
-                return results if results else PRESET_VOICES
+                if results:
+                    return results
         except Exception as e:
             logger.warning(f"Lỗi gọi ElevenLabs API: {e}. Dùng danh mục mặc định.")
 

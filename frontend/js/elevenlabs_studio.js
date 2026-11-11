@@ -4,6 +4,7 @@
 
 let studioElevenVoices = [];
 let studioCurrentPlayingAudio = null;
+let studioCurrentPlayingVoiceId = null;
 
 async function loadElevenLabsStudio() {
     await Promise.all([
@@ -38,7 +39,7 @@ async function loadElevenLabsSubscription() {
                 progressBar.style.width = pct + '%';
                 progressBar.style.background = pct > 85 ? '#ef4444' : (pct > 60 ? '#f59e0b' : '#c084fc');
             }
-            if (textQuota && data.character_limit) {
+            if (textQuota) {
                 textQuota.innerHTML = `Đã dùng <b>${(data.character_count || 0).toLocaleString()}</b> / ${(data.character_limit || 0).toLocaleString()} ký tự (Còn lại: <span style="color:#22c55e; font-weight:700;">${(data.characters_remaining || 0).toLocaleString()}</span>)`;
             }
         } else {
@@ -47,10 +48,13 @@ async function loadElevenLabsSubscription() {
                 badgeTier.style.background = 'rgba(239, 68, 68, 0.15)';
                 badgeTier.style.color = '#ef4444';
                 badgeTier.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-                badgeTier.innerText = 'Chưa cấu hình API Key';
+                badgeTier.innerText = data.tier || 'Chưa cấu hình API Key';
+            }
+            if (progressBar) {
+                progressBar.style.width = '0%';
             }
             if (textQuota) {
-                textQuota.innerHTML = '<span style="color:var(--text-muted);">Vui lòng nhập ElevenLabs API Key để kích hoạt phòng thu</span>';
+                textQuota.innerHTML = `<span style="color:#f87171;"><i class="fa-solid fa-triangle-exclamation me-1"></i> ${data.message || 'Vui lòng nhập ElevenLabs API Key để kích hoạt phòng thu'}</span>`;
             }
         }
     } catch (e) {
@@ -192,25 +196,79 @@ function filterVoiceGallery(type, btn) {
 }
 
 function playVoiceDemoSample(voiceId, previewUrl) {
+    // 1. Nếu đang phát đúng giọng này -> Dừng phát (Toggle Stop/Pause)
+    if (studioCurrentPlayingAudio && studioCurrentPlayingVoiceId === voiceId) {
+        studioCurrentPlayingAudio.pause();
+        studioCurrentPlayingAudio = null;
+        studioCurrentPlayingVoiceId = null;
+        const icon = document.getElementById('iconPlayDemo_' + voiceId);
+        if (icon) icon.className = 'fa-solid fa-play';
+        return;
+    }
+
+    // 2. Nếu đang phát một giọng khác -> Dừng giọng cũ trước khi phát giọng mới
     if (studioCurrentPlayingAudio) {
         studioCurrentPlayingAudio.pause();
+        studioCurrentPlayingAudio = null;
+        studioCurrentPlayingVoiceId = null;
         document.querySelectorAll('[id^="iconPlayDemo_"]').forEach(i => i.className = 'fa-solid fa-play');
     }
 
-    if (!previewUrl || previewUrl === 'undefined') {
+    if (!previewUrl || previewUrl === 'undefined' || previewUrl === 'None') {
         alert('Giọng này không có mẫu thu sẵn. Bạn hãy bấm "Tạo Giọng Đọc Thử Nghiệm" ở khung bên trái để nghe!');
         return;
     }
 
-    const audio = new Audio(previewUrl);
-    studioCurrentPlayingAudio = audio;
     const icon = document.getElementById('iconPlayDemo_' + voiceId);
-    if (icon) icon.className = 'fa-solid fa-pause';
+    if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
 
-    audio.play();
-    audio.onended = () => {
+    try {
+        const audio = new Audio(previewUrl);
+        studioCurrentPlayingAudio = audio;
+        studioCurrentPlayingVoiceId = voiceId;
+
+        audio.oncanplay = () => {
+            if (icon && studioCurrentPlayingAudio === audio) {
+                icon.className = 'fa-solid fa-pause';
+            }
+        };
+
+        audio.play().then(() => {
+            if (icon && studioCurrentPlayingAudio === audio) {
+                icon.className = 'fa-solid fa-pause';
+            }
+        }).catch(e => {
+            console.warn('Lỗi phát audio mẫu:', e);
+            if (icon) icon.className = 'fa-solid fa-play';
+            if (studioCurrentPlayingVoiceId === voiceId) {
+                studioCurrentPlayingAudio = null;
+                studioCurrentPlayingVoiceId = null;
+            }
+        });
+
+        audio.onended = () => {
+            if (icon) icon.className = 'fa-solid fa-play';
+            if (studioCurrentPlayingVoiceId === voiceId) {
+                studioCurrentPlayingAudio = null;
+                studioCurrentPlayingVoiceId = null;
+            }
+        };
+
+        audio.onerror = (e) => {
+            console.error('Lỗi tải file âm thanh:', e);
+            if (icon) icon.className = 'fa-solid fa-play';
+            if (studioCurrentPlayingVoiceId === voiceId) {
+                studioCurrentPlayingAudio = null;
+                studioCurrentPlayingVoiceId = null;
+            }
+            alert('Không thể tải file âm thanh mẫu từ ElevenLabs (Lỗi mạng hoặc link không phản hồi).');
+        };
+    } catch (err) {
+        console.error('Lỗi khởi tạo Audio:', err);
         if (icon) icon.className = 'fa-solid fa-play';
-    };
+        studioCurrentPlayingAudio = null;
+        studioCurrentPlayingVoiceId = null;
+    }
 }
 
 function selectVoiceForStudio(voiceId) {

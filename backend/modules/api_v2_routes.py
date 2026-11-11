@@ -206,6 +206,7 @@ from backend.database import get_connection
 def get_elevenlabs_voices():
     """Lấy danh sách tất cả các giọng đọc ElevenLabs (mặc định + cloned)"""
     return {
+        "status": "success",
         "voices": elevenlabs_client.list_voices(),
         "has_api_key": bool(elevenlabs_client.get_api_key())
     }

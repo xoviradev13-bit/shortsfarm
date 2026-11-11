@@ -652,26 +652,39 @@ async function populateElevenLabsVoicesToSelect(selectElId, selectedVoiceId = ''
     try {
         const res = await fetch('/api/v2/voice/elevenlabs/voices');
         const data = await res.json();
-        if (data.status === 'success' && Array.isArray(data.voices)) {
+        const voices = data.voices || (Array.isArray(data) ? data : []);
+        if (Array.isArray(voices) && voices.length > 0) {
             let html = '<option value="">-- Chọn Giọng Đọc ElevenLabs --</option>';
-            data.voices.forEach(v => {
+            voices.forEach(v => {
                 const isSel = (v.voice_id === selectedVoiceId) ? 'selected' : '';
-                html += `<option value="${v.voice_id}" ${isSel}>${v.name} (${v.category || 'Cloned'})</option>`;
+                const gender = v.labels?.gender === 'female' ? 'Nữ' : (v.labels?.gender === 'male' ? 'Nam' : '');
+                const genderStr = gender ? ` [${gender}]` : '';
+                html += `<option value="${v.voice_id}" ${isSel}>${v.name}${genderStr} (${v.category || 'premade'})</option>`;
             });
             selectEl.innerHTML = html;
+        } else {
+            selectEl.innerHTML = '<option value="">-- Không tìm thấy giọng đọc nào --</option>';
         }
-    } catch (_) { }
+    } catch (_) {
+        selectEl.innerHTML = '<option value="">-- Lỗi tải danh sách giọng đọc --</option>';
+    }
 }
 window.populateElevenLabsVoicesToSelect = populateElevenLabsVoicesToSelect;
 
 function toggleCampaignTtsEngine(prefix, engine) {
     const p = (prefix === 'new') ? 'campaign' : 'editCampaign';
     const elWrap = document.getElementById(`${p}ElevenLabsWrap`);
+    const edgeVoiceCol = document.getElementById(`${p}EdgeTtsVoiceCol`);
+    const langCol = document.getElementById(`${p}NarrationLangCol`);
     if (engine === 'elevenlabs') {
         if (elWrap) elWrap.style.display = 'block';
+        if (edgeVoiceCol) edgeVoiceCol.style.display = 'none';
+        if (langCol) langCol.style.gridColumn = '1 / -1';
         populateCampaignElevenLabsVoices(prefix);
     } else {
         if (elWrap) elWrap.style.display = 'none';
+        if (edgeVoiceCol) edgeVoiceCol.style.display = 'block';
+        if (langCol) langCol.style.gridColumn = 'auto';
     }
 }
 window.toggleCampaignTtsEngine = toggleCampaignTtsEngine;
@@ -684,22 +697,34 @@ window.populateCampaignElevenLabsVoices = populateCampaignElevenLabsVoices;
 
 function toggleChannelTtsEngine(engine) {
     const elWrap = document.getElementById('settingChannelElevenLabsWrap');
+    const edgeVoiceCol = document.getElementById('settingChannelEdgeTtsVoiceCol');
+    const langCol = document.getElementById('settingChannelNarrationLangCol');
     if (engine === 'elevenlabs') {
         if (elWrap) elWrap.style.display = 'block';
+        if (edgeVoiceCol) edgeVoiceCol.style.display = 'none';
+        if (langCol) langCol.style.gridColumn = '1 / -1';
         populateElevenLabsVoicesToSelect('settingChannelElevenLabsVoiceId');
     } else {
         if (elWrap) elWrap.style.display = 'none';
+        if (edgeVoiceCol) edgeVoiceCol.style.display = 'block';
+        if (langCol) langCol.style.gridColumn = 'auto';
     }
 }
 window.toggleChannelTtsEngine = toggleChannelTtsEngine;
 
 function toggleStudioTtsEngine(engine) {
     const elWrap = document.getElementById('studioElevenLabsWrap');
+    const edgeVoiceCol = document.getElementById('studioEdgeTtsVoiceCol');
+    const langCol = document.getElementById('studioNarrationLangCol');
     if (engine === 'elevenlabs') {
         if (elWrap) elWrap.style.display = 'block';
+        if (edgeVoiceCol) edgeVoiceCol.style.display = 'none';
+        if (langCol) langCol.style.gridColumn = '1 / -1';
         populateElevenLabsVoicesToSelect('studioElevenLabsVoiceId');
     } else {
         if (elWrap) elWrap.style.display = 'none';
+        if (edgeVoiceCol) edgeVoiceCol.style.display = 'block';
+        if (langCol) langCol.style.gridColumn = 'auto';
     }
 }
 window.toggleStudioTtsEngine = toggleStudioTtsEngine;

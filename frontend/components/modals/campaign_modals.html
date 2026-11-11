@@ -238,13 +238,17 @@
                                 <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-crop"></i>
                                     Định Dạng Khung Hình:</label>
                                 <select id="campaignAspectRatio" class="custom-select mt-1"
-                                    style="width:100%; height:40px;" onchange="handleAspectRatioChange('campaign', this.value);">
+                                    style="width:100%; height:40px;"
+                                    onchange="handleAspectRatioChange('campaign', this.value);">
                                     <option value="9:16_blur" selected>9:16 Dọc Nền Mờ - Chuẩn TikTok
                                     </option>
                                     <option value="9:16_crop">9:16 Dọc Cắt Giữa</option>
                                     <option value="9:16_split">9:16 Split Screen Ghép 2 Tầng</option>
                                 </select>
-                                <small id="campaignAspectLockNotice" style="display:none; color:var(--accent-gold); font-size:11px; margin-top:3px;"><i class="fa-solid fa-lock"></i> Đã khóa 9:16 Nền Mờ (Chế độ AI Storytelling)</small>
+                                <small id="campaignAspectLockNotice"
+                                    style="display:none; color:var(--accent-gold); font-size:11px; margin-top:3px;"><i
+                                        class="fa-solid fa-lock"></i> Đã khóa 9:16 Nền Mờ (Chế độ AI
+                                    Storytelling)</small>
                             </div>
                             <div>
                                 <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-clock"></i>
@@ -261,61 +265,85 @@
                         </div>
 
                         <!-- Split Screen Sub-Video Configuration (New Campaign) -->
-                        <div id="campaignSplitScreenWrap" style="display:none; margin-top:12px; padding:12px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.25); border-radius:8px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                <label style="font-size:12px; font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:6px; margin:0;">
-                                    <i class="fa-solid fa-table-columns"></i> Cấu hình Video Phụ (Tầng Dưới - Split Screen):
+                        <div id="campaignSplitScreenWrap"
+                            style="display:none; margin-top:12px; padding:12px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.25); border-radius:8px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <label
+                                    style="font-size:12px; font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:6px; margin:0;">
+                                    <i class="fa-solid fa-table-columns"></i> Cấu hình Video Phụ (Tầng Dưới - Split
+                                    Screen):
                                 </label>
-                                <span class="badge" style="background:rgba(6,182,212,0.2); color:var(--accent-cyan); font-size:10px; font-weight:700;">Nửa Dưới 1080x960</span>
+                                <span class="badge"
+                                    style="background:rgba(6,182,212,0.2); color:var(--accent-cyan); font-size:10px; font-weight:700;">Nửa
+                                    Dưới 1080x960</span>
                             </div>
 
                             <div style="display:flex; gap:16px; margin-bottom:10px;">
-                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; cursor:pointer;">
-                                    <input type="radio" name="campaignSplitSourceType" id="campaignSplitSourceLocal" value="local" checked onchange="handleSplitSourceChange('campaign', 'local')">
+                                <label
+                                    style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; cursor:pointer;">
+                                    <input type="radio" name="campaignSplitSourceType" id="campaignSplitSourceLocal"
+                                        value="local" checked onchange="handleSplitSourceChange('campaign', 'local')">
                                     <span>📁 Thư Mục Cục Bộ (Khuyên dùng)</span>
                                 </label>
-                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; cursor:pointer;">
-                                    <input type="radio" name="campaignSplitSourceType" id="campaignSplitSourceStock" value="stock" onchange="handleSplitSourceChange('campaign', 'stock')">
+                                <label
+                                    style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; cursor:pointer;">
+                                    <input type="radio" name="campaignSplitSourceType" id="campaignSplitSourceStock"
+                                        value="stock" onchange="handleSplitSourceChange('campaign', 'stock')">
                                     <span>🌐 Tự Động Tải Từ Stock (Pexels / Pixabay)</span>
                                 </label>
                             </div>
 
                             <div id="campaignSplitLocalWrap">
-                                <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
+                                <label
+                                    style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
                                     Đường dẫn thư mục chứa video phụ (Gameplay / ASMR loop):
                                 </label>
                                 <div style="display:flex; gap:8px;">
-                                    <input type="text" id="campaignSplitFolder" class="input-field" value="data/gameplay" placeholder="data/gameplay" style="flex:1;">
-                                    <button type="button" class="btn btn-secondary" onclick="browseFolderForInput('campaignSplitFolder')" style="white-space:nowrap; padding:0 14px; font-size:12px;">
+                                    <input type="text" id="campaignSplitFolder" class="input-field"
+                                        value="data/gameplay" placeholder="data/gameplay" style="flex:1;">
+                                    <button type="button" class="btn btn-secondary"
+                                        onclick="browseFolderForInput('campaignSplitFolder')"
+                                        style="white-space:nowrap; padding:0 14px; font-size:12px;">
                                         <i class="fa-solid fa-folder-open"></i> Duyệt
                                     </button>
                                 </div>
-                                <small class="form-hint" style="color:var(--text-muted); font-size:11px; display:block; margin-top:4px;">
-                                    * Tự động chọn ngẫu nhiên các video khác nhau trong thư mục và lấy đoạn thời gian khác nhau để chống quét trùng lặp.
+                                <small class="form-hint"
+                                    style="color:var(--text-muted); font-size:11px; display:block; margin-top:4px;">
+                                    * Tự động chọn ngẫu nhiên các video khác nhau trong thư mục và lấy đoạn thời gian
+                                    khác nhau để chống quét trùng lặp.
                                 </small>
                             </div>
 
                             <div id="campaignSplitStockWrap" style="display:none;">
-                                <div style="display:grid; grid-template-columns:1fr 220px; gap:10px; margin-bottom:6px;">
+                                <div
+                                    style="display:grid; grid-template-columns:1fr 220px; gap:10px; margin-bottom:6px;">
                                     <div>
-                                        <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
+                                        <label
+                                            style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
                                             Từ khóa tìm kiếm Stock Video (cách nhau bằng dấu phẩy):
                                         </label>
-                                        <input type="text" id="campaignSplitKeywords" class="input-field" value="minecraft parkour, satisfying asmr, subway surfers, soap cutting" placeholder="minecraft parkour, satisfying asmr, subway surfers">
+                                        <input type="text" id="campaignSplitKeywords" class="input-field"
+                                            value="minecraft parkour, satisfying asmr, subway surfers, soap cutting"
+                                            placeholder="minecraft parkour, satisfying asmr, subway surfers">
                                     </div>
                                     <div>
-                                        <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
+                                        <label
+                                            style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
                                             Nguồn Stock:
                                         </label>
-                                        <select id="campaignSplitProvider" class="custom-select" style="width:100%; height:38px;">
+                                        <select id="campaignSplitProvider" class="custom-select"
+                                            style="width:100%; height:38px;">
                                             <option value="all" selected>Pexels &rarr; Pixabay fallback</option>
                                             <option value="pexels">Chỉ dùng Pexels</option>
                                             <option value="pixabay">Chỉ dùng Pixabay</option>
                                         </select>
                                     </div>
                                 </div>
-                                <small class="form-hint" style="color:var(--text-muted); font-size:11px; display:block; margin-top:2px;">
-                                    * Hệ thống tự động bốc video khác nhau cho mỗi lần render, không bao giờ dùng lặp lại video cũ.
+                                <small class="form-hint"
+                                    style="color:var(--text-muted); font-size:11px; display:block; margin-top:2px;">
+                                    * Hệ thống tự động bốc video khác nhau cho mỗi lần render, không bao giờ dùng lặp
+                                    lại video cũ.
                                 </small>
                             </div>
                         </div>
@@ -483,7 +511,8 @@
                                 &amp; Chiến Lược Hook Tâm Lý:
                             </label>
                             <span class="badge"
-                                style="background:rgba(168,85,247,0.2); color:#c084fc; font-size:10px; font-weight:700;">A/B Hook Strategy</span>
+                                style="background:rgba(168,85,247,0.2); color:#c084fc; font-size:10px; font-weight:700;">A/B
+                                Hook Strategy</span>
                         </div>
                         <small class="form-hint"
                             style="color:var(--text-muted); font-size:11px; display:block; margin-top:3px;">
@@ -498,8 +527,8 @@
                                     <i class="fa-solid fa-film text-purple"></i> Chế Độ Xuất Biến Thể:
                                 </label>
                                 <input type="checkbox" id="campaignGenerateVariants" style="display:none;">
-                                <select id="campaignVariantMode" class="custom-select"
-                                    style="width:100%; height:38px;" onchange="syncCampaignVariantModeUI('new', this.value)">
+                                <select id="campaignVariantMode" class="custom-select" style="width:100%; height:38px;"
+                                    onchange="syncCampaignVariantModeUI('new', this.value)">
                                     <option value="single" selected>✂️ 1 Clip Tốt Nhất (Tập Trung 1 Góc Hook)</option>
                                     <option value="variants">🧪 3 Biến Thể A/B/C (A/B Testing Độc Lập)</option>
                                 </select>
@@ -509,12 +538,14 @@
                                     style="font-size:11.5px; color:var(--text-secondary); display:block; margin-bottom:3px;">
                                     <i class="fa-solid fa-bullseye text-cyan"></i> Chiến Lược Hook Tâm Lý:
                                 </label>
-                                <select id="campaignHookAngle" class="custom-select"
-                                    style="width:100%; height:38px;">
+                                <select id="campaignHookAngle" class="custom-select" style="width:100%; height:38px;">
                                     <option value="auto" selected>🎯 Tự Động (AI tự chọn góc kịch tính nhất)</option>
-                                    <option value="curiosity">🔍 Góc Tò Mò (Curiosity: "Lý do 90% người trẻ thất bại...")</option>
-                                    <option value="controversy">⚡ Góc Tranh Luận (Controversy: "Sự thật trần trụi về...")</option>
-                                    <option value="climax">🔥 Góc Cao Trào (Climax: "Khoảnh khắc làm thay đổi tất cả...")</option>
+                                    <option value="curiosity">🔍 Góc Tò Mò (Curiosity: "Lý do 90% người trẻ thất
+                                        bại...")</option>
+                                    <option value="controversy">⚡ Góc Tranh Luận (Controversy: "Sự thật trần trụi
+                                        về...")</option>
+                                    <option value="climax">🔥 Góc Cao Trào (Climax: "Khoảnh khắc làm thay đổi tất
+                                        cả...")</option>
                                 </select>
                             </div>
                         </div>
@@ -523,7 +554,8 @@
                         <div id="campaignVariantsNoticeWrap"
                             style="display:none; font-size:11.5px; color:#c084fc; background:rgba(168,85,247,0.12); padding:8px 10px; border-radius:5px; border:1px dashed rgba(168,85,247,0.35); line-height:1.4; margin-top:10px;">
                             <i class="fa-solid fa-sparkles text-cyan"></i> <strong>A/B/C Testing:</strong> Mỗi video
-                            sẽ tự động xuất 3 biến thể độc lập (VarA: Tò Mò, VarB: Tranh Luận, VarC: Cao Trào) kèm 3 bản nhạc BGM khác nhau để rải đều qua các nick TikTok.
+                            sẽ tự động xuất 3 biến thể độc lập (VarA: Tò Mò, VarB: Tranh Luận, VarC: Cao Trào) kèm 3 bản
+                            nhạc BGM khác nhau để rải đều qua các nick TikTok.
                         </div>
                     </div>
 
@@ -600,7 +632,8 @@
                                 <div>
                                     <label
                                         style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;"><i
-                                            class="fa-solid fa-pen-nib" style="color:#a855f7;"></i> Phong cách kịch bản AI:</label>
+                                            class="fa-solid fa-pen-nib" style="color:#a855f7;"></i> Phong cách kịch bản
+                                        AI:</label>
                                     <select id="campaignNarrationStyle" class="custom-select"
                                         style="font-size:11.5px; height:36px; width:100%;">
                                         <option value="giat_gan" selected>⚡ Giật gân TikTok (Gây tò mò cực độ)</option>
@@ -613,7 +646,8 @@
                                 <div>
                                     <label
                                         style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;"><i
-                                            class="fa-solid fa-palette" style="color:#ec4899;"></i> Phong cách ảnh AI:</label>
+                                            class="fa-solid fa-palette" style="color:#ec4899;"></i> Phong cách ảnh
+                                        AI:</label>
                                     <select id="campaignImageStyle" class="custom-select"
                                         style="font-size:11.5px; height:36px; width:100%;">
                                         <option value="cinematic" selected>🎬 Điện Ảnh 8K</option>
@@ -825,12 +859,13 @@
                             <!-- Edge-TTS Config -->
                             <div id="campaignEdgeTtsWrap"
                                 style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                                <div>
+                                <div id="campaignNarrationLangCol">
                                     <div style="display:flex; align-items:center; margin-bottom:6px; height:20px;">
                                         <label style="font-size:11px; color:var(--text-muted); margin:0;">Ngôn ngữ kịch
                                             bản:</label>
                                     </div>
                                     <select id="campaignNarrationLanguage" class="custom-select"
+                                        onchange="updateVoiceDropdownOptions('campaignVoiceGender', this.value)"
                                         style="font-size:11.5px; height:36px; width:100%;">
                                         <option value="vi" selected>🇻🇳 Tiếng Việt</option>
                                         <option value="en">🇺🇸 English (US)</option>
@@ -842,7 +877,7 @@
                                         <option value="original">🌐 Tự động nhận diện</option>
                                     </select>
                                 </div>
-                                <div>
+                                <div id="campaignEdgeTtsVoiceCol">
                                     <div
                                         style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; height:20px;">
                                         <label style="font-size:11px; color:var(--text-muted); margin:0;">Giọng đọc
@@ -1516,13 +1551,17 @@
                                 <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-crop"></i>
                                     Định Dạng Khung Hình:</label>
                                 <select id="editCampaignAspectRatio" class="custom-select mt-1"
-                                    style="width:100%; height:40px;" onchange="handleAspectRatioChange('editCampaign', this.value);">
+                                    style="width:100%; height:40px;"
+                                    onchange="handleAspectRatioChange('editCampaign', this.value);">
                                     <option value="9:16_blur" selected>9:16 Dọc Nền Mờ - Chuẩn TikTok
                                     </option>
                                     <option value="9:16_crop">9:16 Dọc Cắt Giữa</option>
                                     <option value="9:16_split">9:16 Split Screen Ghép 2 Tầng</option>
                                 </select>
-                                <small id="editCampaignAspectLockNotice" style="display:none; color:var(--accent-gold); font-size:11px; margin-top:3px;"><i class="fa-solid fa-lock"></i> Đã khóa 9:16 Nền Mờ (Chế độ AI Storytelling)</small>
+                                <small id="editCampaignAspectLockNotice"
+                                    style="display:none; color:var(--accent-gold); font-size:11px; margin-top:3px;"><i
+                                        class="fa-solid fa-lock"></i> Đã khóa 9:16 Nền Mờ (Chế độ AI
+                                    Storytelling)</small>
                             </div>
                             <div>
                                 <label style="font-size:12px; font-weight:600;"><i class="fa-solid fa-clock"></i>
@@ -1539,61 +1578,87 @@
                         </div>
 
                         <!-- Split Screen Sub-Video Configuration (Edit Campaign) -->
-                        <div id="editCampaignSplitScreenWrap" style="display:none; margin-top:12px; padding:12px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.25); border-radius:8px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                <label style="font-size:12px; font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:6px; margin:0;">
-                                    <i class="fa-solid fa-table-columns"></i> Cấu hình Video Phụ (Tầng Dưới - Split Screen):
+                        <div id="editCampaignSplitScreenWrap"
+                            style="display:none; margin-top:12px; padding:12px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.25); border-radius:8px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <label
+                                    style="font-size:12px; font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:6px; margin:0;">
+                                    <i class="fa-solid fa-table-columns"></i> Cấu hình Video Phụ (Tầng Dưới - Split
+                                    Screen):
                                 </label>
-                                <span class="badge" style="background:rgba(6,182,212,0.2); color:var(--accent-cyan); font-size:10px; font-weight:700;">Nửa Dưới 1080x960</span>
+                                <span class="badge"
+                                    style="background:rgba(6,182,212,0.2); color:var(--accent-cyan); font-size:10px; font-weight:700;">Nửa
+                                    Dưới 1080x960</span>
                             </div>
 
                             <div style="display:flex; gap:16px; margin-bottom:10px;">
-                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; cursor:pointer;">
-                                    <input type="radio" name="editCampaignSplitSourceType" id="editCampaignSplitSourceLocal" value="local" checked onchange="handleSplitSourceChange('editCampaign', 'local')">
+                                <label
+                                    style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; cursor:pointer;">
+                                    <input type="radio" name="editCampaignSplitSourceType"
+                                        id="editCampaignSplitSourceLocal" value="local" checked
+                                        onchange="handleSplitSourceChange('editCampaign', 'local')">
                                     <span>📁 Thư Mục Cục Bộ (Khuyên dùng)</span>
                                 </label>
-                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; cursor:pointer;">
-                                    <input type="radio" name="editCampaignSplitSourceType" id="editCampaignSplitSourceStock" value="stock" onchange="handleSplitSourceChange('editCampaign', 'stock')">
+                                <label
+                                    style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; cursor:pointer;">
+                                    <input type="radio" name="editCampaignSplitSourceType"
+                                        id="editCampaignSplitSourceStock" value="stock"
+                                        onchange="handleSplitSourceChange('editCampaign', 'stock')">
                                     <span>🌐 Tự Động Tải Từ Stock (Pexels / Pixabay)</span>
                                 </label>
                             </div>
 
                             <div id="editCampaignSplitLocalWrap">
-                                <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
+                                <label
+                                    style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
                                     Đường dẫn thư mục chứa video phụ (Gameplay / ASMR loop):
                                 </label>
                                 <div style="display:flex; gap:8px;">
-                                    <input type="text" id="editCampaignSplitFolder" class="input-field" value="data/gameplay" placeholder="data/gameplay" style="flex:1;">
-                                    <button type="button" class="btn btn-secondary" onclick="browseFolderForInput('editCampaignSplitFolder')" style="white-space:nowrap; padding:0 14px; font-size:12px;">
+                                    <input type="text" id="editCampaignSplitFolder" class="input-field"
+                                        value="data/gameplay" placeholder="data/gameplay" style="flex:1;">
+                                    <button type="button" class="btn btn-secondary"
+                                        onclick="browseFolderForInput('editCampaignSplitFolder')"
+                                        style="white-space:nowrap; padding:0 14px; font-size:12px;">
                                         <i class="fa-solid fa-folder-open"></i> Duyệt
                                     </button>
                                 </div>
-                                <small class="form-hint" style="color:var(--text-muted); font-size:11px; display:block; margin-top:4px;">
-                                    * Tự động chọn ngẫu nhiên các video khác nhau trong thư mục và lấy đoạn thời gian khác nhau để chống quét trùng lặp.
+                                <small class="form-hint"
+                                    style="color:var(--text-muted); font-size:11px; display:block; margin-top:4px;">
+                                    * Tự động chọn ngẫu nhiên các video khác nhau trong thư mục và lấy đoạn thời gian
+                                    khác nhau để chống quét trùng lặp.
                                 </small>
                             </div>
 
                             <div id="editCampaignSplitStockWrap" style="display:none;">
-                                <div style="display:grid; grid-template-columns:1fr 220px; gap:10px; margin-bottom:6px;">
+                                <div
+                                    style="display:grid; grid-template-columns:1fr 220px; gap:10px; margin-bottom:6px;">
                                     <div>
-                                        <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
+                                        <label
+                                            style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
                                             Từ khóa tìm kiếm Stock Video (cách nhau bằng dấu phẩy):
                                         </label>
-                                        <input type="text" id="editCampaignSplitKeywords" class="input-field" value="minecraft parkour, satisfying asmr, subway surfers, soap cutting" placeholder="minecraft parkour, satisfying asmr, subway surfers">
+                                        <input type="text" id="editCampaignSplitKeywords" class="input-field"
+                                            value="minecraft parkour, satisfying asmr, subway surfers, soap cutting"
+                                            placeholder="minecraft parkour, satisfying asmr, subway surfers">
                                     </div>
                                     <div>
-                                        <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
+                                        <label
+                                            style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">
                                             Nguồn Stock:
                                         </label>
-                                        <select id="editCampaignSplitProvider" class="custom-select" style="width:100%; height:38px;">
+                                        <select id="editCampaignSplitProvider" class="custom-select"
+                                            style="width:100%; height:38px;">
                                             <option value="all" selected>Pexels &rarr; Pixabay fallback</option>
                                             <option value="pexels">Chỉ dùng Pexels</option>
                                             <option value="pixabay">Chỉ dùng Pixabay</option>
                                         </select>
                                     </div>
                                 </div>
-                                <small class="form-hint" style="color:var(--text-muted); font-size:11px; display:block; margin-top:2px;">
-                                    * Hệ thống tự động bốc video khác nhau cho mỗi lần render, không bao giờ dùng lặp lại video cũ.
+                                <small class="form-hint"
+                                    style="color:var(--text-muted); font-size:11px; display:block; margin-top:2px;">
+                                    * Hệ thống tự động bốc video khác nhau cho mỗi lần render, không bao giờ dùng lặp
+                                    lại video cũ.
                                 </small>
                             </div>
                         </div>
@@ -1764,7 +1829,8 @@
                                 &amp; Chiến Lược Hook Tâm Lý:
                             </label>
                             <span class="badge"
-                                style="background:rgba(168,85,247,0.2); color:#c084fc; font-size:10px; font-weight:700;">A/B Hook Strategy</span>
+                                style="background:rgba(168,85,247,0.2); color:#c084fc; font-size:10px; font-weight:700;">A/B
+                                Hook Strategy</span>
                         </div>
                         <small class="form-hint"
                             style="color:var(--text-muted); font-size:11px; display:block; margin-top:3px;">
@@ -1780,7 +1846,8 @@
                                 </label>
                                 <input type="checkbox" id="editCampaignGenerateVariants" style="display:none;">
                                 <select id="editCampaignVariantMode" class="custom-select"
-                                    style="width:100%; height:38px;" onchange="syncCampaignVariantModeUI('edit', this.value)">
+                                    style="width:100%; height:38px;"
+                                    onchange="syncCampaignVariantModeUI('edit', this.value)">
                                     <option value="single" selected>✂️ 1 Clip Tốt Nhất (Tập Trung 1 Góc Hook)</option>
                                     <option value="variants">🧪 3 Biến Thể A/B/C (A/B Testing Độc Lập)</option>
                                 </select>
@@ -1793,9 +1860,12 @@
                                 <select id="editCampaignHookAngle" class="custom-select"
                                     style="width:100%; height:38px;">
                                     <option value="auto" selected>🎯 Tự Động (AI tự chọn góc kịch tính nhất)</option>
-                                    <option value="curiosity">🔍 Góc Tò Mò (Curiosity: "Lý do 90% người trẻ thất bại...")</option>
-                                    <option value="controversy">⚡ Góc Tranh Luận (Controversy: "Sự thật trần trụi về...")</option>
-                                    <option value="climax">🔥 Góc Cao Trào (Climax: "Khoảnh khắc làm thay đổi tất cả...")</option>
+                                    <option value="curiosity">🔍 Góc Tò Mò (Curiosity: "Lý do 90% người trẻ thất
+                                        bại...")</option>
+                                    <option value="controversy">⚡ Góc Tranh Luận (Controversy: "Sự thật trần trụi
+                                        về...")</option>
+                                    <option value="climax">🔥 Góc Cao Trào (Climax: "Khoảnh khắc làm thay đổi tất
+                                        cả...")</option>
                                 </select>
                             </div>
                         </div>
@@ -1804,7 +1874,8 @@
                         <div id="editCampaignVariantsNoticeWrap"
                             style="display:none; font-size:11.5px; color:#c084fc; background:rgba(168,85,247,0.12); padding:8px 10px; border-radius:5px; border:1px dashed rgba(168,85,247,0.35); line-height:1.4; margin-top:10px;">
                             <i class="fa-solid fa-sparkles text-cyan"></i> <strong>A/B/C Testing:</strong> Mỗi video
-                            sẽ tự động xuất 3 biến thể độc lập (VarA: Tò Mò, VarB: Tranh Luận, VarC: Cao Trào) kèm 3 bản nhạc BGM khác nhau để rải đều qua các nick TikTok.
+                            sẽ tự động xuất 3 biến thể độc lập (VarA: Tò Mò, VarB: Tranh Luận, VarC: Cao Trào) kèm 3 bản
+                            nhạc BGM khác nhau để rải đều qua các nick TikTok.
                         </div>
                     </div>
 
@@ -1885,7 +1956,8 @@
                                 <div>
                                     <label
                                         style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;"><i
-                                            class="fa-solid fa-pen-nib" style="color:#a855f7;"></i> Phong cách kịch bản AI:</label>
+                                            class="fa-solid fa-pen-nib" style="color:#a855f7;"></i> Phong cách kịch bản
+                                        AI:</label>
                                     <select id="editCampaignNarrationStyle" class="custom-select"
                                         style="font-size:11.5px; height:36px; width:100%;">
                                         <option value="giat_gan" selected>⚡ Giật gân TikTok (Gây tò mò cực độ)
@@ -1901,7 +1973,8 @@
                                 <div>
                                     <label
                                         style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;"><i
-                                            class="fa-solid fa-palette" style="color:#ec4899;"></i> Phong cách ảnh AI:</label>
+                                            class="fa-solid fa-palette" style="color:#ec4899;"></i> Phong cách ảnh
+                                        AI:</label>
                                     <select id="editCampaignImageStyle" class="custom-select"
                                         style="font-size:11.5px; height:36px; width:100%;">
                                         <option value="cinematic" selected>🎬 Điện Ảnh 8K</option>
@@ -2119,12 +2192,13 @@
                             <!-- Edge-TTS Config -->
                             <div id="editCampaignEdgeTtsWrap"
                                 style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                                <div>
+                                <div id="editCampaignNarrationLangCol">
                                     <div style="display:flex; align-items:center; margin-bottom:6px; height:20px;">
                                         <label style="font-size:11px; color:var(--text-muted); margin:0;">Ngôn ngữ kịch
                                             bản:</label>
                                     </div>
                                     <select id="editCampaignNarrationLanguage" class="custom-select"
+                                        onchange="updateVoiceDropdownOptions('editCampaignVoiceGender', this.value)"
                                         style="font-size:11.5px; height:36px; width:100%;">
                                         <option value="vi" selected>🇻🇳 Tiếng Việt</option>
                                         <option value="en">🇺🇸 English (US)</option>
@@ -2136,7 +2210,7 @@
                                         <option value="original">🌐 Tự động nhận diện</option>
                                     </select>
                                 </div>
-                                <div>
+                                <div id="editCampaignEdgeTtsVoiceCol">
                                     <div
                                         style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; height:20px;">
                                         <label style="font-size:11px; color:var(--text-muted); margin:0;">Giọng đọc

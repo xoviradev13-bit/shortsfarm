@@ -14,22 +14,24 @@ from typing import Dict, Any, Optional, Tuple
 from backend.config import APP_VERSION, LICENSE_PORTAL_URL, FALLBACK_PORTAL_URL
 from backend.database import get_setting, set_setting
 
-# Secret salt / client key dùng xác thực chữ ký bản quyền chống chỉnh sửa DB
-CLIENT_LICENSE_SALT = "SS_SECURE_SALT_v1_9c8f2b1a7d4e3f60"
+# Secret salt / server secret dùng xác thực chữ ký bản quyền đồng bộ với Web Portal
+# Phải khớp với LICENSE_SIGNING_SECRET / ADMIN_SECRET_KEY trên server web (web/lib/security.ts)
+SERVER_SIGNING_SECRET = "TiktokFarmSecretAdmin2026!#"
 
-def compute_license_signature(license_key: str, hwid: str) -> str:
-    """Tạo / Kiểm tra chữ ký HMAC-SHA256 liên kết chặt giữa License Key và HWID"""
+def compute_license_signature(license_key: str, hwid: str, plan: str = "monthly", expires_at: str = "") -> str:
+    """Tạo / Kiểm tra chữ ký HMAC-SHA256 chuẩn hóa khớp 100% với Web Portal"""
     clean_key = (license_key or "").strip().upper()
     clean_hwid = (hwid or "").strip().upper()
-    data = f"{clean_key}:{clean_hwid}".encode("utf-8")
-    return hmac.new(CLIENT_LICENSE_SALT.encode("utf-8"), data, hashlib.sha256).hexdigest()
+    clean_plan = (plan or "monthly").strip().lower()
+    exp_str = expires_at if (expires_at and expires_at != "None") else "lifetime"
+    payload = f"{clean_key}:{clean_hwid}:{clean_plan}:{exp_str}"
+    return hmac.new(SERVER_SIGNING_SECRET.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
 
-def verify_signature_authenticity(license_key: str, hwid: str, signature: str) -> bool:
+def verify_signature_authenticity(license_key: str, hwid: str, signature: str, plan: str = "monthly", expires_at: str = "") -> bool:
     """Xác minh tính hợp lệ của chữ ký đã lưu chống tamper"""
     if not signature or not license_key or not hwid:
         return False
-    expected = compute_license_signature(license_key, hwid)
-    # Hỗ trợ cả constant-time compare
+    expected = compute_license_signature(license_key, hwid, plan, expires_at)
     return hmac.compare_digest(signature.strip().lower(), expected.lower())
 
 PLAN_NAMES: Dict[str, str] = {
@@ -170,9 +172,8 @@ def get_license_info() -> Dict[str, Any]:
     if bool(key) and status == "active":
         if not signature:
             is_tampered = True
-        elif not verify_signature_authenticity(key, hwid, signature):
-            # Nếu server trả về chữ ký HMAC chuẩn, đối chiếu trực tiếp.
-            # Tránh trường hợp user copy sqlite database hoặc tự sửa license_status='active' trên máy khác
+        elif not verify_signature_authenticity(key, hwid, signature, plan=plan, expires_at=expires_at_str):
+            # Nếu chữ ký không khớp định dạng server
             is_tampered = True
 
     if is_tampered:
@@ -232,8 +233,7 @@ def activate_license(license_key: str) -> Dict[str, Any]:
             # Lưu vào Database máy
             sig = lic_data.get("signature") or resp.get("signature") or ""
             if not sig:
-                # Nếu server chưa triển khai signature HMAC, tự tính toán theo salt bí mật đồng bộ
-                sig = compute_license_signature(clean_key, hwid)
+                sig = compute_license_signature(clean_key, hwid, plan=plan, expires_at=str(expires_at) if expires_at else "")
             set_setting("license_key", clean_key)
             set_setting("license_status", "active")
             set_setting("license_plan", plan)
@@ -308,7 +308,7 @@ def verify_license(force_remote: bool = False) -> Dict[str, Any]:
                 set_setting("license_max_devices", str(max_d))
             sig = resp.get("signature") or ""
             if not sig:
-                sig = compute_license_signature(info["license_key"], hwid)
+                sig = compute_license_signature(info["license_key"], hwid, plan=str(p) if p else info.get("plan", ""), expires_at=str(exp) if exp else "")
             if sig:
                 set_setting("license_signature", sig)
             return {"valid": True, "status": "active", "message": "Bản quyền hợp lệ."}

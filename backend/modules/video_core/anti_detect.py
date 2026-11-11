@@ -44,23 +44,47 @@ class AntiDetectEngine:
         crop_watermarks: bool = True,
         enable_ken_burns: bool = True,
         endcard_text: Optional[str] = None,
-        video_duration: float = 65.0
+        video_duration: float = 65.0,
+        aspect_ratio_mode: str = "9:16_blur",
+        sub_video_input_idx: Optional[int] = None
     ) -> Tuple[str, str, str]:
         """
-        Xây dựng chuỗi filter_complex, out_map, và audio_filter cho FFmpeg.
+        Xây dựng chuỗi filter_complex, out_map, và audio_filter cho FFmpeg:
+        - 9:16_blur: Background mờ phóng to + Foreground ở giữa (16:9 gốc không méo)
+        - 9:16_crop: Cắt chính giữa khung hình 9:16
+        - 9:16_split: Ghép 2 tầng (Tầng trên: Video chính 1080x960, Tầng dưới: Video phụ 1080x960)
         Trả về (filter_complex_str, out_map_name, audio_filter_str)
         """
-        # 1. Background mờ + Foreground ở giữa (Bảo toàn 100% tỷ lệ khung hình gốc 16:9, không bị méo hình)
         # Micro punch-in crop (4-5%) giúp loại bỏ watermark/logo kênh ở góc mép video
         fg_crop = "crop=trunc(in_w*0.95/2)*2:trunc(in_h*0.95/2)*2," if crop_watermarks else ""
-        fg_stream_code = f"[0:v]{fg_crop}scale={width}:{height}:force_original_aspect_ratio=decrease[fg]"
 
-        scale_filter = (
-            f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
-            f"crop={width}:{height},boxblur=25:5[bg];"
-            f"{fg_stream_code};"
-            f"[bg][fg]overlay=(W-w)/2:(H-h)/2[base]"
-        )
+        if aspect_ratio_mode == "9:16_split" and sub_video_input_idx is not None:
+            # 🎬 Split Screen Ghép 2 Tầng:
+            # Tầng trên: Video chính (0:v) scaled & crop 1080x960
+            # Tầng dưới: Video phụ (sub_video_input_idx:v) scaled & crop 1080x960
+            half_h = height // 2
+            scale_filter = (
+                f"[0:v]{fg_crop}scale={width}:{half_h}:force_original_aspect_ratio=increase,"
+                f"crop={width}:{half_h},setsar=1[v_top];"
+                f"[{sub_video_input_idx}:v]scale={width}:{half_h}:force_original_aspect_ratio=increase,"
+                f"crop={width}:{half_h},setsar=1[v_bot];"
+                f"[v_top][v_bot]vstack=inputs=2[base]"
+            )
+        elif aspect_ratio_mode == "9:16_crop":
+            # Cắt dọc chính giữa 9:16 (1080x1920)
+            scale_filter = (
+                f"[0:v]{fg_crop}scale={width}:{height}:force_original_aspect_ratio=increase,"
+                f"crop={width}:{height},setsar=1[base]"
+            )
+        else:
+            # 9:16 Dọc Nền Mờ - Chuẩn TikTok (Mặc định)
+            fg_stream_code = f"[0:v]{fg_crop}scale={width}:{height}:force_original_aspect_ratio=decrease[fg]"
+            scale_filter = (
+                f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
+                f"crop={width}:{height},boxblur=25:5[bg];"
+                f"{fg_stream_code};"
+                f"[bg][fg]overlay=(W-w)/2:(H-h)/2[base]"
+            )
 
         current_stream = "base"
         sub_filters = []

@@ -692,6 +692,31 @@ async function renderStudioActiveVideo(btn) {
         return;
     }
 
+    const studioAspectRatio = document.getElementById('studioAspectRatio')?.value || '9:16_blur';
+    let splitSourceType = 'local';
+    let splitFolder = 'data/gameplay';
+    let splitKeywords = 'minecraft parkour, satisfying asmr, subway surfers';
+    let splitProvider = 'all';
+
+    if (studioAspectRatio === '9:16_split') {
+        const isLocal = document.getElementById('studioSplitSourceLocal')?.checked;
+        splitSourceType = isLocal ? 'local' : 'stock';
+        if (isLocal) {
+            splitFolder = document.getElementById('studioSplitFolder')?.value.trim();
+            if (!splitFolder) {
+                markInputError('studioSplitFolder', 'Vui lòng nhập đường dẫn thư mục chứa video phụ (Tầng Dưới) cho Split Screen!');
+                return;
+            }
+        } else {
+            splitKeywords = document.getElementById('studioSplitKeywords')?.value.trim();
+            if (!splitKeywords) {
+                markInputError('studioSplitKeywords', 'Vui lòng nhập từ khóa tìm kiếm Stock Video cho Split Screen!');
+                return;
+            }
+            splitProvider = document.getElementById('studioSplitProvider')?.value || 'all';
+        }
+    }
+
     const origHtml = btn ? btn.innerHTML : '';
     const stopBtn = document.getElementById('btnStudioRenderStop');
     if (stopBtn) stopBtn.style.display = 'inline-flex';
@@ -742,7 +767,12 @@ async function renderStudioActiveVideo(btn) {
             ken_burns_enabled: studioKenBurns,
             endcard_enabled: studioEndcard,
             keep_original_script_for_shorts: studioKeepOrig,
-            disable_narration_for_shorts: studioDisableNarrShorts
+            disable_narration_for_shorts: studioDisableNarrShorts,
+            aspect_ratio: studioAspectRatio,
+            split_source_type: splitSourceType,
+            split_folder: splitFolder,
+            split_keywords: splitKeywords,
+            split_provider: splitProvider
         } : {
             video_id: activeStudioVideo.yt_video_id,
             duration: duration,
@@ -771,7 +801,12 @@ async function renderStudioActiveVideo(btn) {
             ken_burns_enabled: studioKenBurns,
             endcard_enabled: studioEndcard,
             keep_original_script_for_shorts: studioKeepOrig,
-            disable_narration_for_shorts: studioDisableNarrShorts
+            disable_narration_for_shorts: studioDisableNarrShorts,
+            aspect_ratio: studioAspectRatio,
+            split_source_type: splitSourceType,
+            split_folder: splitFolder,
+            split_keywords: splitKeywords,
+            split_provider: splitProvider
         };
 
         const res = await fetch(endpoint, {
@@ -932,6 +967,20 @@ document.addEventListener('click', function (e) {
 // Module Window Exposures
 window.toggleStudioSafeZoneOverlay = toggleStudioSafeZoneOverlay;
 window.switchStudioPlatformPreview = switchStudioPlatformPreview;
+function handleStudioAspectRatioChange(val) {
+    const splitWrap = document.getElementById('studioSplitScreenWrap');
+    if (splitWrap) splitWrap.style.display = (val === '9:16_split') ? 'block' : 'none';
+}
+
+function handleStudioSplitSourceChange(type) {
+    const loc = document.getElementById('studioSplitLocalWrap');
+    const stk = document.getElementById('studioSplitStockWrap');
+    if (loc) loc.style.display = (type === 'local') ? 'block' : 'none';
+    if (stk) stk.style.display = (type === 'stock') ? 'block' : 'none';
+}
+
+window.handleStudioAspectRatioChange = handleStudioAspectRatioChange;
+window.handleStudioSplitSourceChange = handleStudioSplitSourceChange;
 window.toggleStudioPlatformDropdown = toggleStudioPlatformDropdown;
 window.selectStudioPlatform = selectStudioPlatform;
 window.applyStudioPreset = applyStudioPreset;

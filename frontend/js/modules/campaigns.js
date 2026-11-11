@@ -763,6 +763,25 @@ async function openNewCampaignModal() {
     const campStkWrap = document.getElementById('campaignStockWrap');
     if (campStkWrap) campStkWrap.style.display = 'none';
 
+    // Reset Aspect Ratio & Split Screen
+    const campAspect = document.getElementById('campaignAspectRatio');
+    if (campAspect) {
+        campAspect.value = '9:16_blur';
+        campAspect.disabled = false;
+        campAspect.style.opacity = '';
+        campAspect.style.cursor = '';
+        if (typeof handleAspectRatioChange === 'function') handleAspectRatioChange('campaign', '9:16_blur');
+    }
+    const campAspectNotice = document.getElementById('campaignAspectLockNotice');
+    if (campAspectNotice) campAspectNotice.style.display = 'none';
+    const campSplitLocRadio = document.getElementById('campaignSplitSourceLocal');
+    if (campSplitLocRadio) campSplitLocRadio.checked = true;
+    if (typeof handleSplitSourceChange === 'function') handleSplitSourceChange('campaign', 'local');
+    const campSplitFld = document.getElementById('campaignSplitFolder');
+    if (campSplitFld) campSplitFld.value = 'data/gameplay';
+    const campSplitKw = document.getElementById('campaignSplitKeywords');
+    if (campSplitKw) campSplitKw.value = 'minecraft parkour, satisfying asmr, subway surfers, soap cutting';
+
     // Reset Narration & TTS
     const newCampNarr = document.getElementById('campaignNarrationSwitch');
     if (newCampNarr) newCampNarr.checked = false;
@@ -1429,6 +1448,32 @@ async function handleCreateCampaignSubmit(e) {
         return;
     }
 
+    // Validate Split Screen (Ghép 2 tầng) nếu được chọn
+    const campAspectRatio = document.getElementById('campaignAspectRatio')?.value || '9:16_blur';
+    let splitSourceType = 'local';
+    let splitFolder = 'data/gameplay';
+    let splitKeywords = 'minecraft parkour, satisfying asmr, subway surfers';
+    let splitProvider = 'all';
+
+    if (campAspectRatio === '9:16_split') {
+        const isLocal = document.getElementById('campaignSplitSourceLocal')?.checked;
+        splitSourceType = isLocal ? 'local' : 'stock';
+        if (isLocal) {
+            splitFolder = document.getElementById('campaignSplitFolder')?.value.trim();
+            if (!splitFolder) {
+                markInputError('campaignSplitFolder', 'Vui lòng nhập đường dẫn thư mục chứa video phụ (Tầng Dưới) cho Split Screen!');
+                return;
+            }
+        } else {
+            splitKeywords = document.getElementById('campaignSplitKeywords')?.value.trim();
+            if (!splitKeywords) {
+                markInputError('campaignSplitKeywords', 'Vui lòng nhập từ khóa tìm kiếm Stock Video cho Split Screen!');
+                return;
+            }
+            splitProvider = document.getElementById('campaignSplitProvider')?.value || 'all';
+        }
+    }
+
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Kích Hoạt...';
@@ -1448,8 +1493,12 @@ async function handleCreateCampaignSubmit(e) {
         distribution_mode: document.getElementById('campaignDistributionMode')?.value || 'round_robin',
         download_dir: document.getElementById('campaignDownloadDir')?.value.trim() || 'data/downloads',
         render_dir: document.getElementById('campaignRenderDir')?.value.trim() || 'data/rendered',
-        aspect_ratio: document.getElementById('campaignAspectRatio')?.value || '9:16_blur',
-        preset_name: document.getElementById('campaignAspectRatio')?.value === '9:16_blur' ? 'TikTok Beta Chuẩn 9:16 (Nền Mờ)' : 'TikTok Chuẩn 9:16',
+        aspect_ratio: campAspectRatio,
+        preset_name: campAspectRatio === '9:16_blur' ? 'TikTok Beta Chuẩn 9:16 (Nền Mờ)' : (campAspectRatio === '9:16_split' ? '9:16 Split Screen Ghép 2 Tầng' : 'TikTok Chuẩn 9:16'),
+        split_source_type: splitSourceType,
+        split_folder: splitFolder,
+        split_keywords: splitKeywords,
+        split_provider: splitProvider,
         video_duration: parseInt(document.getElementById('campaignVideoDuration')?.value, 10) || 65,
         min_video_duration: minDurVal ? parseInt(minDurVal, 10) : null,
         max_video_duration: maxDurVal ? parseInt(maxDurVal, 10) : null,
@@ -1680,7 +1729,25 @@ async function openEditCampaignModal(id) {
 
         // Edit Recipe
         const aspectSel = document.getElementById('editCampaignAspectRatio');
-        if (aspectSel) aspectSel.value = c.aspect_ratio || '9:16_blur';
+        if (aspectSel) {
+            aspectSel.value = c.aspect_ratio || '9:16_blur';
+            if (typeof handleAspectRatioChange === 'function') handleAspectRatioChange('editCampaign', aspectSel.value);
+        }
+        const editSplitType = c.split_source_type || 'local';
+        const editLocRadio = document.getElementById('editCampaignSplitSourceLocal');
+        const editStRadio = document.getElementById('editCampaignSplitSourceStock');
+        if (editSplitType === 'stock') {
+            if (editStRadio) editStRadio.checked = true;
+        } else {
+            if (editLocRadio) editLocRadio.checked = true;
+        }
+        if (typeof handleSplitSourceChange === 'function') handleSplitSourceChange('editCampaign', editSplitType);
+        const editSplitFld = document.getElementById('editCampaignSplitFolder');
+        if (editSplitFld) editSplitFld.value = c.split_folder || 'data/gameplay';
+        const editSplitKw = document.getElementById('editCampaignSplitKeywords');
+        if (editSplitKw) editSplitKw.value = c.split_keywords || 'minecraft parkour, satisfying asmr, subway surfers, soap cutting';
+        const editSplitProv = document.getElementById('editCampaignSplitProvider');
+        if (editSplitProv) editSplitProv.value = c.split_provider || 'all';
 
         const durSel = document.getElementById('editCampaignVideoDuration');
         if (durSel) durSel.value = String(c.video_duration || 65);
@@ -2234,6 +2301,32 @@ async function handleEditCampaignSubmit(e) {
         return;
     }
 
+    // Validate Split Screen (Ghép 2 tầng) nếu được chọn
+    const editAspectRatio = document.getElementById('editCampaignAspectRatio')?.value || '9:16_blur';
+    let editSplitSourceType = 'local';
+    let editSplitFolder = 'data/gameplay';
+    let editSplitKeywords = 'minecraft parkour, satisfying asmr, subway surfers';
+    let editSplitProvider = 'all';
+
+    if (editAspectRatio === '9:16_split') {
+        const isLocal = document.getElementById('editCampaignSplitSourceLocal')?.checked;
+        editSplitSourceType = isLocal ? 'local' : 'stock';
+        if (isLocal) {
+            editSplitFolder = document.getElementById('editCampaignSplitFolder')?.value.trim();
+            if (!editSplitFolder) {
+                markInputError('editCampaignSplitFolder', 'Vui lòng nhập đường dẫn thư mục chứa video phụ (Tầng Dưới) cho Split Screen!');
+                return;
+            }
+        } else {
+            editSplitKeywords = document.getElementById('editCampaignSplitKeywords')?.value.trim();
+            if (!editSplitKeywords) {
+                markInputError('editCampaignSplitKeywords', 'Vui lòng nhập từ khóa tìm kiếm Stock Video cho Split Screen!');
+                return;
+            }
+            editSplitProvider = document.getElementById('editCampaignSplitProvider')?.value || 'all';
+        }
+    }
+
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Lưu Thay Đổi...';
@@ -2253,8 +2346,12 @@ async function handleEditCampaignSubmit(e) {
         distribution_mode: document.getElementById('editCampaignDistributionMode')?.value || 'round_robin',
         download_dir: document.getElementById('editCampaignDownloadDir')?.value.trim() || 'data/downloads',
         render_dir: document.getElementById('editCampaignRenderDir')?.value.trim() || 'data/rendered',
-        aspect_ratio: document.getElementById('editCampaignAspectRatio')?.value || '9:16_blur',
-        preset_name: document.getElementById('editCampaignAspectRatio')?.value === '9:16_blur' ? 'TikTok Beta Chuẩn 9:16 (Nền Mờ)' : 'TikTok Chuẩn 9:16',
+        aspect_ratio: editAspectRatio,
+        preset_name: editAspectRatio === '9:16_blur' ? 'TikTok Beta Chuẩn 9:16 (Nền Mờ)' : (editAspectRatio === '9:16_split' ? '9:16 Split Screen Ghép 2 Tầng' : 'TikTok Chuẩn 9:16'),
+        split_source_type: editSplitSourceType,
+        split_folder: editSplitFolder,
+        split_keywords: editSplitKeywords,
+        split_provider: editSplitProvider,
         video_duration: parseInt(document.getElementById('editCampaignVideoDuration')?.value, 10) || 65,
         min_video_duration: minDurVal ? parseInt(minDurVal, 10) : null,
         max_video_duration: maxDurVal ? parseInt(maxDurVal, 10) : null,

@@ -329,11 +329,13 @@
                             <div class="recipe-grid">
                                 <div class="form-group">
                                     <label><i class="fa-solid fa-crop-simple"></i> Khung Hình Dọc:</label>
-                                    <select id="studioAspectRatio" class="input-field">
+                                    <select id="studioAspectRatio" class="input-field" onchange="handleStudioAspectRatioChange(this.value)">
                                         <option value="9:16_blur" selected>9:16 Dọc Nền Mờ (Phóng to viền)</option>
                                         <option value="9:16_crop">9:16 Cắt Chính Giữa</option>
+                                        <option value="9:16_split">9:16 Split Screen Ghép 2 Tầng</option>
                                         <option value="original">Giữ Nguyên Khung Hình Gốc</option>
                                     </select>
+                                    <small id="studioAspectLockNotice" style="display:none; color:var(--accent-gold); font-size:11px; margin-top:3px;"><i class="fa-solid fa-lock"></i> Đã khóa 9:16 Dọc Nền Mờ (Chế độ AI Storytelling)</small>
                                 </div>
 
                                 <div class="form-group" style="margin-bottom:2px;">
@@ -349,6 +351,60 @@
                                     <small class="form-hint"
                                         style="color:var(--accent-gold); font-size:11px; display:block; margin-top:3px; margin-bottom:0;">*
                                         Đạt chuẩn > 1 phút để vào Quỹ Tác Giả TikTok (Creator Rewards Program)</small>
+                                </div>
+                            </div>
+
+                            <!-- Studio Split Screen Sub-Video Config -->
+                            <div id="studioSplitScreenWrap" style="display:none; margin-top:10px; margin-bottom:12px; padding:12px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.25); border-radius:8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <label style="font-size:11.5px; font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:6px; margin:0;">
+                                        <i class="fa-solid fa-table-columns"></i> Cấu hình Video Phụ (Tầng Dưới - Split Screen):
+                                    </label>
+                                    <span class="badge" style="background:rgba(6,182,212,0.2); color:var(--accent-cyan); font-size:10px; font-weight:700;">Nửa Dưới 1080x960</span>
+                                </div>
+
+                                <div style="display:flex; gap:16px; margin-bottom:8px;">
+                                    <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; cursor:pointer;">
+                                        <input type="radio" name="studioSplitSourceType" id="studioSplitSourceLocal" value="local" checked onchange="handleStudioSplitSourceChange('local')">
+                                        <span>📁 Thư Mục Cục Bộ</span>
+                                    </label>
+                                    <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; cursor:pointer;">
+                                        <input type="radio" name="studioSplitSourceType" id="studioSplitSourceStock" value="stock" onchange="handleStudioSplitSourceChange('stock')">
+                                        <span>🌐 Tải Stock (Pexels / Pixabay)</span>
+                                    </label>
+                                </div>
+
+                                <div id="studioSplitLocalWrap">
+                                    <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;">Thư mục video phụ:</label>
+                                    <div style="display:flex; gap:6px;">
+                                        <input type="text" id="studioSplitFolder" class="input-field" value="data/gameplay" placeholder="data/gameplay" style="flex:1; height:34px; font-size:11.5px;">
+                                        <button type="button" class="btn btn-secondary" onclick="browseFolderForInput('studioSplitFolder')" style="white-space:nowrap; padding:0 10px; font-size:11px; height:34px;">
+                                            <i class="fa-solid fa-folder-open"></i> Duyệt
+                                        </button>
+                                    </div>
+                                    <small class="form-hint" style="color:var(--text-muted); font-size:10.5px; display:block; margin-top:3px;">
+                                        * Tự động chọn video khác nhau và random start offset chống quét lặp.
+                                    </small>
+                                </div>
+
+                                <div id="studioSplitStockWrap" style="display:none;">
+                                    <div style="display:grid; grid-template-columns:1fr 160px; gap:8px; margin-bottom:4px;">
+                                        <div>
+                                            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;">Từ khóa tìm video (cách nhau bởi dấu phẩy):</label>
+                                            <input type="text" id="studioSplitKeywords" class="input-field" value="minecraft parkour, satisfying asmr, subway surfers, soap cutting" placeholder="minecraft parkour, satisfying asmr" style="height:34px; font-size:11.5px;">
+                                        </div>
+                                        <div>
+                                            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px;">Nguồn:</label>
+                                            <select id="studioSplitProvider" class="custom-select" style="width:100%; height:34px; font-size:11.5px;">
+                                                <option value="all" selected>Pexels &rarr; Pixabay</option>
+                                                <option value="pexels">Pexels</option>
+                                                <option value="pixabay">Pixabay</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <small class="form-hint" style="color:var(--text-muted); font-size:10.5px; display:block; margin-top:2px;">
+                                        * Tự động bốc video khác nhau cho mỗi lần render.
+                                    </small>
                                 </div>
                             </div>
 

@@ -270,6 +270,38 @@ function toggleAiStoryCard(prefix, isChecked) {
     if (subShortsWrap) subShortsWrap.style.display = isChecked ? 'none' : 'block';
     if (narrShortsWrap) narrShortsWrap.style.display = isChecked ? 'none' : 'grid';
 
+    // Khóa khung hình 9:16 Dọc Nền Mờ khi bật chế độ AI Storytelling (không dùng Split screen hay Crop)
+    let aspectId = prefix === 'campaign' ? 'campaignAspectRatio' : (prefix === 'editCampaign' ? 'editCampaignAspectRatio' : (prefix === 'studio' ? 'studioAspectRatio' : ''));
+    let lockNoticeId = prefix === 'campaign' ? 'campaignAspectLockNotice' : (prefix === 'editCampaign' ? 'editCampaignAspectLockNotice' : (prefix === 'studio' ? 'studioAspectLockNotice' : ''));
+    let splitWrapId = prefix === 'campaign' ? 'campaignSplitScreenWrap' : (prefix === 'editCampaign' ? 'editCampaignSplitScreenWrap' : (prefix === 'studio' ? 'studioSplitScreenWrap' : ''));
+    
+    const aspectSelect = aspectId ? document.getElementById(aspectId) : null;
+    const lockNotice = lockNoticeId ? document.getElementById(lockNoticeId) : null;
+    const splitWrap = splitWrapId ? document.getElementById(splitWrapId) : null;
+
+    if (aspectSelect) {
+        if (isChecked) {
+            aspectSelect.dataset.prevValue = aspectSelect.value;
+            aspectSelect.value = '9:16_blur';
+            aspectSelect.disabled = true;
+            aspectSelect.style.opacity = '0.7';
+            aspectSelect.style.cursor = 'not-allowed';
+            if (lockNotice) lockNotice.style.display = 'block';
+            if (splitWrap) splitWrap.style.display = 'none';
+        } else {
+            aspectSelect.disabled = false;
+            aspectSelect.style.opacity = '';
+            aspectSelect.style.cursor = '';
+            if (lockNotice) lockNotice.style.display = 'none';
+            if (aspectSelect.dataset.prevValue) {
+                aspectSelect.value = aspectSelect.dataset.prevValue;
+            }
+            if (splitWrap) {
+                splitWrap.style.display = (aspectSelect.value === '9:16_split') ? 'block' : 'none';
+            }
+        }
+    }
+
     // Khi bật AI Story, tự động kích hoạt & mở panel Lồng Tiếng AI nếu đang tắt để người dùng thấy rõ giọng đọc
     if (isChecked) {
         let narrSwitchId = prefix === 'campaign' ? 'campaignNarrationSwitch' : (prefix === 'editCampaign' ? 'editCampaignNarrationSwitch' : (prefix === 'studio' ? 'studioNarrationSwitch' : 'settingChannelNarrationSwitch'));
@@ -281,6 +313,23 @@ function toggleAiStoryCard(prefix, isChecked) {
             if (narrWrap) narrWrap.style.display = (prefix === 'studio' ? 'flex' : 'block');
         }
     }
+}
+
+function handleAspectRatioChange(prefix, value) {
+    let splitWrapId = prefix === 'campaign' ? 'campaignSplitScreenWrap' : (prefix === 'editCampaign' ? 'editCampaignSplitScreenWrap' : (prefix === 'studio' ? 'studioSplitScreenWrap' : ''));
+    const splitWrap = splitWrapId ? document.getElementById(splitWrapId) : null;
+    if (splitWrap) {
+        splitWrap.style.display = (value === '9:16_split') ? 'block' : 'none';
+    }
+}
+
+function handleSplitSourceChange(prefix, type) {
+    let localWrapId = prefix === 'campaign' ? 'campaignSplitLocalWrap' : (prefix === 'editCampaign' ? 'editCampaignSplitLocalWrap' : (prefix === 'studio' ? 'studioSplitLocalWrap' : ''));
+    let stockWrapId = prefix === 'campaign' ? 'campaignSplitStockWrap' : (prefix === 'editCampaign' ? 'editCampaignSplitStockWrap' : (prefix === 'studio' ? 'studioSplitStockWrap' : ''));
+    const localWrap = document.getElementById(localWrapId);
+    const stockWrap = document.getElementById(stockWrapId);
+    if (localWrap) localWrap.style.display = (type === 'local') ? 'block' : 'none';
+    if (stockWrap) stockWrap.style.display = (type === 'stock') ? 'block' : 'none';
 }
 
 function toggleCampaignEngagementOptions(prefix, isChecked) {
@@ -1902,3 +1951,5 @@ window.triggerManualCleanup = triggerManualCleanup;
 window.updateModalIntervalBadge = updateModalIntervalBadge;
 window.updateModalParallelUploadsBadge = updateModalParallelUploadsBadge;
 window.validateMinDurationInput = validateMinDurationInput;
+window.handleAspectRatioChange = handleAspectRatioChange;
+window.handleSplitSourceChange = handleSplitSourceChange;

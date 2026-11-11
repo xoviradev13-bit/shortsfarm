@@ -414,6 +414,10 @@ def init_db():
         "tts_engine": "TEXT DEFAULT 'edge-tts'",
         "elevenlabs_voice_id": "TEXT DEFAULT ''",
         "elevenlabs_model": "TEXT DEFAULT 'eleven_multilingual_v2'",
+        "split_source_type": "TEXT DEFAULT 'local'",
+        "split_folder": "TEXT DEFAULT 'data/gameplay'",
+        "split_keywords": "TEXT DEFAULT 'minecraft parkour, satisfying asmr, subway surfers'",
+        "split_provider": "TEXT DEFAULT 'all'",
     }
     for col, col_type in new_camp_cols.items():
         if col not in existing_camp_cols:
@@ -542,7 +546,9 @@ def log_event(level: str, message: str, details: str = ""):
     except Exception:
         pass
 
-def log_campaign_event(campaign_id: int, level: str, action: str, message: str, details: str = ""):
+def log_campaign_event(campaign_id: Optional[int], level: str, action: str, message: str, details: str = ""):
+    if not campaign_id:
+        return
     try:
         conn = get_connection()
         cursor = conn.cursor()

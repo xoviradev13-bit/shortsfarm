@@ -18,14 +18,14 @@ class YouTubeRSSMonitor:
     - Tầng 2: Fallback YouTube Data API v3 Uploads Playlist (chỉ 1 quota unit, tự động đổi key)
     - Tầng 3: Fallback yt-dlp flat-playlist (hoạt động độc lập, không cần API key)
     """
-    def check_channel_rss(self, channel_id: str, limit: int = 10) -> List[Dict[str, str]]:
+    def check_channel_rss(self, channel_id: str, limit: int = 10) -> List[Dict[str, Any]]:
         try:
             from backend.modules.local_ingestion import is_rss_scan_enabled
             if not is_rss_scan_enabled():
                 return []
         except Exception:
             pass
-        new_videos: List[Dict[str, str]] = []
+        new_videos: List[Dict[str, Any]] = []
 
         # =====================================================================
         # TẦNG 1: RSS Feed chính thức (0 quota)
@@ -52,8 +52,8 @@ class YouTubeRSSMonitor:
                 published_el = entry.find("atom:published", ns)
 
                 if video_id_el is not None and title_el is not None:
-                    vid = video_id_el.text
-                    title = title_el.text
+                    vid = video_id_el.text or ""
+                    title = title_el.text or ""
                     pub = published_el.text if published_el is not None else ""
                     new_videos.append({
                         "video_id": vid,
@@ -73,6 +73,7 @@ class YouTubeRSSMonitor:
         # =====================================================================
         # TẦNG 2: Fallback YouTube Data API v3 (Uploads Playlist: chỉ tốn 1 Quota unit)
         # =====================================================================
+        api_key: Optional[str] = None
         try:
             from backend.modules.yt_scanner import yt_scanner
             api_key = yt_scanner.key_pool.get_active_key()
@@ -103,7 +104,7 @@ class YouTubeRSSMonitor:
                         log_event("INFO", f"✅ [Fallback API v3] Lấy thành công {len(new_videos)} video từ kênh {channel_id}")
                         return new_videos
         except urllib.error.HTTPError as he:
-            if he.code in (403, 429):
+            if he.code in (403, 429) and api_key:
                 try:
                     from backend.modules.yt_scanner import yt_scanner
                     yt_scanner.key_pool.mark_key_exhausted(api_key, f"HTTP {he.code}")
@@ -117,22 +118,22 @@ class YouTubeRSSMonitor:
         # TẦNG 3: Fallback yt-dlp flat-playlist (hoàn toàn miễn phí, độc lập)
         # =====================================================================
         try:
-            ydl_opts = {
+            ydl_opts: Any = {
                 'quiet': True,
                 'extract_flat': True,
                 'playlist_items': f'1:{min(limit, 10)}',
                 'skip_download': True,
                 'no_warnings': True
             }
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl: # type: ignore
                 channel_url = f"https://www.youtube.com/channel/{channel_id}/videos"
                 info = ydl.extract_info(channel_url, download=False)
                 for entry in (info.get('entries') or []):
                     vid = entry.get('id')
                     if vid:
                         new_videos.append({
-                            "video_id": vid,
-                            "title": entry.get('title', ''),
+                            "video_id": str(vid),
+                            "title": str(entry.get('title') or ''),
                             "url": f"https://www.youtube.com/watch?v={vid}",
                             "published_at": ""
                         })
@@ -283,6 +284,11 @@ class YouTubeRSSMonitor:
                         use_ai_images=narr_settings.get("use_ai_images", False),
                         image_style=narr_settings.get("image_style", "cinematic"),
                         visual_source=narr_settings.get("visual_source", "ai"),
+                        aspect_ratio=render_settings.get("aspect_ratio", "9:16_blur"),
+                        split_source_type=render_settings.get("split_source_type", "local"),
+                        split_folder=render_settings.get("split_folder", "data/gameplay"),
+                        split_keywords=render_settings.get("split_keywords", "minecraft parkour, satisfying asmr, subway surfers"),
+                        split_provider=render_settings.get("split_provider", "all"),
                         ai_image_model=narr_settings.get("ai_image_model", "flux"),
                         ai_video_model=narr_settings.get("ai_video_model", "fal_ltx"),
                         stock_provider=narr_settings.get("stock_provider", "all")
@@ -338,7 +344,7 @@ class YouTubeRSSMonitor:
                 except Exception as e:
                     log_campaign_event(cid, "ERROR", "render", f"Lỗi render AI theo chiến dịch: {str(e)}")
         else:
-            if channel_obj.get("auto_render", 1):
+            if not channel_obj or channel_obj.get("auto_render", 1):
                 try:
                     from backend.modules.ai_video_engine import ai_video_engine
                     sub_settings = self.get_effective_subtitle_settings(channel_obj, None)
@@ -364,7 +370,12 @@ class YouTubeRSSMonitor:
                         disable_narration_for_shorts=narr_settings.get("disable_narration_for_shorts", True),
                         keep_original_script_for_shorts=narr_settings.get("keep_original_script_for_shorts", True),
                         enable_endcard=render_settings.get("endcard_enabled", True),
-                        enable_ken_burns=render_settings.get("ken_burns_enabled", True)
+                        enable_ken_burns=render_settings.get("ken_burns_enabled", True),
+                        aspect_ratio=render_settings.get("aspect_ratio", "9:16_blur"),
+                        split_source_type=render_settings.get("split_source_type", "local"),
+                        split_folder=render_settings.get("split_folder", "data/gameplay"),
+                        split_keywords=render_settings.get("split_keywords", "minecraft parkour, satisfying asmr, subway surfers"),
+                        split_provider=render_settings.get("split_provider", "all")
                     )
                 except Exception as re_err:
                     log_event("WARNING", f"Lỗi auto-render video {video_id}: {str(re_err)}")
@@ -614,12 +625,38 @@ class YouTubeRSSMonitor:
         else:
             eff_ec = True
 
+        # 5) aspect_ratio & Split Screen Settings: Channel > Campaign > Default 9:16_blur
+        ch_ar = channel_obj.get("aspect_ratio") if channel_obj else None
+        camp_ar = camp.get("aspect_ratio") if camp else None
+        eff_ar = (ch_ar if ch_ar not in ("inherit", "", None) else camp_ar) or "9:16_blur"
+
+        ch_sst = channel_obj.get("split_source_type") if channel_obj else None
+        camp_sst = camp.get("split_source_type") if camp else None
+        eff_sst = (ch_sst if ch_sst not in ("inherit", "", None) else camp_sst) or "local"
+
+        ch_sf = channel_obj.get("split_folder") if channel_obj else None
+        camp_sf = camp.get("split_folder") if camp else None
+        eff_sf = (ch_sf if ch_sf not in ("inherit", "", None) else camp_sf) or "data/gameplay"
+
+        ch_sk = channel_obj.get("split_keywords") if channel_obj else None
+        camp_sk = camp.get("split_keywords") if camp else None
+        eff_sk = (ch_sk if ch_sk not in ("inherit", "", None) else camp_sk) or "minecraft parkour, satisfying asmr, subway surfers"
+
+        ch_sp = channel_obj.get("split_provider") if channel_obj else None
+        camp_sp = camp.get("split_provider") if camp else None
+        eff_sp = (ch_sp if ch_sp not in ("inherit", "", None) else camp_sp) or "all"
+
         return {
             "render_dir": eff_render_dir or None,
             "bgm_folder": eff_bgm_folder or None,
             "bgm_volume": eff_bgm_volume,
             "ken_burns_enabled": eff_kb,
-            "endcard_enabled": eff_ec
+            "endcard_enabled": eff_ec,
+            "aspect_ratio": eff_ar,
+            "split_source_type": eff_sst,
+            "split_folder": eff_sf,
+            "split_keywords": eff_sk,
+            "split_provider": eff_sp
         }
 
 

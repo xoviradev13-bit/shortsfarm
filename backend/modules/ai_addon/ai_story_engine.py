@@ -23,6 +23,7 @@ from backend.modules.ai_addon.ass_subtitle import ass_subtitle_generator
 from backend.modules.audio_manager import audio_manager
 from backend.modules.ai_addon.stock_footage import stock_footage_manager
 from backend.modules.ai_addon.ai_video_generator import ai_video_generator, AI_VIDEO_MODELS
+from backend.modules.ai_addon.episodic_generator import generate_episodic_series
 
 logger = get_logger("ai_story_engine")
 
@@ -1111,27 +1112,20 @@ CRITICAL INSTRUCTIONS:
                 if any(k in lower_ip for k in ["man", "woman", "person", "girl", "boy", "face", "portrait", "hands", "soldier", "detective", "doctor", "crowd", "people"]):
                     has_person = True
 
-            # Quy tắc định tuyến ưu tiên từ trên xuống:
-            # 1. Có người/khuôn mặt -> Tuyệt đối không dùng I2V để triệt tiêu vặn vẹo (dùng Ken Burns hoặc Stock)
-            if has_person or face_prominence >= 0.15:
-                if visual_source in ("stock", "mixed") and is_action:
-                    route_choice = "stock"
-                else:
-                    route_choice = "ken_burns"
-            # 2. Cảnh hành động không có người -> LTX hoặc Stock
-            elif is_action:
-                route_choice = "ai_video" if visual_source in ("ai_video", "mixed") else "stock"
-            # 3. Hook hoặc Climax không có người -> LTX hoặc Stock
-            elif is_hook or is_climax:
-                route_choice = "ai_video" if visual_source in ("ai_video", "mixed") else "stock"
-            # 4. Cảnh tĩnh / phong cảnh / hội thoại
+            # Quy tắc định tuyến nguồn hình ảnh:
+            if visual_source == "stock":
+                route_choice = "stock"
+            elif visual_source == "mixed":
+                route_choice = "stock" if (idx % 2 == 0) else "ken_burns"
+            elif has_person or face_prominence >= 0.15:
+                # Có người/khuôn mặt -> Ưu tiên Ken Burns để tránh méo mặt
+                route_choice = "ken_burns"
+            elif is_action or is_hook or is_climax:
+                route_choice = "ai_video" if visual_source == "ai_video" else "ken_burns"
             else:
-                if visual_source == "stock":
-                    route_choice = "stock"
-                elif visual_source == "ai_video":
-                    route_choice = "ai_video"
-                else:
-                    route_choice = "ken_burns"
+                route_choice = "ai_video" if visual_source == "ai_video" else "ken_burns"
+
+            log_event("INFO", f"🎬 [SCENE #{idx + 1}] Route: {route_choice.upper()} | Query: {stock_q[:60]}")
 
             clip_ready = False
 
@@ -1375,15 +1369,14 @@ CRITICAL INSTRUCTIONS:
         bgm_folder: str = "cinematic",
         force_regenerate_script: bool = False,
         target_part: Optional[int] = None,
-        num_parts: Optional[int] = None
+        num_parts: Optional[int] = None,
+        target_duration: float = 65.0
     ) -> Dict[str, Any]:
         """
         Quy trình sản xuất trọn bộ Series TikTok nhiều tập (Episodic Bible Arc):
         1. Gọi episodic_generator để phân tích thể loại, tạo Master Bible và kịch bản phân cảnh từng tập (Part 1, 2, 3...)
         2. Tự động render từng tập với các neo nhân vật đồng nhất và cliffhanger hoàn hảo.
         """
-        from backend.modules.ai_addon.episodic_generator import generate_episodic_series
-
         log_event("INFO", f"🎬 [EPISODIC SERIES] Bắt đầu sản xuất series cho video '{video_title}' ({video_id}, {num_parts or 'auto'} parts)")
 
         series_data = generate_episodic_series(
@@ -1393,7 +1386,8 @@ CRITICAL INSTRUCTIONS:
             language=target_language,
             ethnicity=ethnicity,
             image_model=ai_image_model,
-            force=force_regenerate_script
+            force=force_regenerate_script,
+            target_duration=target_duration
         )
 
         if not series_data or not series_data.get("parts"):
@@ -1421,7 +1415,7 @@ CRITICAL INSTRUCTIONS:
                 video_id=video_id,
                 video_title=p_title,
                 channel_name=channel_name,
-                target_duration=64.0,
+                target_duration=target_duration,
                 target_language=target_language,
                 visual_source=visual_source,
                 ai_image_model=ai_image_model,

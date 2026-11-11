@@ -243,14 +243,23 @@ def normalize_for_hash(text: str) -> str:
     return re.sub(r"\s+", " ", unicodedata.normalize("NFC", text or "")).strip().lower()
 
 
-def plan_structure(wc: int) -> "tuple[int, int]":
+def plan_structure(wc: int, target_duration: float = 65.0) -> "tuple[int, int]":
+    dur = float(target_duration or 65.0)
+    if dur >= 60.0:
+        # Chuẩn TikTok Creator Rewards Beta (>60s): mỗi scene dài 5.5s - 7.0s
+        scenes_per_part = max(9, int(round(dur / 6.5)))
+    else:
+        scenes_per_part = max(5, int(round(dur / 6.0)))
+
     if wc < 300:
-        return 2, 6
-    if wc < 1000:
-        return 3, 8
-    if wc < 2200:
-        return 3, 10
-    return 4, 8
+        parts = 2
+    elif wc < 1000:
+        parts = 3
+    elif wc < 2200:
+        parts = 3
+    else:
+        parts = 4
+    return parts, scenes_per_part
 
 
 def _num(v: Any) -> "float | None":
@@ -1075,6 +1084,7 @@ def build_chain_instruction(
 def build_part_prompt(
     p_num: int, num_parts: int, num_scenes: int, act: dict, bible: dict,
     prior_summaries: list[str], prev_cliff: str, prev_state: dict, lang: str, banned_visuals: list[str],
+    target_duration: float = 65.0,
 ) -> str:
     chain = build_chain_instruction(p_num, num_parts, act, bible, prior_summaries, prev_cliff,
                                     prev_state, lang, banned_visuals)
@@ -1082,6 +1092,19 @@ def build_part_prompt(
     char_ids = [c["id"] for c in bible["characters"]]
     loc_keys = list(bible["locations"].keys())
     L = language_label(lang)
+
+    eff_target_dur = float(target_duration or 65.0)
+    min_words = int(round(eff_target_dur * 3.1))
+    target_words = int(round(eff_target_dur * 3.4))
+
+    beta_rule = ""
+    if eff_target_dur >= 60.0:
+        beta_rule = f"""
+CRITICAL TIKTOK BETA RUNTIME REQUIREMENT (>60s):
+- The sum of all narration text across all {num_scenes} scenes in this part MUST exceed {min_words} {unit} (aim for ~{target_words} {unit}, approx {center} {unit} per scene).
+- The total spoken duration MUST reach at least {int(eff_target_dur)} seconds to qualify for monetization. Do NOT write ultra-short one-liner scenes.
+"""
+
     return f"""Write the TikTok storyboard for PART {p_num}: {act['part_title']}
 Purpose: {act['act_purpose']}
 Series logline: {bible['series_logline']}
@@ -1089,10 +1112,10 @@ Genre: {bible.get('genre', 'drama')}
 Narration language: {L}.
 
 {chain}
-
+{beta_rule}
 Generate EXACTLY {num_scenes} scenes numbered 1..{num_scenes}. Per scene:
 - "beat_role": from the enum. Scene 1 = hook (part 1) or setup (later parts). Final scene = cliffhanger (non-final parts) or button (final part).
-- "duration_sec": 6-10 (the part should total about {num_scenes * SECONDS_PER_SCENE}s).
+- "duration_sec": 6-10 (the part should total about {max(int(eff_target_dur), num_scenes * SECONDS_PER_SCENE)}s).
 - "narration": {L}, about {center} {unit} for an 8-second scene (acceptable {lo}-{hi}); scale with duration_sec. The FINAL scene is the fixed sentence above.
 - "subject": one of {char_ids}, a "+"-joined combination such as "{'+'.join(char_ids[:2])}", or "none".
 - "location": one of {loc_keys}.
@@ -1493,7 +1516,8 @@ def run(args: argparse.Namespace, query_llm: Callable[..., Any]) -> dict:
         log.warning(msg)
         stats.warnings.append(msg)
 
-    planned_parts, planned_scenes = plan_structure(wc)
+    target_dur = getattr(args, "target_duration", 65.0) or 65.0
+    planned_parts, planned_scenes = plan_structure(wc, target_duration=target_dur)
     num_parts = getattr(args, "num_parts", None) or planned_parts
     num_scenes = planned_scenes
     key = make_cache_key(transcript, title, max_chars=args.max_chars, num_parts=num_parts,
@@ -1589,7 +1613,7 @@ def run(args: argparse.Namespace, query_llm: Callable[..., Any]) -> dict:
             raw = query_json(
                 client, f"part_{p_num}_script", SYSTEM_PROMPT,
                 build_part_prompt(p_num, num_parts, num_scenes, act, bible, summaries, prev_cliff,
-                                  prev_state, lang, all_visuals),
+                                  prev_state, lang, all_visuals, target_duration=target_dur),
                 part_validator, label=f"part_{p_num}", retries=args.retries, dump_dir=dump_dir)
             write_json_atomic(part_path, {"raw": raw})  # raw model output; derived fields are rebuilt below
 
@@ -1677,6 +1701,7 @@ def generate_episodic_series(
     image_model: str = "flux",
     force: bool = False,
     no_audit: bool = True,
+    target_duration: float = 65.0,
     max_llm_calls: int = 40,
     seed: "int | None" = None,
     verbose: bool = False
@@ -1706,6 +1731,7 @@ def generate_episodic_series(
         title=title,
         out=out_file,
         num_parts=num_parts,
+        target_duration=target_duration,
         force=force,
         retries=3,
         max_chars=DEFAULT_MAX_CHARS,

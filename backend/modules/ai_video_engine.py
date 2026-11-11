@@ -260,6 +260,11 @@ class AIVideoEngine:
         total_parts: int = 1,
         enable_endcard: bool = True,
         enable_ken_burns: bool = True,
+        aspect_ratio: str = "9:16_blur",
+        split_source_type: str = "local",
+        split_folder: str = "data/gameplay",
+        split_keywords: str = "minecraft parkour, satisfying asmr, subway surfers",
+        split_provider: str = "all",
         **kwargs
     ) -> Optional[str]:
         """
@@ -479,6 +484,34 @@ class AIVideoEngine:
                 language=effective_lang
             )
 
+        # Chuẩn bị video phụ cho Split Screen (Ghép 2 tầng) nếu được chọn
+        sub_video_file = None
+        sub_video_input_idx = None
+        if aspect_ratio == "9:16_split":
+            try:
+                from backend.modules.ai_addon.stock_footage import stock_footage_manager
+                sub_video_file = stock_footage_manager.get_split_sub_video(
+                    source_type=split_source_type or "local",
+                    folder_path=split_folder or "data/gameplay",
+                    keywords=split_keywords or "minecraft parkour, satisfying asmr, subway surfers",
+                    provider=split_provider or "all",
+                    duration=duration,
+                    width=1080,
+                    height=960
+                )
+            except Exception as s_err:
+                log_event("WARNING", f"Lỗi lấy video phụ Split Screen: {s_err}")
+
+        has_bgm = bool(selected_bgm and os.path.exists(selected_bgm))
+        has_sub_video = bool(sub_video_file and os.path.exists(sub_video_file))
+
+        # Xác định chỉ số input cho sub_video trong lệnh FFmpeg
+        if has_sub_video:
+            if has_narration:
+                sub_video_input_idx = 3 if has_bgm else 2
+            else:
+                sub_video_input_idx = 2 if has_bgm else 1
+
         # Xây dựng Filter Complex chống kiểm duyệt
         # Lưu ý: Khi có giọng đọc AI (has_narration=True), giữ speed_factor=1.0 để phụ đề Karaoke khớp 100% với khẩu hình/âm thanh
         eff_speed_factor = 1.0 if has_narration else speed_factor
@@ -492,16 +525,18 @@ class AIVideoEngine:
             add_part_label=add_part_label,
             enable_ken_burns=enable_ken_burns,
             endcard_text=ec_text,
-            video_duration=duration
+            video_duration=duration,
+            aspect_ratio_mode=aspect_ratio,
+            sub_video_input_idx=sub_video_input_idx
         )
 
         # Cờ encoder tối ưu (NVENC hoặc CPU libx264)
         encoder_flags = get_optimal_video_encoder_flags()
 
-        has_bgm = bool(selected_bgm and os.path.exists(selected_bgm))
         fade_start = max(0.0, float(duration) - 2.0)
-
         bgm_boost_vol = min(1.0, target_bgm_vol * 1.6)
+
+        sub_vid_args = ["-stream_loop", "-1", "-i", sub_video_file] if has_sub_video else []
 
         if has_narration:
             # SỬ DỤNG GIỌNG ĐỌC AI MỚI TOANH (ZERO-UNORIGINAL CONTENT)
@@ -524,11 +559,14 @@ class AIVideoEngine:
                     "-i", temp_voice_file,
                     "-ss", str(bgm_start_offset),
                     "-stream_loop", "-1",
-                    "-i", selected_bgm,
+                    "-i", selected_bgm
+                ]
+                cmd.extend(sub_vid_args)
+                cmd.extend([
                     "-filter_complex", full_filter_complex,
                     "-map", f"[{out_map}]",
                     "-map", "[a_out]"
-                ]
+                ])
             else:
                 # Video(0), AI Voice(1) -> apad để giữ audio đầy đủ
                 full_filter_complex = (
@@ -541,11 +579,14 @@ class AIVideoEngine:
                     "-ss", str(start_time),
                     "-t", str(duration),
                     "-i", input_file,
-                    "-i", temp_voice_file,
+                    "-i", temp_voice_file
+                ]
+                cmd.extend(sub_vid_args)
+                cmd.extend([
                     "-filter_complex", full_filter_complex,
                     "-map", f"[{out_map}]",
                     "-map", "[a_voice]"
-                ]
+                ])
         else:
             # GIỮ NGUYÊN ÂM THANH GỐC CỦA VIDEO
             if has_bgm:
@@ -564,11 +605,14 @@ class AIVideoEngine:
                     "-i", input_file,
                     "-ss", str(bgm_start_offset),
                     "-stream_loop", "-1",
-                    "-i", selected_bgm,
+                    "-i", selected_bgm
+                ]
+                cmd.extend(sub_vid_args)
+                cmd.extend([
                     "-filter_complex", full_filter_complex,
                     "-map", f"[{out_map}]",
                     "-map", "[a_out]"
-                ]
+                ])
             else:
                 full_filter_complex = filter_complex
                 cmd = [
@@ -576,12 +620,15 @@ class AIVideoEngine:
                     "-y",
                     "-ss", str(start_time),
                     "-t", str(duration),
-                    "-i", input_file,
+                    "-i", input_file
+                ]
+                cmd.extend(sub_vid_args)
+                cmd.extend([
                     "-filter_complex", filter_complex,
                     "-map", f"[{out_map}]",
                     "-map", "0:a",
                     "-af", audio_filter
-                ]
+                ])
 
         cmd.extend(encoder_flags)
         cmd.extend([
@@ -726,7 +773,7 @@ class AIVideoEngine:
         self,
         input_file: str,
         video_id: str,
-        total_duration: int,
+        total_duration: float,
         part_duration: int = 65,
         channel_name: Optional[str] = None,
         video_title: Optional[str] = None,
@@ -750,7 +797,12 @@ class AIVideoEngine:
         custom_provider: Optional[str] = None,
         custom_model: Optional[str] = None,
         enable_endcard: bool = True,
-        enable_ken_burns: bool = True
+        enable_ken_burns: bool = True,
+        aspect_ratio: str = "9:16_blur",
+        split_source_type: str = "local",
+        split_folder: str = "data/gameplay",
+        split_keywords: str = "minecraft parkour, satisfying asmr, subway surfers",
+        split_provider: str = "all"
     ) -> List[str]:
         """
         Tự động cắt video dài thành nhiều Part bằng cách dùng Silence Detector để ngắt tại khoảng lặng câu
@@ -760,7 +812,7 @@ class AIVideoEngine:
         # Đo thời lượng thực tế chính xác và kiểm tra có phải là Shorts/Short-form không (<= 180s)
         actual_dur = self._get_exact_media_duration(input_file)
         if actual_dur > 0:
-            total_duration = actual_dur
+            total_duration = int(actual_dur)
         is_short_form = (total_duration <= 180.0)
 
         # Video ngắn / Shorts: Tự động giữ nguyên chiều gốc (không lật ngang) để tránh ngược chữ/tiêu đề
@@ -815,7 +867,12 @@ class AIVideoEngine:
                 custom_model=custom_model,
                 total_parts=1,
                 enable_endcard=enable_endcard,
-                enable_ken_burns=enable_ken_burns
+                enable_ken_burns=enable_ken_burns,
+                aspect_ratio=aspect_ratio,
+                split_source_type=split_source_type,
+                split_folder=split_folder,
+                split_keywords=split_keywords,
+                split_provider=split_provider
             )
             if f:
                 rendered_files.append(f)
@@ -861,7 +918,7 @@ class AIVideoEngine:
                     add_part_label=add_part_label,
                     subtitle_style=subtitle_style,
                     subtitle_position=subtitle_position,
-                    bgm_folder=bgm_folder,
+                    bgm_folder=bgm_folder or "cinematic",
                     bgm_volume=bgm_volume,
                     enable_narration=enable_narration,
                     narration_language=narration_language,
@@ -871,7 +928,12 @@ class AIVideoEngine:
                     custom_model=custom_model,
                     total_parts=max_parts,
                     enable_endcard=enable_endcard,
-                    enable_ken_burns=enable_ken_burns
+                    enable_ken_burns=enable_ken_burns,
+                    aspect_ratio=aspect_ratio,
+                    split_source_type=split_source_type,
+                    split_folder=split_folder,
+                    split_keywords=split_keywords,
+                    split_provider=split_provider
                 )
                 if f:
                     rendered_files.append(f)
@@ -887,7 +949,7 @@ class AIVideoEngine:
         video_id: str,
         channel_name: str,
         video_title: str,
-        output_dir: str,
+        output_dir: Optional[str],
         start_time: float,
         duration: float,
         hooks_dict: Dict[str, str],
@@ -951,7 +1013,7 @@ class AIVideoEngine:
                     hook_text=m_hook,
                     flip_horizontal=flip_horizontal,
                     speed_factor=spd,
-                    bgm_folder=bgm_folder,
+                    bgm_folder=bgm_folder or "cinematic",
                     bgm_volume=bgm_volume,
                     variant_tag=tag,
                     specific_bgm_path=bgm_path,
@@ -1083,7 +1145,12 @@ class AIVideoEngine:
         visual_source: str = "ai",
         ai_image_model: str = "flux",
         ai_video_model: str = "fal_ltx",
-        stock_provider: str = "all"
+        stock_provider: str = "all",
+        aspect_ratio: str = "9:16_blur",
+        split_source_type: str = "local",
+        split_folder: str = "data/gameplay",
+        split_keywords: str = "minecraft parkour, satisfying asmr, subway surfers",
+        split_provider: str = "all"
     ) -> Dict[str, Any]:
         """
         Quy trình xử lý AI trọn gói (End-to-End Enterprise SaaS Workflow):
@@ -1120,8 +1187,9 @@ class AIVideoEngine:
                     ai_image_model=ai_image_model or "flux",
                     enable_subtitles=bool(enable_subtitles if enable_subtitles is not None else True),
                     subtitle_style=subtitle_style or "karaoke_yellow",
-                    bgm_folder=bgm_folder,
-                    num_parts=clips_count
+                    bgm_folder=bgm_folder or "cinematic",
+                    num_parts=clips_count,
+                    target_duration=float(target_duration or 65.0)
                 )
             else:
                 log_event("INFO", f"🎬 [AI STORY MODE BẬT] Video {video_id}: Đang tạo video hoàn toàn mới 100% bằng Ảnh AI ({image_style}) và Lồng tiếng AI...")
@@ -1143,7 +1211,7 @@ class AIVideoEngine:
                     enable_subtitles=bool(enable_subtitles if enable_subtitles is not None else True),
                     subtitle_style=subtitle_style or "karaoke_yellow",
                     subtitle_position=subtitle_position or "center",
-                    bgm_folder=bgm_folder,
+                    bgm_folder=bgm_folder or "cinematic",
                     bgm_volume=bgm_volume if bgm_volume is not None else 0.15,
                     ai_provider=custom_provider,
                     ai_model=custom_model
@@ -1168,7 +1236,7 @@ class AIVideoEngine:
         # Lấy tổng thời lượng video chính xác bằng ffprobe
         actual_dur = self._get_exact_media_duration(input_file)
         if actual_dur > 0:
-            total_duration = actual_dur
+            total_duration = int(actual_dur)
         elif transcript_segments and transcript_segments[-1].get("end", 0.0) > 0:
             total_duration = transcript_segments[-1].get("end", 0.0)
         else:
@@ -1320,7 +1388,12 @@ class AIVideoEngine:
                 custom_model=custom_model,
                 total_parts=1 if is_short_form else effective_clips_count,
                 enable_endcard=enable_endcard,
-                enable_ken_burns=enable_ken_burns
+                enable_ken_burns=enable_ken_burns,
+                aspect_ratio=aspect_ratio,
+                split_source_type=split_source_type,
+                split_folder=split_folder,
+                split_keywords=split_keywords,
+                split_provider=split_provider
             )
             rendered_files = [rendered_file] if rendered_file else []
 
@@ -1389,7 +1462,7 @@ class AIVideoEngine:
                     add_part_label=add_part_label,
                     subtitle_style=subtitle_style,
                     subtitle_position=subtitle_position,
-                    bgm_folder=bgm_folder,
+                    bgm_folder=bgm_folder or "cinematic",
                     bgm_volume=bgm_volume,
                     enable_narration=enable_narration,
                     narration_language=narration_language,
@@ -1399,7 +1472,12 @@ class AIVideoEngine:
                     custom_model=custom_model,
                     total_parts=effective_clips_count,
                     enable_endcard=enable_endcard,
-                    enable_ken_burns=enable_ken_burns
+                    enable_ken_burns=enable_ken_burns,
+                    aspect_ratio=aspect_ratio,
+                    split_source_type=split_source_type,
+                    split_folder=split_folder,
+                    split_keywords=split_keywords,
+                    split_provider=split_provider
                 )
                 if next_p:
                     rendered_files.append(next_p)

@@ -176,6 +176,11 @@ class RenderVideoRequest(BaseModel):
     bgm_folder: Optional[str] = None
     bgm_volume: Optional[float] = None
     generate_variants: Optional[bool] = False
+    aspect_ratio: Optional[str] = "9:16_blur"
+    split_source_type: Optional[str] = "local"
+    split_folder: Optional[str] = "data/gameplay"
+    split_keywords: Optional[str] = "minecraft parkour, satisfying asmr, subway surfers"
+    split_provider: Optional[str] = "all"
     hook_angle: Optional[str] = "auto"
     use_ai_images: Optional[bool] = False
     image_style: Optional[str] = "cinematic"
@@ -209,6 +214,11 @@ class SmartRenderVideoRequest(BaseModel):
     bgm_folder: Optional[str] = None
     bgm_volume: Optional[float] = None
     generate_variants: Optional[bool] = False
+    aspect_ratio: Optional[str] = "9:16_blur"
+    split_source_type: Optional[str] = "local"
+    split_folder: Optional[str] = "data/gameplay"
+    split_keywords: Optional[str] = "minecraft parkour, satisfying asmr, subway surfers"
+    split_provider: Optional[str] = "all"
     hook_angle: Optional[str] = "auto"
     use_ai_images: Optional[bool] = False
     image_style: Optional[str] = "cinematic"
@@ -508,6 +518,10 @@ class CreateCampaignRequest(BaseModel):
     tts_engine: Optional[str] = "edge-tts"
     elevenlabs_voice_id: Optional[str] = None
     elevenlabs_model: Optional[str] = "eleven_multilingual_v2"
+    split_source_type: Optional[str] = "local"
+    split_folder: Optional[str] = "data/gameplay"
+    split_keywords: Optional[str] = "minecraft parkour, satisfying asmr, subway surfers"
+    split_provider: Optional[str] = "all"
 
 class DownloadFilterSettingsRequest(BaseModel):
     min_video_duration: int = 300
@@ -1917,7 +1931,7 @@ def list_campaigns():
             r["render_dir"] = str(RENDERED_DIR)
     return rows
 
-def sanitize_campaign_schedule(raw_str: str) -> str:
+def sanitize_campaign_schedule(raw_str: Optional[str]) -> str:
     """Kiểm tra và chuẩn hóa khung giờ đăng bài HH:MM"""
     if not raw_str:
         return "11:30, 18:00, 20:30"
@@ -1991,9 +2005,10 @@ def create_campaign(req: CreateCampaignRequest):
             auto_engagement_enabled, auto_pin_comment, pin_comment_delay_mins,
             auto_reply_comments, reply_comments_delay_mins,
             narration_enabled, narration_language, voice_gender, narration_style, disable_narration_for_shorts, keep_original_script_for_shorts, ken_burns_enabled, endcard_enabled, use_ai_images, image_style, visual_source, ai_image_model, ai_video_model, stock_provider, auto_upload,
-            tts_engine, elevenlabs_voice_id, elevenlabs_model
+            tts_engine, elevenlabs_voice_id, elevenlabs_model,
+            split_source_type, split_folder, split_keywords, split_provider
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         req.name,
         source_mode,
@@ -2058,7 +2073,11 @@ def create_campaign(req: CreateCampaignRequest):
         1 if (req.auto_upload is None or req.auto_upload != 0) else 0,
         req.tts_engine or 'edge-tts',
         req.elevenlabs_voice_id or None,
-        req.elevenlabs_model or 'eleven_multilingual_v2'
+        req.elevenlabs_model or 'eleven_multilingual_v2',
+        req.split_source_type or 'local',
+        req.split_folder or 'data/gameplay',
+        req.split_keywords or 'minecraft parkour, satisfying asmr, subway surfers',
+        req.split_provider or 'all'
     ))
     campaign_id = cursor.lastrowid
     # Persist last used download/render dirs in settings table for future campaigns
@@ -2225,7 +2244,11 @@ def update_campaign(campaign_id: int, req: CreateCampaignRequest):
             auto_upload = ?,
             tts_engine = ?,
             elevenlabs_voice_id = ?,
-            elevenlabs_model = ?
+            elevenlabs_model = ?,
+            split_source_type = ?,
+            split_folder = ?,
+            split_keywords = ?,
+            split_provider = ?
         WHERE id = ?
     ''', (
         req.name,
@@ -2291,6 +2314,10 @@ def update_campaign(campaign_id: int, req: CreateCampaignRequest):
         req.tts_engine or 'edge-tts',
         req.elevenlabs_voice_id or None,
         req.elevenlabs_model or 'eleven_multilingual_v2',
+        req.split_source_type or 'local',
+        req.split_folder or 'data/gameplay',
+        req.split_keywords or 'minecraft parkour, satisfying asmr, subway surfers',
+        req.split_provider or 'all',
         campaign_id
     ))
     if req.download_dir:
@@ -3376,7 +3403,12 @@ def render_video_ai(req: RenderVideoRequest):
             subtitle_style=req.subtitle_style,
             subtitle_position=req.subtitle_position,
             bgm_folder=req.bgm_folder,
-            bgm_volume=req.bgm_volume
+            bgm_volume=req.bgm_volume,
+            aspect_ratio=req.aspect_ratio or "9:16_blur",
+            split_source_type=req.split_source_type or "local",
+            split_folder=req.split_folder or "data/gameplay",
+            split_keywords=req.split_keywords or "minecraft parkour, satisfying asmr, subway surfers",
+            split_provider=req.split_provider or "all"
         )
         if not parts:
             raise HTTPException(status_code=500, detail="Lỗi khi render các part video AI")
@@ -3405,7 +3437,12 @@ def render_video_ai(req: RenderVideoRequest):
         subtitle_style=req.subtitle_style,
         subtitle_position=req.subtitle_position,
         bgm_folder=req.bgm_folder,
-        bgm_volume=req.bgm_volume
+        bgm_volume=req.bgm_volume,
+        aspect_ratio=req.aspect_ratio or "9:16_blur",
+        split_source_type=req.split_source_type or "local",
+        split_folder=req.split_folder or "data/gameplay",
+        split_keywords=req.split_keywords or "minecraft parkour, satisfying asmr, subway surfers",
+        split_provider=req.split_provider or "all"
     )
 
     if not rendered:
@@ -3496,7 +3533,12 @@ def render_smart_ai_video(req: SmartRenderVideoRequest):
         stock_provider=req.stock_provider or "all",
         narration_language=req.narration_language or "vi",
         voice_gender=req.voice_gender or "male",
-        narration_style=req.narration_style or "giat_gan"
+        narration_style=req.narration_style or "giat_gan",
+        aspect_ratio=req.aspect_ratio or "9:16_blur",
+        split_source_type=req.split_source_type or "local",
+        split_folder=req.split_folder or "data/gameplay",
+        split_keywords=req.split_keywords or "minecraft parkour, satisfying asmr, subway surfers",
+        split_provider=req.split_provider or "all"
     )
 
     if result.get("status") != "success":
@@ -4836,6 +4878,7 @@ def get_variants_ab_test_report():
 
 @app.on_event("startup")
 def on_startup():
+    db_settings: dict[str, str] = {}
     try:
         # 1. Restore environment settings from SQLite settings table
         conn = get_connection()
@@ -4855,7 +4898,7 @@ def on_startup():
     try:
         # 2. Check if scheduler was previously paused or enabled
         scheduler.load_settings()
-        saved_running = db_settings.get("scheduler_running", "1") if 'db_settings' in locals() else "1"
+        saved_running = db_settings.get("scheduler_running", "1")
         should_run = (saved_running == "1")
         if should_run:
             scheduler.start()
